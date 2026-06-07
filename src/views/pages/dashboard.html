@@ -1,375 +1,131 @@
 <!DOCTYPE html>
-<html lang="es">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Panel de Administración</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="../vendor/bootstrap-icons/bootstrap-icons.css">
-    <link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/toastify-js/src/toastify.min.css">    
-    <style>
-        body { display: flex; min-height: 100vh; background-color: #f8f9fa; }
-        #sidebar { min-width: 250px; max-width: 250px; background: #212529; color: white; transition: all 0.3s; }
-        #sidebar .nav-link { color: rgba(255,255,255,0.8); border-radius: 0; padding: 1rem 1.5rem; cursor: pointer; }
-        #sidebar .nav-link.active { background: #0d6efd; color: white; border-left: 4px solid #fff; }
-        #sidebar .nav-link:hover { background: rgba(255,255,255,0.1); }
-        .main-content { flex: 1; padding: 2rem; }
-        .user-table { cursor: pointer; }
-    </style>
+    <link rel="stylesheet" href="../styles/styles.css">
+    <title>Document</title>
 </head>
 <body>
-
-    <!-- Navbar lateral -->
-    <nav id="sidebar" class="d-flex flex-column">
-        <div class="p-4">
-            <h5 class="text-white">Panel de Administración</h5>
-            <p class="text-white-50 small" id="user-display">Cargando..</p>
-        </div>
-        <ul class="nav flex-column mb-auto">
-            <li class="nav-item">
-                <a id="nav-users" class="nav-link active">
-                    <i class="bi bi-people-fill me-2"></i> Usuarios
-                </a>
-            </li>
-            <li class="nav-item">
-                <a id="nav-roles" class="nav-link">
-                    <i class="bi bi-gear-fill me-2"></i> Roles
-                </a>
-            </li>
-        </ul>
-        <div class="p-3 border-top border-secondary">
-            <button class="btn btn-outline-light btn-sm w-100" id="btnLogout">
-                <i class="bi bi-box-arrow-left me-2"></i> Cerrar Sesión
-            </button>
-        </div>
+    <div id="header"></div>
+    <script>
+    fetch('/src/views/components/header.html')
+        .then(res => res.text())
+        .then(html => document.getElementById('header').innerHTML = html);
+    </script>
+    
+    <nav id="secondary-nav">
+        <h2>Acciones Rápidas</h2>
+            <ul>
+                <li id="btn-ingreso"><a href="#">+ Registrar ingreso</a></li>
+                <li id="btn-egreso"><a href="#">- Registrar egreso</a></li>
+                <li id="btn-stock"><a href="#">Ajustar stock</a></li>
+                <li id="btn-reporte"><a href="#">Ver reporte</a></li>
+            </ul>
     </nav>
-
-    <!-- Main principal -->
-    <main class="main-content">
-
-        <!-- Cards de estadisticas -->
-        <div class="row mb-4">
-            <div class="col-md-3">
-                <div class="card bg-primary text-white shadow-sm">
-                    <div class="card-body">
-                        <h6>Total Usuarios</h6>
-                        <h2 id="stat-total">0</h2>
-                    </div>
+    <main id="dashboard-main">
+        <section id="dashboard-kpis" >
+            <section class="dashboard-kpi" id="dashboard-kpis-1">
+                <h3>Ingresos del mes</h3>
+                <h4>$342.000</h4>
+                <h5>+12% vs anterior</h5>
+            </section>
+            <section class="dashboard-kpi" id="dashboard-kpis-2">
+                <h3>Ingresos del mes</h3>
+                <h4>$342.000</h4>
+                <h5>+12% vs anterior</h5>
+            </section>
+            <section class="dashboard-kpi" id="dashboard-kpis-3">
+                <h3>Ingresos del mes</h3>
+                <h4>$342.000</h4>
+                <h5>+12% vs anterior</h5>
+            </section>
+            <section class="dashboard-kpi" id="dashboard-kpis-4">
+                <h3>Ingresos del mes</h3>
+                <h4>$342.000</h4>
+                <h5>+12% vs anterior</h5>
+            </section>
+            <section class="dashboard-kpi" id="dashboard-kpis-5">
+                <h3>Ingresos del mes</h3>
+                <h4>$342.000</h4>
+                <h5>+12% vs anterior</h5>
+            </section>
+        </section>
+        <section id="dashboard-charts">
+            <section class="dashboard-block" id="dashboard-movimientos">
+                <div class="dashboard-block-header">
+                    <h3>Movimientos recientes</h3>
+                    <a href="#">Ver todos →</a>
                 </div>
-            </div>
-            <div class="col-md-3">
-                <div class="card bg-success text-white shadow-sm">
-                    <div class="card-body">
-                        <h6>Activos</h6>
-                        <h2 id="stat-activos">0</h2>
-                    </div>
+                <table class="dashboard-table">
+                    <tr>
+                        <td class="positivo">Venta conservas</td>
+                        <td>Ventas</td>
+                        <td class="monto">+$120.000</td>
+                        <td>12/05</td>
+                    </tr>
+                    <tr>
+                        <td class="negativo">Pago proveedor</td>
+                        <td>Proveedores</td>
+                        <td class="monto">-$45.000</td>
+                        <td>10/05</td>
+                    </tr>
+                    <tr>
+                        <td class="positivo">Subsidio INAES</td>
+                        <td>Subsidios</td>
+                        <td class="monto">+$80.000</td>
+                        <td>08/05</td>
+                    </tr>
+                </table>
+            </section>
+            <section class="dashboard-block" id="dashboard-stock">
+                <div class="dashboard-block-header">
+                    <h3>Alertas de stock</h3>
+                    <a href="#">Ver stock →</a>
                 </div>
-            </div>
-            <div class="col-md-3">
-                <div class="card bg-danger text-white shadow-sm">
-                    <div class="card-body">
-                        <h6>Inactivos</h6>
-                        <h2 id="stat-inactivos">0</h2>
-                    </div>
+                <table class="dashboard-table">
+                    <tr>
+                    <td>Conserva tomate 350g</td>
+                    <td class="estado ok">OK</td>
+                    </tr>
+                    <tr>
+                    <td>Mermelada frambuesa</td>
+                    <td class="estado bajo">Bajo</td>
+                    </tr>
+                    <tr>
+                    <td>Tapas metálicas</td>
+                    <td class="estado sin-stock">Sin stock</td>
+                    </tr>
+                </table>
+            </section>
+            <section class="dashboard-block" id="dashboard-matches">
+                <div class="dashboard-block-header">
+                    <h3>Matches</h3>
+                    <a href="#">Ver todos →</a>
                 </div>
-            </div>
-            <div class="col-md-3">
-                <div class="card bg-secondary text-white shadow-sm">
-                    <div class="card-body">
-                        <h6>Roles</h6>
-                        <h2 id="stat-roles">0</h2>
-                    </div>
-                </div>
-            </div>
-        </div>
+                <table class="dashboard-table">
+                    <tr>
+                    <td>Coop. La Verdecita</td>
+                    <td>Necesita frío</td>
+                    <td class="porcentaje alto">92%</td>
+                    </tr>
+                    <tr>
+                    <td>Coop. Sol y Fruto</td>
+                    <td>Ofrece transporte</td>
+                    <td class="porcentaje medio">78%</td>
+                    </tr>
+                    <tr>
+                    <td>Coop. Norte Fuerte</td>
+                    <td>Necesita maquinaria</td>
+                    <td class="porcentaje bajo">65%</td>
+                    </tr>
+                </table>
+            </section>
+        </section>
 
-        <div class="container-fluid">
-            
-            <!-- Seccion de usuarios -->
-            <div id="view-users">
-                <div class="d-flex justify-content-between align-items-center mb-4">
-                    <h2 class="h3">Gestión de Usuarios</h2>
-                    <button class="btn btn-primary" id="btnNewUser">
-                        <i class="bi bi-plus-circle me-2"></i> Nuevo Usuario
-                    </button>
-                </div>
 
-                <div id="alert-api" class="alert d-none" role="alert"></div>
-
-                <div class="card mb-4 shadow-sm">
-                    <div class="card-body">
-                        <div class="input-group">
-                            <span class="input-group-text bg-white border-end-0">
-                                <i class="bi bi-search text-muted"></i>
-                            </span>
-                            <input type="text" id="userSearch" class="form-control border-start-0" placeholder="Buscar por nombre, email o DNI">
-                        </div>
-                    </div>
-                </div>
-
-                <div class="card shadow-sm">
-                    <div class="table-responsive">
-                        <table class="table table-hover align-middle mb-0">
-                            <thead class="table-light">
-                                <tr>
-                                    <th>Nombre</th>
-                                    <th>Email</th>
-                                    <th>DNI</th>
-                                    <th>Rol</th>
-                                    <th>Estado</th>
-                                    <th>Fecha de Alta</th>
-                                    <th class="text-end">Acciones</th>
-                                </tr>
-                            </thead>
-                            <tbody id="usuariosTableBody">
-                                <tr>
-                                    <td colspan="7" class="text-center py-4 text-muted"> Cargando usuarios </td>
-                                </tr>
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Seccion de roles -->
-            <div id="view-roles" class="d-none">
-                <div class="d-flex justify-content-between align-items-center mb-4">
-                    <h2 class="h3">Gestión de Roles</h2>
-                    <button class="btn btn-primary" id="btnNewRole">
-                        <i class="bi bi-plus-circle me-2"></i> Nuevo Rol
-                    </button>
-                </div>
-
-                <div class="card shadow-sm">
-                    <div class="table-responsive">
-                        <table class="table table-hover align-middle mb-0">
-                            <thead class="table-light">
-                                <tr>
-                                    <th>Nombre del Rol</th>
-                                    <th>Descripción</th>
-                                    <th>Usuarios</th>
-                                    <th>Estado</th>
-                                    <th class="text-end">Acciones</th>
-                                </tr>
-                            </thead>
-                            <tbody id="rolesTableBody">
-                                <tr>
-                                    <td colspan="5" class="text-center py-4 text-muted"> Cargando roles... </td>
-                                </tr>
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-            </div>
-
-        </div>
     </main>
 
-    <!-- Modal creacion de usuario -->
-    <div class="modal fade" id="modalUser" tabindex="-1" aria-hidden="true">
-        <div class="modal-dialog modal-lg">
-            <div class="modal-content">
-                <div class="modal-header bg-dark text-white">
-                    <h5 class="modal-title"><i class="bi bi-person-plus-fill me-2"></i> Gestión de Usuario</h5>
-                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
-                </div>
-                <div class="modal-body">
-                    <div id="alert-container" class="alert d-none" role="alert"></div>
-                    <form id="formUser" class="row g-3 m-0 justify-content-center">
-                        <div class="row mt-3 mb-3">
-                            <div class="col">
-                                <label class="form-label">Nombre Completo</label>
-                                <input type="text" class="form-control" id="userName" required>
-                            </div>
-                            <div class="col">
-                                <label class="form-label">DNI</label>
-                                <input type="text" class="form-control" id="userDni" required>
-                            </div>
-                        </div>
-                        <div class="row mb-3">
-                            <div class="col-md-8">
-                                <label class="form-label">Email</label>
-                                <input type="email" class="form-control" id="userEmail" required>
-                            </div>
-                            <div class="col-md-4">
-                                <label class="form-label">Rol</label>
-                                <select class="form-select" id="userRol" required>
-                                    <option value="" selected disabled>Seleccionar</option>
-                                </select>
-                            </div>
-                        </div>
-                        <div class="row mb-3">
-                            <div class="col-md-4">
-                                <label class="form-label">Fecha de Nacimiento</label>
-                                <input type="date" class="form-control" id="userBirth">
-                            </div>
-                            <div class="col-md-6">
-                                <label class="form-label">Domicilio</label>
-                                <input type="text" class="form-control" id="userAddress" placeholder="Calle y número">
-                            </div>
-                            <div class="col-md-2">
-                                <label class="form-label">Código Postal</label>
-                                <input type="text" class="form-control" id="userZip">
-                            </div>
-                        </div>
-                        <div class="row mb-3">
-                            <div class="col">
-                                <label class="form-label">Contraseña</label>
-                                <input type="password" class="form-control" id="userPassword" required minlength="8">
-                            </div>
-                            <div class="col">
-                                <label class="form-label">Confirmar Contraseña</label>
-                                <input type="password" class="form-control" id="confirmPassword" required>
-                            </div>
-                        </div>
-                        <div class="row mb-3">
-                            <div class="col">
-                                <label class="form-label">Observaciones</label>
-                                <textarea class="form-control" id="userObs" rows="3" placeholder="Notas"></textarea>
-                            </div>
-                        </div>
-                        <div class="row mb-3">
-                            <div class="col-12">
-                                <div class="form-check form-switch">
-                                    <input class="form-check-input" type="checkbox" id="userStatus" checked>
-                                    <label class="form-check-label">Usuario Activo</label>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="row">
-                            <div class="col text-end border-top pt-2">
-                                <button type="button" class="btn btn-secondary me-2" data-bs-dismiss="modal">Cancelar</button>
-                                <button type="submit" class="btn btn-primary">Guardar Usuario</button>
-                            </div>
-                        </div>
-                    </form>
-                </div>
-            </div>
-        </div>
-    </div>
 
-
-    <!-- Modal detalle de usuario -->
-    <div class="modal fade" id="modalDetail" tabindex="-1" aria-hidden="true">
-        <div class="modal-dialog modal-lg">
-            <div class="modal-content">
-                <div class="modal-header bg-dark text-white">
-                    <h5 class="modal-title">
-                        <i class="bi bi-person-vcard-fill me-2"></i> Detalle de Usuario
-                    </h5>
-                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
-                </div>
-                <div class="modal-body">
-                    <div class="row g-3">
-                        <div class="col-12">
-                            <div class="border rounded p-3 bg-light">
-                                <small class="text-muted d-block">Nombre completo</small>
-                                <h5 class="mb-0" id="detailName"></h5>
-                            </div>
-                        </div>
-                        <div class="col-md-4">
-                            <label class="form-label text-muted small mb-1">DNI</label>
-                            <div class="form-control bg-light" id="detailDni"></div>
-                        </div>
-                        <div class="col-md-4">
-                            <label class="form-label text-muted small mb-1">Fecha de nacimiento</label>
-                            <div class="form-control bg-light" id="detailBirth"></div>
-                        </div>
-                        <div class="col-md-4">
-                            <label class="form-label text-muted small mb-1">Email</label>
-                            <div class="form-control bg-light" id="detailEmail"></div>
-                        </div>
-                        <div class="col-md-4">
-                            <label class="form-label text-muted small mb-1">Fecha de alta</label>
-                            <div class="form-control bg-light" id="detailCreatedAt"></div>
-                        </div>
-                        <div class="col-md-4">
-                            <label class="form-label text-muted small mb-1">Rol</label>
-                            <div class="form-control bg-light">
-                                <span id="detailRol" class="badge bg-secondary"></span>
-                            </div>
-                        </div>
-                        <div class="col-md-4">
-                            <label class="form-label text-muted small mb-1">Estado</label>
-                            <div class="form-control bg-light">
-                                <span id="detailStatus" class="badge"></span>
-                            </div>
-                        </div>
-                        <div class="col-md-4">
-                            <label class="form-label text-muted small mb-1">Domicilio</label>
-                            <div class="form-control bg-light" id="detailLocation"></div>
-                        </div>
-                        <div class="col-12">
-                            <label class="form-label text-muted small mb-1">Observaciones</label>
-                            <div class="form-control bg-light" id="detailObs" style="min-height: 90px;"></div>
-                        </div>
-                    </div>
-                </div>
-                <div class="modal-footer bg-light">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
-                </div>
-            </div>
-        </div>
-    </div>
-
-        <!-- Modal eliminacion (users y roles) -->
-    <div class="modal fade" id="modalDelete" tabindex="-1" aria-hidden="true">
-        <div class="modal-dialog">
-            <div class="modal-content">
-                <div class="modal-header bg-danger text-white">
-                    <h5 class="modal-title"><i class="bi bi-exclamation-triangle-fill me-2"></i> Confirmar Eliminación</h5>
-                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
-                </div>
-                <div class="modal-body">
-                    <p>¿Esta seguro de que desea eliminar el registro?</p>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
-                    <button type="button" class="btn btn-danger" id="btnModalDelete">Eliminar</button>
-                </div>
-            </div>
-        </div>
-    </div>
-
-
-    <!-- Modal creacion de roles -->
-    <div class="modal fade" id="modalRole" tabindex="-1" aria-hidden="true">
-        <div class="modal-dialog">
-            <div class="modal-content">
-                <div class="modal-header bg-dark text-white">
-                    <h5 class="modal-title" id="roleModalTitle"><i class="bi bi-shield-plus me-2"></i> Gestión de Rol</h5>
-                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
-                </div>
-                <div class="modal-body">
-                    <form id="formRole" class="row g-3">
-                        <div class="col-12">
-                            <label class="form-label">Nombre del Rol</label>
-                            <input type="text" class="form-control" id="roleName" required placeholder="Ej: Supervisor">
-                        </div>
-                        <div class="col-12">
-                            <label class="form-label">Descripción</label>
-                            <textarea class="form-control" id="roleDesc" rows="3" placeholder="¿Qué permisos tiene este rol?"></textarea>
-                        </div>
-                        <div class="col-12">
-                            <div class="form-check form-switch">
-                                <input class="form-check-input" type="checkbox" id="roleStatus" checked>
-                                <label class="form-check-label">Rol Activo</label>
-                            </div>
-                        </div>
-                        <div class="col-12 text-end border-top pt-3">
-                            <button type="button" class="btn btn-secondary me-2" data-bs-dismiss="modal">Cancelar</button>
-                            <button type="submit" class="btn btn-primary">Guardar Rol</button>
-                        </div>
-                    </form>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/toastify-js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-    <script src="../js/dashboard.js"></script>
-    <script src="../js/users.js"></script>
-    <script src="../js/roles.js"></script>
 </body>
 </html>

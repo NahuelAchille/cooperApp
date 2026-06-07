@@ -12,7 +12,7 @@ body, html {
 
 .fondo-login-con-lineas {
   
-  background-image: url('../images/background_login.png'); 
+  background-image: url('../../../images/background_login.png'); 
   background-size: cover;
   background-position: center;
   background-repeat: no-repeat;
@@ -656,7 +656,16 @@ main {
   justify-content: center;
 }
 
-
+/* ========================================= */
+/* registerUser */
+/* ========================================= */
+.main-header-register{
+   display: flex;
+  justify-content: center; 
+  align-items: center;    
+  height: 80px;           
+  background-color: green;
+}
 
 /* ========================================= */
 /* DASHBOARD-CHARTS */

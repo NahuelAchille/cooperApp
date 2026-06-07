@@ -1,40 +1,32 @@
 <!DOCTYPE html>
-<html lang="es">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Login - Sistema de Administracion</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+    <link rel="stylesheet" href="/src/views/styles/styles.css">
+    <title>Login</title>
 </head>
+<body class="fondo-login-con-lineas">
+    <main>
 
-<body class="bg-light">
+        <h1>Inicio de sesión</h1>
+        <form class="main-input" action="login.php" method="POST">
+            <section id="formulario-login">
+                <input type="email" name="email" placeholder="Email">
+                <section class="input-con-icono">
+                    <input type="password" name="password" placeholder="Contraseña">
+                    <i class="fa-solid fa-lock"></i>
+                </section>
+                
 
-    <div class="container vh-100 d-flex justify-content-center">
-        <div class="col-12 col-md-8 col-lg-5">
-            <div class="card shadow-sm mt-5">
-                <div class="card-body p-5">
-                    <h2 class="text-center mb-4">Ingresar</h2>
-                    
-                    <div id="alert-container" class="alert d-none" role="alert"></div>
-
-                    <form id="loginForm">
-                        <div class="mb-3">
-                            <label for="email" class="form-label">Email</label>
-                            <input type="email" class="form-control" id="email" required placeholder="nombre@ejemplo.com">
-                        </div>
-                        <div class="mb-3">
-                            <label for="password" class="form-label">Contraseña</label>
-                            <input type="password" class="form-control" id="password"  placeholder="********">
-                        </div>
-                        <div class="d-grid">
-                            <button type="submit" class="btn btn-primary">Ingresar</button>
-                        </div>
-                    </form>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <script src="/login.js"></script>
+                <!-- <p><a href="">¿Olvidaste la contraseña?</a></p> -->
+            </section>
+            <section id="boton-login">
+                <button type="submit">Login</button>
+            </section>
+        </form>
+            
+    </main>  
 </body>
 </html>
