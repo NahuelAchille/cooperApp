@@ -1,32 +1,284 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="es">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
-    <link rel="stylesheet" href="/src/views/styles/styles.css">
-    <title>Login</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css">
+  <link rel="stylesheet" href="/styles/styles.css">
+  <title>Login - CooperApp</title>
+  <style>
+    /* Modal */
+    .modal-content-coop {
+      background-color: #2d7a4f;
+      border: none;
+      border-radius: 14px;
+      overflow: hidden;
+    }
+    .modal-header-coop {
+      background-color: rgba(0,0,0,0.2);
+      border-bottom: 1px solid rgba(255,255,255,0.15);
+      color: white;
+    }
+    .modal-footer-coop {
+      background-color: rgba(0,0,0,0.15);
+      border-top: 1px solid rgba(255,255,255,0.15);
+    }
+    .form-control-registro {
+      background-color: rgba(255,255,255,0.2) !important;
+      border: 1.5px solid rgba(255,255,255,0.35) !important;
+      color: #ffffff !important;
+      border-radius: 6px;
+    }
+    .form-control-registro::placeholder { color: rgba(255,255,255,0.65) !important; }
+    .form-control-registro:focus {
+      background-color: rgba(255,255,255,0.28) !important;
+      border-color: rgba(255,255,255,0.7) !important;
+      box-shadow: 0 0 0 3px rgba(255,255,255,0.15) !important;
+      color: #ffffff !important;
+    }
+    .form-label { color: rgba(255,255,255,0.85); font-size: 0.85rem; margin-bottom: 4px; }
+    .modal-body hr { border-color: rgba(255,255,255,0.2); }
+    .modal-seccion-titulo { color: rgba(255,255,255,0.95); font-weight: 600; }
+    .btn-registro-enviar {
+      background-color: rgba(255,255,255,0.25);
+      color: white; border: 1.5px solid rgba(255,255,255,0.5);
+      font-weight: bold;
+    }
+    .btn-registro-enviar:hover { background-color: rgba(255,255,255,0.35); color: white; }
+    .toast-cooperapp {
+      position: fixed;
+      top: 30px;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 9999;
+      min-width: 340px;
+      border-radius: 12px;
+      padding: 16px 24px;
+      font-size: 1rem;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.4);
+      animation: slideDown 0.3s ease;
+    }
+    .toast-cooperapp.success {
+      background: linear-gradient(135deg, #19de75, #128c4a);
+      color: white;
+    }
+    .toast-cooperapp.error {
+      background: linear-gradient(135deg, #e05252, #a81d1d);
+      color: white;
+    }
+    @keyframes slideDown {
+      from { opacity: 0; top: 10px; }
+      to   { opacity: 1; top: 30px; }
+    }
+  </style>
 </head>
 <body class="fondo-login-con-lineas">
-    <main>
 
-        <h1>Inicio de sesión</h1>
-        <form class="main-input" action="login.php" method="POST">
-            <section id="formulario-login">
-                <input type="email" name="email" placeholder="Email">
-                <section class="input-con-icono">
-                    <input type="password" name="password" placeholder="Contraseña">
-                    <i class="fa-solid fa-lock"></i>
-                </section>
-                
+  <main>
+    <h1>Inicio de sesión</h1>
 
-                <!-- <p><a href="">¿Olvidaste la contraseña?</a></p> -->
-            </section>
-            <section id="boton-login">
-                <button type="submit">Login</button>
-            </section>
-        </form>
-            
-    </main>  
+    <form class="main-input" id="form-login" autocomplete="new-password">
+      <section id="formulario-login">
+        <input type="email" name="email" id="login-email" placeholder="Email" autocomplete="new-password" required>
+        <section class="input-con-icono">
+          <input type="password" name="password" id="login-password" placeholder="Contraseña" autocomplete="new-password" required>
+          <i class="fa-solid fa-lock"></i>
+        </section>
+        <div id="login-error" class="text-danger small mt-1 d-none"></div>
+      </section>
+      <section id="boton-login">
+        <button type="submit">Ingresar</button>
+      </section>
+    </form>
+
+    <p class="text-white mt-2">
+      ¿No tenés cuenta?
+      <a href="#" class="text-success fw-bold" data-bs-toggle="modal" data-bs-target="#modalRegistro">
+        Registrar mi cooperativa
+      </a>
+    </p>
+  </main>
+
+  <!-- Modal de Registro -->
+  <div class="modal fade" id="modalRegistro" tabindex="-1" aria-labelledby="modalRegistroLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
+      <div class="modal-content-coop text-white">
+
+        <div class="modal-header-coop p-3 px-4">
+          <h5 class="modal-title fw-bold mb-0"><i class="fa-solid fa-building me-2"></i>Registro de cooperativa</h5>
+          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+        </div>
+
+        <div class="modal-body">
+          <form id="form-registro" novalidate autocomplete="new-password">
+
+            <!-- Paso 1: Datos de la cooperativa -->
+            <h6 class="text-success mb-3"><i class="fa-solid fa-building me-2"></i>Datos de la cooperativa</h6>
+            <div class="row g-3">
+              <div class="col-md-8">
+                <label class="form-label">Nombre de la cooperativa</label>
+                <input type="text" class="form-control form-control-registro" name="coop_nombre" placeholder="Cooperativa Ejemplo Ltda." autocomplete="new-password" required>
+              </div>
+              <div class="col-md-4">
+                <label class="form-label">CUIT</label>
+                <input type="text" class="form-control form-control-registro" name="coop_cuit" placeholder="20123456789" autocomplete="new-password" required>
+              </div>
+              <div class="col-md-6">
+                <label class="form-label">Email de la cooperativa</label>
+                <input type="email" class="form-control form-control-registro" name="coop_email" placeholder="contacto@coop.com" autocomplete="new-password" required>
+              </div>
+              <div class="col-md-6">
+                <label class="form-label">Matrícula</label>
+                <input type="text" class="form-control form-control-registro" name="coop_matricula" placeholder="Nro. de matrícula" autocomplete="new-password" required>
+              </div>
+              <div class="col-md-6">
+                <label class="form-label">Domicilio</label>
+                <input type="text" class="form-control form-control-registro" name="coop_domicilio" placeholder="Av. Siempre Viva 123" autocomplete="new-password">
+              </div>
+              <div class="col-md-6">
+                <label class="form-label">Federación</label>
+                <input type="text" class="form-control form-control-registro" name="coop_federacion" placeholder="Nombre de la federación (opcional)" autocomplete="new-password">
+              </div>
+            </div>
+
+            <hr class="border-secondary my-4">
+
+            <!-- Paso 2: Datos del usuario admin -->
+            <h6 class="text-success mb-3"><i class="fa-solid fa-user-shield me-2"></i>Datos del administrador</h6>
+            <div class="row g-3">
+              <div class="col-md-6">
+                <label class="form-label">Nombre</label>
+                <input type="text" class="form-control form-control-registro" name="nombre" placeholder="Juan" autocomplete="new-password" required>
+              </div>
+              <div class="col-md-6">
+                <label class="form-label">Apellido</label>
+                <input type="text" class="form-control form-control-registro" name="apellido" placeholder="Pérez" autocomplete="new-password" required>
+              </div>
+              <div class="col-md-6">
+                <label class="form-label">Email</label>
+                <input type="email" class="form-control form-control-registro" name="email" placeholder="juan@coop.com" autocomplete="new-password" required>
+              </div>
+              <div class="col-md-6">
+                <label class="form-label">DNI</label>
+                <input type="text" class="form-control form-control-registro" name="dni" placeholder="12345678" autocomplete="new-password" required>
+              </div>
+              <div class="col-md-6">
+                <label class="form-label">Contraseña</label>
+                <div class="input-con-icono">
+                  <input type="password" class="form-control form-control-registro" name="password" id="reg-password" placeholder="Contraseña" autocomplete="new-password" required>
+                  <i class="fa-solid fa-lock"></i>
+                </div>
+              </div>
+              <div class="col-md-6">
+                <label class="form-label">Confirmar contraseña</label>
+                <div class="input-con-icono">
+                  <input type="password" class="form-control form-control-registro" name="password_confirm" id="reg-password-confirm" placeholder="Repetir contraseña" autocomplete="new-password" required>
+                  <i class="fa-solid fa-lock"></i>
+                </div>
+                <div id="password-error" class="text-danger small mt-1 d-none">Las contraseñas no coinciden.</div>
+              </div>
+            </div>
+
+            <div class="alert alert-warning mt-4 mb-0 py-2 small">
+              <i class="fa-solid fa-circle-info me-1"></i>
+              El registro quedará <strong>pendiente de aprobación</strong> hasta que un administrador de la plataforma valide la cooperativa.
+            </div>
+
+          </form>
+        </div>
+
+        <div class="modal-footer-coop p-3 px-4">
+          <button type="button" class="btn btn-outline-light" data-bs-dismiss="modal">Cancelar</button>
+          <button type="button" id="btn-enviar-registro" class="btn btn-registro-enviar px-4">
+            <i class="fa-solid fa-paper-plane me-2"></i>Enviar registro
+          </button>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+  <script>
+
+    function mostrarToast(mensaje, tipo = 'success') {
+      const existente = document.querySelector('.toast-cooperapp');
+      if (existente) existente.remove();
+
+      const icon = tipo === 'success'
+        ? '<i class="fa-solid fa-circle-check fa-lg"></i>'
+        : '<i class="fa-solid fa-circle-xmark fa-lg"></i>';
+
+      const toast = document.createElement('div');
+      toast.className = `toast-cooperapp ${tipo}`;
+      toast.innerHTML = `${icon} <span>${mensaje}</span>`;
+      document.body.appendChild(toast);
+
+      setTimeout(() => toast.remove(), 4000);
+    }
+
+    // Login
+    document.getElementById('form-login').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const res = await fetch('/users/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          email: document.getElementById('login-email').value,
+          password: document.getElementById('login-password').value
+        })
+      });
+      const data = await res.json();
+      if (res.ok) {
+        window.location.href = data.redirect;
+      } else {
+        mostrarToast(data.error, 'error');
+      }
+    });
+
+    // Validación contraseñas
+    const pass = document.getElementById('reg-password');
+    const passConfirm = document.getElementById('reg-password-confirm');
+    const passError = document.getElementById('password-error');
+
+    passConfirm.addEventListener('input', () => {
+      const coinciden = pass.value === passConfirm.value;
+      passError.classList.toggle('d-none', coinciden);
+      passConfirm.classList.toggle('is-invalid', !coinciden);
+    });
+
+    // Registro
+    document.getElementById('btn-enviar-registro').addEventListener('click', async () => {
+      if (pass.value !== passConfirm.value) {
+        passError.classList.remove('d-none');
+        return;
+      }
+
+      const form = document.getElementById('form-registro');
+      const data = Object.fromEntries(new FormData(form));
+
+      const res = await fetch('/users/register', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data)
+      });
+
+      const result = await res.json();
+      bootstrap.Modal.getInstance(document.getElementById('modalRegistro')).hide();
+
+      if (res.ok) {
+        mostrarToast(result.message, 'success');
+        form.reset();
+      } else {
+        mostrarToast(result.error, 'error');
+      }
+    });
+
+  </script>
+
 </body>
 </html>

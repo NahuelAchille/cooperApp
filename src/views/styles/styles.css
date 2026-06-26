@@ -12,7 +12,7 @@ body, html {
 
 .fondo-login-con-lineas {
   
-  background-image: url('../../../images/background_login.png'); 
+  background-image: url('../images/background_login.png');
   background-size: cover;
   background-position: center;
   background-repeat: no-repeat;

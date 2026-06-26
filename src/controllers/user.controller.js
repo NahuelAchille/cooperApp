@@ -1,40 +1,66 @@
-const db = require('../config/db');
 const bcrypt = require('bcrypt');
+const userModel = require('../models/user.model');
 
-exports.registerUser = async (req, res) => {
+exports.login = async (req, res) => {
   try {
-    const { nombre, apellido, email, contraseña, confirmar_contraseña, dni, fecha_nacimiento, domicilio, codigo_postal } = req.body;
+    const { email, password } = req.body;
 
-    if (!nombre || !apellido || !email || !contraseña || !dni) {
-      return res.status(400).json({ error: 'Todos los campos son obligatorios' });
+    if (!email || !password) {
+      return res.status(400).json({ error: 'Email y contraseña son obligatorios' });
     }
 
-    if (contraseña !== confirmar_contraseña) {
-      return res.status(400).json({ error: 'Las contraseñas no coinciden' });
+    const user = await userModel.findByEmailWithContext(email);
+
+    if (!user) {
+      return res.status(401).json({ error: 'Email o contraseña incorrectos' });
     }
 
-    const [existingUser] = await db.query('SELECT id FROM usuarios WHERE email = ?', [email]);
-    if (existingUser.length > 0) {
-      return res.status(400).json({ error: 'El email ya está registrado' });
+    if (!user.activo) {
+      return res.status(403).json({ error: 'Tu cuenta está desactivada' });
     }
 
-    const [existingDni] = await db.query('SELECT id FROM usuarios WHERE dni = ?', [dni]);
-    if (existingDni.length > 0) {
-      return res.status(400).json({ error: 'El DNI ya está registrado' });
+    const esSuperadmin = user.rol === 'superadmin';
+
+    if (!esSuperadmin) {
+      if (user.cooperativa_estado === 'pendiente') {
+        return res.status(403).json({ error: 'Tu cooperativa está pendiente de aprobación' });
+      }
+      if (user.cooperativa_estado === 'suspendida') {
+        return res.status(403).json({ error: 'Tu cooperativa está suspendida' });
+      }
     }
 
-    const hashedPassword = await bcrypt.hash(contraseña, 10);
+    const passwordOk = await bcrypt.compare(password, user.contraseña);
+    if (!passwordOk) {
+      return res.status(401).json({ error: 'Email o contraseña incorrectos' });
+    }
 
-    const query = `
-      INSERT INTO usuarios (nombre, apellido, email, contraseña, dni, fecha_nacimiento, domicilio, codigo_postal)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-    `;
+    req.session.user = {
+      id: user.id,
+      nombre: user.nombre,
+      apellido: user.apellido,
+      email: user.email,
+      rol: user.rol,
+      id_rol: user.id_rol,
+      cooperativa: {
+        id: user.id_cooperativa,
+        nombre: user.cooperativa_nombre
+      }
+    };
 
-    await db.query(query, [nombre, apellido, email, hashedPassword, dni, fecha_nacimiento, domicilio, codigo_postal]);
+    res.json({ redirect: '/pages/dashboard.html' });
 
-    res.status(201).json({ message: 'Usuario registrado correctamente' });
   } catch (error) {
     console.error(error);
-    res.status(500).json({ error: 'Error al registrar usuario' });
+    res.status(500).json({ error: 'Error interno del servidor' });
   }
+};
+
+exports.logout = (req, res) => {
+  req.session.destroy(() => res.redirect('/'));
+};
+
+exports.me = (req, res) => {
+  if (!req.session.user) return res.status(401).json({ error: 'No autenticado' });
+  res.json(req.session.user);
 };
