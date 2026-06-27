@@ -109,6 +109,7 @@ CREATE TABLE usuarios (
   domicilio VARCHAR(255),
   codigo_postal VARCHAR(10),
   activo TINYINT(1) DEFAULT 1,
+  debe_cambiar_password TINYINT(1) DEFAULT 0,
   fecha_registro DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
   id_cooperativa INT,
   FOREIGN KEY (id_cooperativa) REFERENCES cooperativas(id_cooperativa),
