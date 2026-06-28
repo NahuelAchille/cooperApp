@@ -6,9 +6,7 @@ body, html {
   overflow-x: hidden;
 }
 
-/* ========================================= */
-/* LOGIN         */
-/* ========================================= */
+
 
 .fondo-login-con-lineas {
   
@@ -76,8 +74,8 @@ main {
 
 .input-con-icono input {
   width: 100%;
-  height: 45px; /* altura fija para todos los inputs */
-  padding: 10px 40px 10px 10px; /* espacio a la derecha para el icono */
+  height: 45px; 
+  padding: 10px 40px 10px 10px; 
   background-color: rgba(25, 222, 117, 0.3);
   border: 3px solid rgba(25, 222, 117, 0.5);
   border-radius: 5px;
@@ -94,10 +92,10 @@ main {
   position: absolute;
   right: 12px;
   top: 50%;
-  transform: translateY(-50%); /* centra verticalmente */
+  transform: translateY(-50%);
   color: #ffffff;
   opacity: 0.8;
-  font-size: 18px; /* ajustá el tamaño según el alto del input */
+  font-size: 18px; 
   pointer-events: none;
 }
 
@@ -112,23 +110,19 @@ main {
   border: none;
   border-radius: 50px;
   cursor: pointer;
-  background: linear-gradient(180deg, #19de75 0%, #128c4a 100%); /* degradado verde cooperativo */
+  background: linear-gradient(180deg, #19de75 0%, #128c4a 100%); 
   color: #ffffff;
   font-weight: bold;
-  box-shadow: 0 6px 12px rgba(0, 0, 0, 0.25); /* sombra para profundidad */
+  box-shadow: 0 6px 12px rgba(0, 0, 0, 0.25); 
   transition: all 0.3s ease;
 }
 
 #boton-login button:hover {
-  background: linear-gradient(180deg, #9fc1cb 0%, #19de75 100%); /* efecto hover */
+  background: linear-gradient(180deg, #9fc1cb 0%, #19de75 100%); 
   box-shadow: 0 8px 16px rgba(0, 0, 0, 0.35);
-  transform: translateY(-2px); /* sensación de elevación */
+  transform: translateY(-2px); 
 }
 
-
-/* ========================================= */
-/* USUARIOS         */
-/* ========================================= */
 
 
 .listado-main {
@@ -361,18 +355,13 @@ main {
   color: white;
 }
 
-/* ========================================= */
-/* EDITAR USUARIO        */
-/* ========================================= */
 
 .editar-usuario-body {
-            background-color: #2a2a35; 
-            color: #333; 
-        }
+    background-color: #2a2a35; 
+    color: #333; 
+}
 
-/* ========================================= */
-/* DASHBOARD */
-/* ========================================= */
+
 
 #main-header {
   display: flex;
@@ -397,7 +386,7 @@ main {
 
 #main-nav {
   display: flex;
-  align-items: stretch; /* hace que los hijos ocupen toda la altura */
+  align-items: stretch; 
   justify-content: center;
   flex-grow: 1;
   width: 60%;
@@ -411,7 +400,7 @@ main {
   width: 100%;
   height: 100%;
   
-  align-items: stretch; /* fuerza altura completa */
+  align-items: stretch; 
   justify-content: space-between;
 }
 
@@ -427,7 +416,7 @@ main {
   width: 100%;
   height: 100%;
   text-align: center;
-  line-height: 10vh; /* igual al alto del header */
+  line-height: 10vh; 
   color: black;
   font-size: 1.2rem;
   text-decoration: none;
@@ -435,7 +424,7 @@ main {
 }
 
 #main-nav ul li a:hover {
-  background-color: #8ad6a3; /* tono más claro para hover */
+  background-color: #8ad6a3; 
   color: white;
 }
 
@@ -447,9 +436,7 @@ main {
   width: 20%;
 }
 
-/* ========================================= */
-/* ACCIONES RÁPIDAS */
-/* ========================================= */
+
 
 #secondary-nav {
   display: flex;
@@ -462,7 +449,7 @@ main {
 }
 
 #secondary-nav h2 {
-  flex: 0 0 30%; /* franja superior fina */
+  flex: 0 0 30%;
   color: white;
   font-size: 1.5rem;
   
@@ -478,9 +465,9 @@ main {
   list-style: none;
   justify-content: space-between;
   align-items: stretch;
-  width: 100%;       /* ocupa el ancho del contenedor */
-  margin: 0;         /* sin margen adicional */
-  padding: 0;        /* sin padding lateral */
+  width: 100%;       
+  margin: 0;         
+  padding: 0;        
   box-sizing: border-box;
 }
 
@@ -497,7 +484,7 @@ main {
   font-size: 1.2rem;
   font-weight: bold;
   text-decoration: none;
-  box-sizing: border-box; /* mantiene el borde dentro del tamaño */
+  box-sizing: border-box; 
 }
 
 #secondary-nav ul li a:hover {
@@ -558,16 +545,14 @@ main {
   text-decoration: none;
 }
 
-/* ========================================= */
-/* DASHBOARD-MAIN */
-/* ========================================= */
+
 
 #dashboard-main {
   display: flex;
   flex-direction: column;
   justify-content: flex-start;
   margin: 0 1%;
-  height: 72vh;              /* bajamos 1 punto para compensar márgenes */
+  height: 72vh;              
   background-color: #f7f9f8;
   box-sizing: border-box;
 }
@@ -587,17 +572,15 @@ main {
   align-items: center;
   justify-content: space-around;
   border-top: 2px solid #ccc;
-  box-sizing: border-box; /* asegura que el borde cuente dentro del tamaño */
+  box-sizing: border-box; 
   overflow: hidden;
-  
-   /* evita que el texto se salga */
 }
 
 .dashboard-kpi h3,
 .dashboard-kpi h4,
 .dashboard-kpi h5 {
-  margin: 0; /* elimina márgenes por defecto */
-  padding: 2px 0; /* opcional: espacio interno */
+  margin: 0; 
+  padding: 2px 0; 
 }
 
 #dashboard-kpis-1 {
@@ -656,9 +639,7 @@ main {
   justify-content: center;
 }
 
-/* ========================================= */
-/* registerUser */
-/* ========================================= */
+
 .main-header-register{
    display: flex;
   justify-content: center; 
@@ -667,19 +648,17 @@ main {
   background-color: green;
 }
 
-/* ========================================= */
-/* DASHBOARD-CHARTS */
-/* ========================================= */
+
 
 #dashboard-charts {
   display: flex;
-  gap: 1.5%;              /* separación entre bloques */
+  gap: 1.5%;              
   width: 100%;
   margin-top: 20px;
 }
 
 .dashboard-block {
-  flex: 1;                /* cada bloque ocupa el mismo ancho */
+  flex: 1;                
   background-color: #ffffff;
   border-radius: 8px;
   box-shadow: 0 4px 8px rgba(0,0,0,0.1);
@@ -716,7 +695,7 @@ main {
 }
 
 .dashboard-table tr:nth-child(even) {
-  background-color: #f7f9f8;   /* fila alternada */
+  background-color: #f7f9f8;   
 }
 
 .dashboard-table tr:nth-child(odd) {
@@ -735,11 +714,11 @@ main {
 }
 
 .dashboard-table .positivo {
-  color: #128c4a;   /* verde cooperativo */
+  color: #128c4a;  
 }
 
 .dashboard-table .negativo {
-  color: #c13e96;   /* magenta cooperativo */
+  color: #c13e96;   
 }
 
 

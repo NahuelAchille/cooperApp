@@ -75,34 +75,41 @@
 <body>
 
   <div id="header"></div>
+  
   <script>
-  fetch('/components/header.html')
-    .then(res => res.text())
-    .then(html => {
-      document.getElementById('header').innerHTML = html;
-      fetch('/users/me')
-        .then(r => r.json())
-        .then(user => {
-          if (!user || user.error) return;
-          const iniciales = (user.nombre[0] + user.apellido[0]).toUpperCase();
-          document.getElementById('user-avatar').textContent = iniciales;
-          document.getElementById('user-nombre').textContent = `${user.nombre} ${user.apellido}`;
-          document.getElementById('dropdown-coop').textContent = user.cooperativa?.nombre || '';
-          if (user.rol === 'admin_cooperativa' || user.rol === 'superadmin') {
-            document.getElementById('item-usuarios').classList.remove('d-none');
-          }
-          if (user.rol === 'superadmin') {
-            document.getElementById('item-superadmin').classList.remove('d-none');
-          }
+    fetch('/components/header.html')
+      .then(res => res.text())
+      .then(html => {
+        document.getElementById('header').innerHTML = html
+        fetch('/users/me')
+          .then(r => r.json())
+          .then(user => {
 
-          // Solo admin puede crear usuarios
-          if (user.rol !== 'admin_cooperativa' && user.rol !== 'superadmin') {
-            document.getElementById('btn-nuevo-usuario').style.display = 'none';
-          }
+            if (!user || user.error) return
 
-          document.getElementById('nombre-cooperativa').textContent = user.cooperativa?.nombre || '';
-        });
-    });
+            const iniciales = (user.nombre[0] + user.apellido[0]).toUpperCase()
+            document.getElementById('user-avatar').textContent = iniciales
+            document.getElementById('user-nombre').textContent = `${user.nombre} ${user.apellido}`
+            document.getElementById('dropdown-coop').textContent = user.cooperativa?.nombre || ''
+
+            if (user.rol === 'admin_cooperativa' || user.rol === 'superadmin') {
+              document.getElementById('item-usuarios').classList.remove('d-none')
+            }
+
+            if (user.rol === 'superadmin') {
+              document.getElementById('item-superadmin').classList.remove('d-none')
+            }
+
+            // Solo admin puede crear usuarios
+            if (user.rol !== 'admin_cooperativa' && user.rol !== 'superadmin') {
+              document.getElementById('btn-nuevo-usuario').style.display = 'none'
+            }
+
+            document.getElementById('nombre-cooperativa').textContent = user.cooperativa?.nombre || ''
+
+          })
+
+      })
   </script>
 
   <div class="page-header">
@@ -139,7 +146,7 @@
     </div>
   </div>
 
-  <!-- Modal nuevo usuario -->
+  <!-- Modal usuario -->
   <div class="modal fade" id="modalNuevoUsuario" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
       <div class="modal-content">
@@ -192,25 +199,29 @@
   </div>
 
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+
   <script>
+
     fetch('/components/header.html')
       .then(r => r.text())
-      .then(html => document.getElementById('header').innerHTML = html);
+      .then(html => document.getElementById('header').innerHTML = html)
+
 
     fetch('/users/me')
       .then(r => r.json())
       .then(user => {
-        document.getElementById('nombre-cooperativa').textContent = user.cooperativa?.nombre || '';
-      });
+        document.getElementById('nombre-cooperativa').textContent = user.cooperativa?.nombre || ''
+      })
 
     async function cargarUsuarios() {
-      const res = await fetch('/users');
-      const data = await res.json();
-      const tbody = document.getElementById('tabla-usuarios');
+
+      const res = await fetch('/users')
+      const data = await res.json()
+      const tbody = document.getElementById('tabla-usuarios')
 
       if (!data.length) {
-        tbody.innerHTML = '<tr><td colspan="6" class="text-center py-4 text-muted">No hay usuarios registrados.</td></tr>';
-        return;
+        tbody.innerHTML = '<tr><td colspan="6" class="text-center py-4 text-muted">No hay usuarios registrados.</td></tr>'
+        return
       }
 
       tbody.innerHTML = data.map(u => `
@@ -220,56 +231,57 @@
           <td>${u.dni}</td>
           <td><span class="badge-rol">${u.rol}</span></td>
           <td>
-            ${u.debe_cambiar_password
-              ? '<span class="badge-temp">Contraseña temporal</span>'
-              : u.activo
-                ? '<span class="badge-activo">Activo</span>'
-                : '<span class="badge-inactivo">Inactivo</span>'
-            }
+            ${u.debe_cambiar_password ? '<span class="badge-temp">Contraseña temporal</span>' : u.activo ? '<span class="badge-activo">Activo</span>': '<span class="badge-inactivo">Inactivo</span>'}
           </td>
           <td>${new Date(u.fecha_registro).toLocaleDateString('es-AR')}</td>
         </tr>
-      `).join('');
+      `).join('')
     }
 
     document.getElementById('btn-crear-usuario').addEventListener('click', async () => {
-      const form = document.getElementById('form-nuevo-usuario');
-      const errorDiv = document.getElementById('form-error');
-      errorDiv.classList.add('d-none');
 
-      const data = Object.fromEntries(new FormData(form));
+      const form = document.getElementById('form-nuevo-usuario')
+      const errorDiv = document.getElementById('form-error')
+      errorDiv.classList.add('d-none')
+
+      const data = Object.fromEntries(new FormData(form))
 
       if (!data.nombre || !data.apellido || !data.email || !data.dni || !data.id_rol) {
-        errorDiv.textContent = 'Completá todos los campos.';
-        errorDiv.classList.remove('d-none');
-        return;
+
+        errorDiv.textContent = 'Completar todos los campos.'
+        errorDiv.classList.remove('d-none')
+        return
       }
 
       const res = await fetch('/users', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(data)
-      });
+      })
 
-      const result = await res.json();
+      const result = await res.json()
 
       if (res.ok) {
-        bootstrap.Modal.getInstance(document.getElementById('modalNuevoUsuario')).hide();
-        form.reset();
-        cargarUsuarios();
-        // Toast de éxito
-        const toast = document.createElement('div');
-        toast.style = 'position:fixed;top:24px;left:50%;transform:translateX(-50%);background:#2d7a4f;color:white;padding:14px 24px;border-radius:10px;z-index:9999;font-weight:500;box-shadow:0 4px 16px rgba(0,0,0,0.2)';
-        toast.innerHTML = `<i class="fa-solid fa-circle-check me-2"></i>${result.message}`;
-        document.body.appendChild(toast);
-        setTimeout(() => toast.remove(), 4000);
-      } else {
-        errorDiv.textContent = result.error;
-        errorDiv.classList.remove('d-none');
-      }
-    });
 
-    cargarUsuarios();
+        bootstrap.Modal.getInstance(document.getElementById('modalNuevoUsuario')).hide()
+        form.reset()
+        cargarUsuarios()
+
+        const toast = document.createElement('div')
+        toast.style = 'position:fixed;top:24px;left:50%;transform:translateX(-50%);background:#2d7a4f;color:white;padding:14px 24px;border-radius:10px;z-index:9999;font-weight:500;box-shadow:0 4px 16px rgba(0,0,0,0.2)'
+        toast.innerHTML = `<i class="fa-solid fa-circle-check me-2"></i>${result.message}`
+        document.body.appendChild(toast)
+        setTimeout(() => toast.remove(), 4000)
+
+      } else {
+
+        errorDiv.textContent = result.error
+        errorDiv.classList.remove('d-none')
+      }
+
+    })
+
+    cargarUsuarios()
   </script>
 </body>
 </html>

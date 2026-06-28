@@ -8,7 +8,7 @@
   <link rel="stylesheet" href="/styles/styles.css">
   <title>Login - CooperApp</title>
   <style>
-    /* Modal */
+
     .modal-content-coop {
       background-color: #2d7a4f;
       border: none;
@@ -103,10 +103,10 @@
     </p>
   </main>
 
-  <!-- Modal de Registro -->
-  <div class="modal fade" id="modalRegistro" tabindex="-1" aria-labelledby="modalRegistroLabel" aria-hidden="true">
+  <!-- Registro -->
+  <div class="modal fade" id="modalRegistro" tabindex="-1" aria-labelledby="modalRegistroLabel" aria-hidden="true" data-bs-backdrop="static" data-bs-keyboard="false">
     <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
-      <div class="modal-content-coop text-white">
+      <div class="modal-content modal-content-coop text-white">
 
         <div class="modal-header-coop p-3 px-4">
           <h5 class="modal-title fw-bold mb-0"><i class="fa-solid fa-building me-2"></i>Registro de cooperativa</h5>
@@ -116,8 +116,8 @@
         <div class="modal-body">
           <form id="form-registro" novalidate autocomplete="new-password">
 
-            <!-- Paso 1: Datos de la cooperativa -->
-            <h6 class="text-success mb-3"><i class="fa-solid fa-building me-2"></i>Datos de la cooperativa</h6>
+            <!-- Datos de la cooperativa -->
+            <h6 class="mb-3" style="color:white;font-weight:700;"><i class="fa-solid fa-building me-2"></i>Datos de la cooperativa</h6>
             <div class="row g-3">
               <div class="col-md-8">
                 <label class="form-label">Nombre de la cooperativa</label>
@@ -147,8 +147,8 @@
 
             <hr class="border-secondary my-4">
 
-            <!-- Paso 2: Datos del usuario admin -->
-            <h6 class="text-success mb-3"><i class="fa-solid fa-user-shield me-2"></i>Datos del administrador</h6>
+            <!-- Datos del usuario admin -->
+            <h6 class="mb-3" style="color:white;font-weight:700;"><i class="fa-solid fa-user-shield me-2"></i>Datos del administrador</h6>
             <div class="row g-3">
               <div class="col-md-6">
                 <label class="form-label">Nombre</label>
@@ -206,24 +206,29 @@
   <script>
 
     function mostrarToast(mensaje, tipo = 'success') {
-      const existente = document.querySelector('.toast-cooperapp');
-      if (existente) existente.remove();
+
+      const existente = document.querySelector('.toast-cooperapp')
+      if (existente) existente.remove()
 
       const icon = tipo === 'success'
         ? '<i class="fa-solid fa-circle-check fa-lg"></i>'
-        : '<i class="fa-solid fa-circle-xmark fa-lg"></i>';
+        : '<i class="fa-solid fa-circle-xmark fa-lg"></i>'
 
-      const toast = document.createElement('div');
-      toast.className = `toast-cooperapp ${tipo}`;
-      toast.innerHTML = `${icon} <span>${mensaje}</span>`;
-      document.body.appendChild(toast);
+      const toast = document.createElement('div')
 
-      setTimeout(() => toast.remove(), 4000);
+      toast.className = `toast-cooperapp ${tipo}`
+      toast.innerHTML = `${icon} <span>${mensaje}</span>`
+
+      document.body.appendChild(toast)
+
+      setTimeout(() => toast.remove(), 4000)
     }
 
     // Login
     document.getElementById('form-login').addEventListener('submit', async (e) => {
-      e.preventDefault();
+
+      e.preventDefault()
+
       const res = await fetch('/users/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -231,31 +236,34 @@
           email: document.getElementById('login-email').value,
           password: document.getElementById('login-password').value
         })
-      });
-      const data = await res.json();
-      if (res.ok) {
-        window.location.href = data.redirect;
-      } else {
-        mostrarToast(data.error, 'error');
-      }
-    });
+      })
 
-    // Validación contraseñas
-    const pass = document.getElementById('reg-password');
-    const passConfirm = document.getElementById('reg-password-confirm');
-    const passError = document.getElementById('password-error');
+      const data = await res.json()
+      if (res.ok) {
+        window.location.href = data.redirect
+      } else {
+        mostrarToast(data.error, 'error')
+      }
+
+    })
+
+    // Validar contraseñas
+    const pass = document.getElementById('reg-password')
+    const passConfirm = document.getElementById('reg-password-confirm')
+    const passError = document.getElementById('password-error')
 
     passConfirm.addEventListener('input', () => {
-      const coinciden = pass.value === passConfirm.value;
-      passError.classList.toggle('d-none', coinciden);
-      passConfirm.classList.toggle('is-invalid', !coinciden);
-    });
+      const coinciden = pass.value === passConfirm.value
+      passError.classList.toggle('d-none', coinciden)
+      passConfirm.classList.toggle('is-invalid', !coinciden)
+    })
 
     // Registro
     document.getElementById('btn-enviar-registro').addEventListener('click', async () => {
+
       if (pass.value !== passConfirm.value) {
-        passError.classList.remove('d-none');
-        return;
+        passError.classList.remove('d-none')
+        return
       }
 
       const form = document.getElementById('form-registro');
@@ -265,18 +273,19 @@
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(data)
-      });
+      })
 
       const result = await res.json();
-      bootstrap.Modal.getInstance(document.getElementById('modalRegistro')).hide();
+      bootstrap.Modal.getInstance(document.getElementById('modalRegistro')).hide()
 
       if (res.ok) {
-        mostrarToast(result.message, 'success');
-        form.reset();
+        mostrarToast(result.message, 'success')
+        form.reset()
       } else {
-        mostrarToast(result.error, 'error');
+        mostrarToast(result.error, 'error')
       }
-    });
+      
+    })
 
   </script>
 
