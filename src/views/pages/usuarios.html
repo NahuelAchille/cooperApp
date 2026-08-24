@@ -70,6 +70,34 @@
       border-color: #2d7a4f;
       box-shadow: 0 0 0 3px rgba(45,122,79,0.15);
     }
+
+    .btn-reset {
+      background: none;
+      border: 1.5px solid #c8e6d5;
+      color: #2d7a4f;
+      border-radius: 8px;
+      padding: 5px 12px;
+      font-size: 0.8rem;
+      font-weight: 600;
+      white-space: nowrap;
+    }
+    .btn-reset:hover { background-color: #e4f2eb; }
+    .btn-reset:disabled { opacity: 0.5; }
+
+    .btn-accion {
+      background: none;
+      border: 1.5px solid #c8e6d5;
+      color: #2d7a4f;
+      border-radius: 8px;
+      padding: 5px 10px;
+      font-size: 0.8rem;
+      font-weight: 600;
+      white-space: nowrap;
+    }
+    .btn-accion:hover { background-color: #e4f2eb; }
+    .btn-accion.peligro { border-color: #f0c2c2; color: #a01c1c; }
+    .btn-accion.peligro:hover { background-color: #fde8e8; }
+    .fila-inactiva td { opacity: 0.55; }
   </style>
 </head>
 <body>
@@ -92,7 +120,7 @@
             document.getElementById('user-nombre').textContent = `${user.nombre} ${user.apellido}`
             document.getElementById('dropdown-coop').textContent = user.cooperativa?.nombre || ''
 
-            if (user.rol === 'admin_cooperativa' || user.rol === 'superadmin') {
+            if (user.rol === 'admin_cooperativa') {
               document.getElementById('item-usuarios').classList.remove('d-none')
             }
 
@@ -134,10 +162,11 @@
               <th>Rol</th>
               <th>Estado</th>
               <th>Fecha registro</th>
+              <th class="text-end">Acciones</th>
             </tr>
           </thead>
           <tbody id="tabla-usuarios">
-            <tr><td colspan="6" class="text-center py-4 text-muted">
+            <tr><td colspan="7" class="text-center py-4 text-muted">
               <i class="fa-solid fa-spinner fa-spin me-2"></i>Cargando...
             </td></tr>
           </tbody>
@@ -177,6 +206,7 @@
                 <label class="form-label">Rol</label>
                 <select class="form-select" name="id_rol" required>
                   <option value="">Seleccioná un rol...</option>
+                  <option value="2">Tesorero</option>
                   <option value="3">Operador</option>
                 </select>
               </div>
@@ -198,45 +228,347 @@
     </div>
   </div>
 
+  <!-- Modal de edicion de usuario -->
+  <div class="modal fade" id="modalEditar" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title fw-bold"><i class="fa-solid fa-pen me-2"></i>Editar usuario</h5>
+          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          <form id="form-editar-usuario" novalidate>
+            <input type="hidden" name="id">
+            <div class="row g-3">
+              <div class="col-md-6">
+                <label class="form-label">Nombre</label>
+                <input type="text" class="form-control" name="nombre" required>
+              </div>
+              <div class="col-md-6">
+                <label class="form-label">Apellido</label>
+                <input type="text" class="form-control" name="apellido" required>
+              </div>
+              <div class="col-md-6">
+                <label class="form-label">Email</label>
+                <input type="email" class="form-control" name="email" required>
+              </div>
+              <div class="col-md-6">
+                <label class="form-label">DNI</label>
+                <input type="text" class="form-control" name="dni" required>
+              </div>
+              <div class="col-12">
+                <label class="form-label">Rol</label>
+                <select class="form-select" name="id_rol" required>
+                  <option value="2">Tesorero</option>
+                  <option value="3">Operador</option>
+                </select>
+              </div>
+            </div>
+            <div class="alert alert-warning mt-3 mb-0 py-2 small">
+              <i class="fa-solid fa-circle-info me-1"></i>
+              La contraseña no se cambia desde acá. Si el usuario la perdió, usá
+              <strong>Resetear contraseña</strong>.
+            </div>
+            <div id="editar-error" class="text-danger small mt-2 d-none"></div>
+          </form>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
+          <button type="button" id="btn-guardar-usuario" class="btn fw-bold px-4" style="background-color:#2d7a4f;color:white;">
+            <i class="fa-solid fa-floppy-disk me-2"></i>Guardar cambios
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal de confirmacion de baja / alta -->
+  <div class="modal fade" id="modalEstado" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title fw-bold" id="estado-titulo"></h5>
+          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          <p class="mb-2" id="estado-pregunta"></p>
+          <div class="alert alert-warning mb-0 py-2 small" id="estado-aviso"></div>
+          <div id="estado-error" class="text-danger small mt-2 d-none"></div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
+          <button type="button" id="btn-confirmar-estado" class="btn fw-bold px-4" style="background-color:#2d7a4f;color:white;"></button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal de confirmacion de reseteo -->
+  <div class="modal fade" id="modalReset" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title fw-bold"><i class="fa-solid fa-key me-2"></i>Resetear contraseña</h5>
+          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          <p class="mb-2">¿Confirmás resetear la contraseña de <strong id="reset-nombre"></strong>?</p>
+          <div class="alert alert-warning mb-0 py-2 small">
+            <i class="fa-solid fa-circle-info me-1"></i>
+            La contraseña va a volver a ser el <strong>DNI</strong> del usuario, y el sistema le va a
+            pedir que elija una nueva la próxima vez que ingrese.
+          </div>
+          <div id="reset-error" class="text-danger small mt-2 d-none"></div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
+          <button type="button" id="btn-confirmar-reset" class="btn fw-bold px-4" style="background-color:#2d7a4f;color:white;">
+            <i class="fa-solid fa-key me-2"></i>Resetear
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 
   <script>
 
-    fetch('/components/header.html')
-      .then(r => r.text())
-      .then(html => document.getElementById('header').innerHTML = html)
+    // Datos del usuario logueado: se piden una sola vez y se reutilizan
+    let usuarioActual = null
 
+    // Ultimo listado traido del servidor
+    let usuarios = []
 
-    fetch('/users/me')
-      .then(r => r.json())
-      .then(user => {
-        document.getElementById('nombre-cooperativa').textContent = user.cooperativa?.nombre || ''
-      })
+    function mostrarToast(mensaje) {
+
+      const toast = document.createElement('div')
+      toast.style = 'position:fixed;top:24px;left:50%;transform:translateX(-50%);background:#2d7a4f;color:white;padding:14px 24px;border-radius:10px;z-index:9999;font-weight:500;box-shadow:0 4px 16px rgba(0,0,0,0.2)'
+      toast.innerHTML = `<i class="fa-solid fa-circle-check me-2"></i>${mensaje}`
+      document.body.appendChild(toast)
+      setTimeout(() => toast.remove(), 6000)
+    }
+
+    // El administrador puede gestionar a los usuarios comunes de su cooperativa,
+    // pero no a si mismo ni a otro administrador. Es la misma regla que aplica el
+    // servidor: aca solo se oculta lo que no corresponde, la seguridad esta alla.
+    function puedeGestionar(u) {
+
+      return usuarioActual
+        && usuarioActual.rol === 'admin_cooperativa'
+        && u.id !== usuarioActual.id
+        && u.rol !== 'admin_cooperativa'
+        && u.rol !== 'superadmin'
+    }
+
+    function botonesAccion(u) {
+
+      if (!puedeGestionar(u)) return '<span class="text-muted small">—</span>'
+
+      const datos = `data-id="${u.id}" data-nombre="${u.nombre} ${u.apellido}"`
+
+      const baja = u.activo
+        ? `<button class="btn-accion peligro" data-accion="baja" ${datos} title="Dar de baja">
+             <i class="fa-solid fa-user-slash"></i></button>`
+        : `<button class="btn-accion" data-accion="alta" ${datos} title="Reactivar">
+             <i class="fa-solid fa-user-check"></i></button>`
+
+      return `<div class="d-flex gap-1 justify-content-end">
+                <button class="btn-accion" data-accion="editar" ${datos} title="Editar">
+                  <i class="fa-solid fa-pen"></i></button>
+                <button class="btn-reset" ${datos} title="Resetear contraseña">
+                  <i class="fa-solid fa-key"></i></button>
+                ${baja}
+              </div>`
+    }
 
     async function cargarUsuarios() {
+
+      if (!usuarioActual) {
+        usuarioActual = await fetch('/users/me').then(r => r.json())
+      }
+
+      document.getElementById('nombre-cooperativa').textContent = usuarioActual.cooperativa?.nombre || ''
 
       const res = await fetch('/users')
       const data = await res.json()
       const tbody = document.getElementById('tabla-usuarios')
 
       if (!data.length) {
-        tbody.innerHTML = '<tr><td colspan="6" class="text-center py-4 text-muted">No hay usuarios registrados.</td></tr>'
+        tbody.innerHTML = '<tr><td colspan="7" class="text-center py-4 text-muted">No hay usuarios registrados.</td></tr>'
         return
       }
 
+      // Se guardan los datos para poder precargar el formulario de edicion
+      usuarios = data
+
       tbody.innerHTML = data.map(u => `
-        <tr>
+        <tr class="${u.activo ? '' : 'fila-inactiva'}">
           <td><strong>${u.nombre} ${u.apellido}</strong></td>
           <td>${u.email}</td>
           <td>${u.dni}</td>
           <td><span class="badge-rol">${u.rol}</span></td>
           <td>
-            ${u.debe_cambiar_password ? '<span class="badge-temp">Contraseña temporal</span>' : u.activo ? '<span class="badge-activo">Activo</span>': '<span class="badge-inactivo">Inactivo</span>'}
+            ${!u.activo ? '<span class="badge-inactivo">Dado de baja</span>' : u.debe_cambiar_password ? '<span class="badge-temp">Contraseña temporal</span>' : '<span class="badge-activo">Activo</span>'}
           </td>
           <td>${new Date(u.fecha_registro).toLocaleDateString('es-AR')}</td>
+          <td class="text-end">${botonesAccion(u)}</td>
         </tr>
       `).join('')
     }
+
+    // Un solo listener para toda la tabla: sirve para las filas que se crean despues
+    document.getElementById('tabla-usuarios').addEventListener('click', (evento) => {
+
+      const boton = evento.target.closest('.btn-reset, .btn-accion')
+      if (!boton) return
+
+      const id = boton.dataset.id
+      const nombre = boton.dataset.nombre
+
+      // Resetear contraseña
+      if (boton.classList.contains('btn-reset')) {
+        document.getElementById('reset-nombre').textContent = nombre
+        document.getElementById('reset-error').classList.add('d-none')
+        document.getElementById('btn-confirmar-reset').dataset.id = id
+        new bootstrap.Modal(document.getElementById('modalReset')).show()
+        return
+      }
+
+      // Editar: se precarga el formulario con lo que ya tiene el usuario
+      if (boton.dataset.accion === 'editar') {
+
+        const u = usuarios.find(x => String(x.id) === String(id))
+        if (!u) return
+
+        const form = document.getElementById('form-editar-usuario')
+        form.id.value       = u.id
+        form.nombre.value   = u.nombre
+        form.apellido.value = u.apellido
+        form.email.value    = u.email
+        form.dni.value      = u.dni
+        form.id_rol.value   = u.id_rol
+
+        document.getElementById('editar-error').classList.add('d-none')
+        new bootstrap.Modal(document.getElementById('modalEditar')).show()
+        return
+      }
+
+      // Dar de baja o reactivar
+      const dandoDeBaja = boton.dataset.accion === 'baja'
+      const btnConfirmar = document.getElementById('btn-confirmar-estado')
+
+      document.getElementById('estado-titulo').innerHTML = dandoDeBaja
+        ? '<i class="fa-solid fa-user-slash me-2"></i>Dar de baja'
+        : '<i class="fa-solid fa-user-check me-2"></i>Reactivar usuario'
+
+      document.getElementById('estado-pregunta').innerHTML = dandoDeBaja
+        ? `¿Confirmás dar de baja a <strong>${nombre}</strong>?`
+        : `¿Confirmás reactivar a <strong>${nombre}</strong>?`
+
+      document.getElementById('estado-aviso').innerHTML = dandoDeBaja
+        ? '<i class="fa-solid fa-circle-info me-1"></i>No se borra nada: el usuario queda en el listado pero no va a poder iniciar sesión. Se puede reactivar cuando quieras.'
+        : '<i class="fa-solid fa-circle-info me-1"></i>El usuario va a poder iniciar sesión de nuevo con la contraseña que tenía.'
+
+      btnConfirmar.innerHTML = dandoDeBaja
+        ? '<i class="fa-solid fa-user-slash me-2"></i>Dar de baja'
+        : '<i class="fa-solid fa-user-check me-2"></i>Reactivar'
+      btnConfirmar.style.backgroundColor = dandoDeBaja ? '#a01c1c' : '#2d7a4f'
+      btnConfirmar.dataset.id = id
+      btnConfirmar.dataset.activo = dandoDeBaja ? '0' : '1'
+
+      document.getElementById('estado-error').classList.add('d-none')
+      new bootstrap.Modal(document.getElementById('modalEstado')).show()
+    })
+
+    // Guardar la edicion
+    document.getElementById('btn-guardar-usuario').addEventListener('click', async (evento) => {
+
+      const boton = evento.currentTarget
+      const form = document.getElementById('form-editar-usuario')
+      const errorDiv = document.getElementById('editar-error')
+      errorDiv.classList.add('d-none')
+
+      const datos = Object.fromEntries(new FormData(form))
+
+      if (!datos.nombre.trim() || !datos.apellido.trim() || !datos.email.trim() || !datos.dni.trim()) {
+        errorDiv.textContent = 'Completar todos los campos.'
+        errorDiv.classList.remove('d-none')
+        return
+      }
+
+      boton.disabled = true
+
+      const res = await fetch(`/users/${datos.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(datos)
+      })
+
+      const resultado = await res.json()
+      boton.disabled = false
+
+      if (!res.ok) {
+        errorDiv.textContent = resultado.error
+        errorDiv.classList.remove('d-none')
+        return
+      }
+
+      bootstrap.Modal.getInstance(document.getElementById('modalEditar')).hide()
+      mostrarToast(resultado.message)
+      cargarUsuarios()
+    })
+
+    // Confirmar la baja o el alta
+    document.getElementById('btn-confirmar-estado').addEventListener('click', async (evento) => {
+
+      const boton = evento.currentTarget
+      const errorDiv = document.getElementById('estado-error')
+
+      boton.disabled = true
+
+      const res = await fetch(`/users/${boton.dataset.id}/estado`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ activo: boton.dataset.activo })
+      })
+
+      const resultado = await res.json()
+      boton.disabled = false
+
+      if (!res.ok) {
+        errorDiv.textContent = resultado.error
+        errorDiv.classList.remove('d-none')
+        return
+      }
+
+      bootstrap.Modal.getInstance(document.getElementById('modalEstado')).hide()
+      mostrarToast(resultado.message)
+      cargarUsuarios()
+    })
+
+    document.getElementById('btn-confirmar-reset').addEventListener('click', async (evento) => {
+
+      const boton = evento.currentTarget
+      const errorDiv = document.getElementById('reset-error')
+
+      boton.disabled = true
+
+      const res = await fetch(`/users/${boton.dataset.id}/resetear-password`, { method: 'POST' })
+      const resultado = await res.json()
+
+      boton.disabled = false
+
+      if (!res.ok) {
+        errorDiv.textContent = resultado.error
+        errorDiv.classList.remove('d-none')
+        return
+      }
+
+      bootstrap.Modal.getInstance(document.getElementById('modalReset')).hide()
+      mostrarToast(resultado.message)
+      cargarUsuarios()
+    })
 
     document.getElementById('btn-crear-usuario').addEventListener('click', async () => {
 
@@ -266,12 +598,7 @@
         bootstrap.Modal.getInstance(document.getElementById('modalNuevoUsuario')).hide()
         form.reset()
         cargarUsuarios()
-
-        const toast = document.createElement('div')
-        toast.style = 'position:fixed;top:24px;left:50%;transform:translateX(-50%);background:#2d7a4f;color:white;padding:14px 24px;border-radius:10px;z-index:9999;font-weight:500;box-shadow:0 4px 16px rgba(0,0,0,0.2)'
-        toast.innerHTML = `<i class="fa-solid fa-circle-check me-2"></i>${result.message}`
-        document.body.appendChild(toast)
-        setTimeout(() => toast.remove(), 4000)
+        mostrarToast(result.message)
 
       } else {
 

@@ -54,7 +54,7 @@ exports.registerCooperativa = async (req, res) => {
     const hashedPassword = await bcrypt.hash(password, 10)
     await userModel.create({
       nombre, apellido, email, dni,
-      contraseña: hashedPassword,
+      password_hash: hashedPassword,
       id_rol: ID_ROL_ADMIN,
       id_cooperativa
     })

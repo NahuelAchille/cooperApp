@@ -1,3 +1,7 @@
+-- Los acentos del archivo se interpretan bien sin necesidad de pasar opciones
+-- en la linea de comandos. Importar simplemente con:  mysql -u root < database.sql
+SET NAMES utf8mb4;
+
 CREATE DATABASE IF NOT EXISTS cooperApp;
 USE cooperApp;
 
@@ -102,7 +106,7 @@ CREATE TABLE usuarios (
   nombre VARCHAR(100) NOT NULL,
   apellido VARCHAR(100) NOT NULL,
   email VARCHAR(150) NOT NULL UNIQUE,
-  contraseña VARCHAR(255) NOT NULL,
+  password_hash VARCHAR(255) NOT NULL,
   dni VARCHAR(20) NOT NULL UNIQUE,
   fecha_nacimiento DATE,
   id_rol INT NOT NULL,
@@ -188,11 +192,7 @@ INSERT INTO tipoMovimiento (nombre) VALUES
 ('Ingreso'),
 ('Egreso');
 
--- Cooperativa de la plataforma
-INSERT INTO cooperativas (nombre, email, cuit, matricula, estado) VALUES
-('CooperApp', 'admin@cooperapp.com', 99999999999, 0, 'activa');
-
 -- Usuario superadmin (contraseña: password)
-INSERT INTO usuarios (nombre, apellido, email, contraseña, dni, id_rol, activo, id_cooperativa) VALUES
-('Super', 'Admin', 'superadmin@cooperapp.com', '$2b$10$pNHXgoOkGWp2xM0twt4f7OJwg7YhCW0w/T82hCTkDrtzfyd8EJsoS', '00000001', 4, 1,
-  (SELECT id_cooperativa FROM cooperativas WHERE email = 'admin@cooperapp.com'));
+-- El superadmin administra la plataforma, no una cooperativa: id_cooperativa queda en NULL.
+INSERT INTO usuarios (nombre, apellido, email, password_hash, dni, id_rol, activo) VALUES
+('Super', 'Admin', 'superadmin@cooperapp.com', '$2b$10$pNHXgoOkGWp2xM0twt4f7OJwg7YhCW0w/T82hCTkDrtzfyd8EJsoS', '00000001', 4, 1);
