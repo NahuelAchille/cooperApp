@@ -1,0 +1,159 @@
+===========================================================
+ CooperApp - USUARIOS DE PRUEBA
+ Actualizado: 23/08/2026
+===========================================================
+
+La app corre en http://localhost:3000
+
+Los datos de prueba salen del archivo cooperApp\datos_de_prueba.sql
+Cualquiera del grupo puede tener exactamente estos mismos usuarios
+corriendo ese archivo (ver el final de este documento).
+
+
+===========================================================
+ CONTRASENAS
+===========================================================
+
+ superadmin@cooperapp.com  ->  password
+ marta@laesperanza.coop    ->  esperanza123
+ Test1@gmail.com           ->  Test123
+ todos los demas           ->  prueba123
+
+
+===========================================================
+ 1) ADMINISTRADOR DE LA PLATAFORMA
+===========================================================
+
+ superadmin@cooperapp.com / password        (DNI 00000001)
+
+ No pertenece a ninguna cooperativa.
+ Que puede hacer:
+   - Aprobar y rechazar cooperativas
+   - Resetear la contrasena de los admin de cooperativa
+
+ Su propia contrasena NO se puede resetear desde la app.
+ Si se pierde, hay que cambiarla desde la base de datos.
+
+
+===========================================================
+ 2) LAS 4 COOPERATIVAS
+===========================================================
+
+ --- Cooperativa de Trabajo La Esperanza Ltda. (ACTIVA) ---
+ 7 miembros - Ituzaingo - textil
+   marta@laesperanza.coop     Marta Gomez        ADMIN
+   roberto@laesperanza.coop   Roberto Quiroga    tesorero
+   Test1@gmail.com            NombreTest         operador
+   silvia@laesperanza.coop    Silvia Ferreyra    operador
+   jorge@laesperanza.coop     Jorge Maidana      operador
+   claudia@laesperanza.coop   Claudia Rios       operador  (contrasena temporal)
+   hector@laesperanza.coop    Hector Sosa        operador  (DADO DE BAJA)
+
+ --- Cooperativa Textil El Amanecer Ltda. (ACTIVA) ---
+ 6 miembros - Moron
+   norma@elamanecer.coop      Norma Benitez      ADMIN
+   lucia@elamanecer.coop      Lucia Paredes      tesorero
+   miriam@elamanecer.coop     Miriam Acuna       operador
+   veronica@elamanecer.coop   Veronica Ledesma   operador
+   ramon@elamanecer.coop      Ramon Ojeda        operador
+   estela@elamanecer.coop     Estela Cabrera     operador  (contrasena temporal)
+
+ --- Fabrica Recuperada Metalurgica del Oeste (ACTIVA) ---
+ 9 miembros - Merlo
+   osvaldo@metaloeste.coop    Osvaldo Peralta    ADMIN
+   daniel@metaloeste.coop     Daniel Ibarra      tesorero
+   fabian@metaloeste.coop     Fabian Correa      operador
+   sergio@metaloeste.coop     Sergio Villalba    operador
+   walter@metaloeste.coop     Walter Ocampo      operador
+   andres@metaloeste.coop     Andres Zarate      operador
+   patricia@metaloeste.coop   Patricia Nunez     operador
+   mariela@metaloeste.coop    Mariela Godoy      operador  (contrasena temporal)
+   ruben@metaloeste.coop      Ruben Aguirre      operador  (DADO DE BAJA)
+
+ --- Grupo Asociativo Huerta Norte (PENDIENTE) ---
+ 5 miembros - San Miguel
+   elena@huertanorte.coop     Elena Maldonado    ADMIN
+   carlos@huertanorte.coop    Carlos Zapata      tesorero
+   yamila@huertanorte.coop    Yamila Ferreira    operador
+   diego@huertanorte.coop     Diego Caceres      operador
+   rocio@huertanorte.coop     Rocio Benegas      operador
+
+ OJO: esta cooperativa esta PENDIENTE a proposito. Ninguno de
+ sus 5 usuarios puede entrar todavia. Sirve para probar la
+ aprobacion desde el panel del superadmin.
+
+
+===========================================================
+ QUE SE PUEDE PROBAR CON ESTO
+===========================================================
+
+ Aprobacion de cooperativas
+   Entrar como superadmin y aprobar Huerta Norte.
+   Despues elena@huertanorte.coop / prueba123 ya puede entrar.
+
+ Usuario dado de baja
+   hector@laesperanza.coop / prueba123 -> "Tu cuenta esta desactivada"
+   Entrando como Marta se lo puede reactivar.
+
+ Contrasena temporal
+   claudia@laesperanza.coop / prueba123 -> lo manda a elegir
+   una contrasena nueva antes de dejarlo operar.
+
+ Reseteo de contrasena
+   Como superadmin: resetea a los 4 admin de cooperativa.
+   Como Marta: resetea a los usuarios de La Esperanza.
+   La contrasena pasa a ser el DNI del usuario.
+
+ Editar y dar de baja usuarios
+   Como Marta, en la pantalla de Usuarios. No puede tocarse
+   a si misma ni a admins de otras cooperativas.
+
+ Cooperativas distintas no se ven entre si
+   Marta no puede tocar a los usuarios de El Amanecer.
+
+
+===========================================================
+ COMO LEVANTAR LA APP
+===========================================================
+
+ 1) Abrir el panel de XAMPP y darle Start a MySQL.
+    (Apache no hace falta: la app se sirve sola con Express)
+
+ 2) Abrir una consola y correr:
+
+    cd "C:\Users\edeli\Desktop\Personal\Tecnicatura Sup. en Desarrollo de Software\2\pp2\cooperApp"
+    node app.js
+
+ 3) Entrar a http://localhost:3000
+
+
+===========================================================
+ COMO ARMAR / RESETEAR LA BASE
+===========================================================
+
+ Desde la carpeta cooperApp, con MySQL prendido:
+
+   "C:\xampp\mysql\bin\mysql.exe" -u root < database.sql
+   "C:\xampp\mysql\bin\mysql.exe" -u root < datos_de_prueba.sql
+
+ database.sql       = el sistema (tablas + superadmin)
+ datos_de_prueba.sql = las 4 cooperativas y sus 27 usuarios
+
+ No hace falta ninguna opcion de codificacion: los archivos
+ traen el SET NAMES adentro.
+
+ datos_de_prueba.sql se puede volver a correr cuando quieras:
+ borra las 4 cooperativas de prueba y las carga de nuevo, sin
+ tocar el superadmin ni nada que hayas creado por fuera. Sirve
+ para dejar todo limpio despues de andar probando.
+
+
+===========================================================
+ NOTAS
+===========================================================
+
+ - Al reiniciar node se pierden las sesiones abiertas y hay que
+   volver a loguearse. Es normal: se guardan en memoria.
+
+ - Si reseteas alguna contrasena para probar, o corres el
+   datos_de_prueba.sql de nuevo, todo vuelve a como figura aca.
