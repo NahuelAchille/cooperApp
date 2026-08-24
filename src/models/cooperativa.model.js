@@ -44,14 +44,47 @@ const findAll = async () => {
 
   const [rows] = await db.query(`
     SELECT c.id_cooperativa, c.nombre, c.email, c.cuit, c.matricula, c.estado,
-           COUNT(u.id) AS cantidad_usuarios
+           (SELECT COUNT(*) FROM usuarios u WHERE u.id_cooperativa = c.id_cooperativa) AS cantidad_usuarios,
+           adm.id AS admin_id, adm.nombre AS admin_nombre, adm.apellido AS admin_apellido, adm.email AS admin_email
     FROM cooperativas c
-    LEFT JOIN usuarios u ON u.id_cooperativa = c.id_cooperativa
-    GROUP BY c.id_cooperativa
+    LEFT JOIN usuarios adm ON adm.id_cooperativa = c.id_cooperativa AND adm.id_rol = 1
     ORDER BY c.id_cooperativa DESC
   `)
-  
+
   return rows
+}
+
+const findById = async (id_cooperativa) => {
+
+  const [rows] = await db.query(`
+    SELECT id_cooperativa, nombre, email, cuit, matricula, federacion, domicilio,
+           cantidadTrabajadores, cantidadDiversidad, cantidadHombre, cantidadMujer, estado
+    FROM cooperativas
+    WHERE id_cooperativa = ?
+  `, [id_cooperativa])
+
+  return rows[0] || null
+}
+
+// Busca otra cooperativa que ya use ese email, sin contar la propia
+const findByEmailExcluyendo = async (email, id_cooperativa) => {
+
+  const [rows] = await db.query(
+    'SELECT id_cooperativa FROM cooperativas WHERE email = ? AND id_cooperativa <> ?',
+    [email, id_cooperativa]
+  )
+
+  return rows[0] || null
+}
+
+const update = async (id_cooperativa, { nombre, email, federacion, domicilio, cantidadTrabajadores, cantidadDiversidad, cantidadHombre, cantidadMujer }) => {
+
+  await db.query(`
+    UPDATE cooperativas
+    SET nombre = ?, email = ?, federacion = ?, domicilio = ?,
+        cantidadTrabajadores = ?, cantidadDiversidad = ?, cantidadHombre = ?, cantidadMujer = ?
+    WHERE id_cooperativa = ?
+  `, [nombre, email, federacion, domicilio, cantidadTrabajadores, cantidadDiversidad, cantidadHombre, cantidadMujer, id_cooperativa])
 }
 
 const updateEstado = async (id_cooperativa, estado) => {
@@ -62,4 +95,4 @@ const activarUsuarioAdmin = async (id_cooperativa) => {
   await db.query('UPDATE usuarios SET activo = 1 WHERE id_cooperativa = ? AND id_rol = 1', [id_cooperativa])
 }
 
-module.exports = { findByEmail, findByCuit, findByMatricula, create, findPendientes, findAll, updateEstado, activarUsuarioAdmin }
+module.exports = { findByEmail, findByCuit, findByMatricula, create, findPendientes, findAll, findById, findByEmailExcluyendo, update, updateEstado, activarUsuarioAdmin }

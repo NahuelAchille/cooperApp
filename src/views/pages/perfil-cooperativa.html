@@ -1,0 +1,328 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css">
+  <link rel="stylesheet" href="/styles/styles.css">
+  <title>Mi cooperativa - CooperApp</title>
+  <style>
+    body { background-color: #f0f7f3; }
+
+    .page-header {
+      background: linear-gradient(135deg, #2d7a4f, #3a9e65);
+      color: white;
+      padding: 20px 32px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .content { padding: 32px; }
+
+    .card-form {
+      background: white;
+      border-radius: 12px;
+      box-shadow: 0 2px 12px rgba(0,0,0,0.07);
+      padding: 28px 32px;
+      max-width: 900px;
+    }
+
+    .seccion-titulo {
+      color: #2d7a4f;
+      font-size: 0.82rem;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      font-weight: 700;
+      border-bottom: 2px solid #a8d5bc;
+      padding-bottom: 6px;
+      margin-bottom: 18px;
+    }
+
+    .form-label { color: #2d7a4f; font-size: 0.85rem; font-weight: 600; }
+    .form-control:focus {
+      border-color: #2d7a4f;
+      box-shadow: 0 0 0 3px rgba(45,122,79,0.15);
+    }
+    .form-control[readonly] { background-color: #f2faf6; color: #6c757d; }
+
+    .badge-estado {
+      font-size: 0.78rem;
+      padding: 4px 12px;
+      border-radius: 20px;
+      font-weight: 600;
+    }
+    .badge-activa     { background-color: #d1f5e0; color: #1a6b3a; }
+    .badge-pendiente  { background-color: #fff3cd; color: #856404; }
+    .badge-suspendida { background-color: #fde8e8; color: #a01c1c; }
+
+    .btn-guardar {
+      background-color: #2d7a4f;
+      color: white;
+      font-weight: bold;
+      padding: 9px 28px;
+      border: none;
+    }
+    .btn-guardar:hover { background-color: #24623f; color: white; }
+    .btn-guardar:disabled { opacity: 0.6; }
+
+    .nota-solo-lectura {
+      background-color: #f2faf6;
+      border-left: 3px solid #a8d5bc;
+      padding: 10px 14px;
+      font-size: 0.85rem;
+      color: #4a6b58;
+      border-radius: 4px;
+    }
+  </style>
+</head>
+<body>
+
+  <div id="header"></div>
+
+  <div class="page-header">
+    <div>
+      <h4 class="mb-0 fw-bold"><i class="fa-solid fa-building me-2"></i>Mi cooperativa</h4>
+      <small style="opacity:0.8;">Datos de la cooperativa</small>
+    </div>
+    <span id="estado-coop"></span>
+  </div>
+
+  <div class="content">
+    <div class="card-form">
+
+      <form id="form-perfil" novalidate>
+
+        <p class="seccion-titulo">Datos generales</p>
+
+        <div class="row g-3 mb-4">
+          <div class="col-md-6">
+            <label class="form-label">Nombre de la cooperativa *</label>
+            <input type="text" class="form-control" name="nombre" required>
+          </div>
+          <div class="col-md-6">
+            <label class="form-label">Email de contacto *</label>
+            <input type="email" class="form-control" name="email" required>
+          </div>
+          <div class="col-md-6">
+            <label class="form-label">Federación</label>
+            <input type="text" class="form-control" name="federacion" placeholder="Sin federación">
+          </div>
+          <div class="col-md-6">
+            <label class="form-label">Domicilio</label>
+            <input type="text" class="form-control" name="domicilio" placeholder="Calle, número, localidad">
+          </div>
+        </div>
+
+        <p class="seccion-titulo">Composición del grupo de trabajo</p>
+
+        <div class="row g-3 mb-4">
+          <div class="col-md-3">
+            <label class="form-label">Total de trabajadores</label>
+            <input type="number" class="form-control" name="cantidadTrabajadores" min="0" step="1">
+          </div>
+          <div class="col-md-3">
+            <label class="form-label">Mujeres</label>
+            <input type="number" class="form-control" name="cantidadMujer" min="0" step="1">
+          </div>
+          <div class="col-md-3">
+            <label class="form-label">Varones</label>
+            <input type="number" class="form-control" name="cantidadHombre" min="0" step="1">
+          </div>
+          <div class="col-md-3">
+            <label class="form-label">Diversidades</label>
+            <input type="number" class="form-control" name="cantidadDiversidad" min="0" step="1">
+          </div>
+        </div>
+
+        <p class="seccion-titulo">Datos registrales</p>
+
+        <div class="row g-3 mb-3">
+          <div class="col-md-6">
+            <label class="form-label">CUIT</label>
+            <input type="text" class="form-control" id="cuit" readonly>
+          </div>
+          <div class="col-md-6">
+            <label class="form-label">Matrícula</label>
+            <input type="text" class="form-control" id="matricula" readonly>
+          </div>
+        </div>
+
+        <div class="nota-solo-lectura mb-4">
+          <i class="fa-solid fa-lock me-1"></i>
+          El CUIT y la matrícula no se pueden modificar desde acá. Si están mal cargados,
+          hay que pedirle el cambio al administrador de la plataforma.
+        </div>
+
+        <div id="form-error" class="alert alert-danger py-2 small d-none"></div>
+
+        <div class="d-flex gap-2" id="zona-botones">
+          <button type="submit" class="btn btn-guardar" id="btn-guardar">
+            <i class="fa-solid fa-floppy-disk me-2"></i>Guardar cambios
+          </button>
+          <button type="button" class="btn btn-outline-secondary" id="btn-deshacer">Deshacer</button>
+        </div>
+
+      </form>
+
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+
+  <script>
+
+    const form      = document.getElementById('form-perfil')
+    const errorDiv  = document.getElementById('form-error')
+    const btnGuardar = document.getElementById('btn-guardar')
+
+    // Muestra un aviso verde flotante arriba de la pantalla
+    function mostrarToast(mensaje) {
+
+      const toast = document.createElement('div')
+      toast.style = 'position:fixed;top:24px;left:50%;transform:translateX(-50%);background:#2d7a4f;color:white;padding:14px 24px;border-radius:10px;z-index:9999;font-weight:500;box-shadow:0 4px 16px rgba(0,0,0,0.2)'
+      toast.innerHTML = `<i class="fa-solid fa-circle-check me-2"></i>${mensaje}`
+      document.body.appendChild(toast)
+      setTimeout(() => toast.remove(), 4000)
+    }
+
+    function mostrarError(mensaje) {
+      errorDiv.textContent = mensaje
+      errorDiv.classList.remove('d-none')
+    }
+
+    // Carga el header y despues completa los datos del usuario logueado
+    async function cargarHeader() {
+
+      const html = await fetch('/components/header.html').then(r => r.text())
+      document.getElementById('header').innerHTML = html
+
+      const user = await fetch('/users/me').then(r => r.json())
+      if (!user || user.error) return null
+
+      document.getElementById('user-avatar').textContent = (user.nombre[0] + user.apellido[0]).toUpperCase()
+      document.getElementById('user-nombre').textContent = `${user.nombre} ${user.apellido}`
+      document.getElementById('dropdown-coop').textContent = user.cooperativa?.nombre || ''
+
+      if (user.rol === 'admin_cooperativa') {
+        document.getElementById('item-usuarios').classList.remove('d-none')
+      }
+
+      if (user.rol === 'superadmin') {
+        document.getElementById('item-superadmin').classList.remove('d-none')
+      }
+
+      // El superadmin administra la plataforma, no una cooperativa
+      if (user.rol === 'superadmin') {
+
+        document.querySelector('.card-form').innerHTML = `
+          <div class="text-center py-4">
+            <i class="fa-solid fa-shield-halved fa-2x mb-3" style="color:#2d7a4f;"></i>
+            <p class="mb-1 fw-bold" style="color:#2d7a4f;">Esta pantalla no aplica a tu usuario</p>
+            <p class="text-muted mb-3 small">
+              Como administrador de la plataforma no pertenecés a ninguna cooperativa.
+            </p>
+            <a href="/pages/superadmin.html" class="btn btn-guardar">
+              <i class="fa-solid fa-shield-halved me-2"></i>Ir al panel de administración
+            </a>
+          </div>`
+        document.getElementById('estado-coop').textContent = ''
+        return user
+      }
+
+      // Solo el administrador de la cooperativa puede editar: el resto ve el formulario bloqueado
+      if (user.rol !== 'admin_cooperativa') {
+
+        form.querySelectorAll('input').forEach(input => input.readOnly = true)
+        document.getElementById('zona-botones').innerHTML =
+          '<div class="nota-solo-lectura"><i class="fa-solid fa-eye me-1"></i>Sólo el administrador de la cooperativa puede modificar estos datos.</div>'
+      }
+
+      return user
+    }
+
+    // Trae los datos de la cooperativa y los pone en el formulario
+    async function cargarCooperativa() {
+
+      const res = await fetch('/cooperativas/mi-cooperativa')
+
+      if (!res.ok) {
+        mostrarError('No se pudieron cargar los datos de la cooperativa.')
+        return
+      }
+
+      const coop = await res.json()
+
+      form.nombre.value               = coop.nombre ?? ''
+      form.email.value                = coop.email ?? ''
+      form.federacion.value           = coop.federacion ?? ''
+      form.domicilio.value            = coop.domicilio ?? ''
+      form.cantidadTrabajadores.value = coop.cantidadTrabajadores ?? ''
+      form.cantidadMujer.value        = coop.cantidadMujer ?? ''
+      form.cantidadHombre.value       = coop.cantidadHombre ?? ''
+      form.cantidadDiversidad.value   = coop.cantidadDiversidad ?? ''
+
+      document.getElementById('cuit').value      = coop.cuit ?? ''
+      document.getElementById('matricula').value = coop.matricula ?? ''
+
+      const estado = document.getElementById('estado-coop')
+      estado.className = `badge-estado badge-${coop.estado}`
+      estado.textContent = coop.estado.toUpperCase()
+    }
+
+    // Guardar
+    form.addEventListener('submit', async (evento) => {
+
+      evento.preventDefault()
+      errorDiv.classList.add('d-none')
+
+      const datos = Object.fromEntries(new FormData(form))
+
+      if (!datos.nombre.trim() || !datos.email.trim()) {
+        mostrarError('El nombre y el email son obligatorios.')
+        return
+      }
+
+      btnGuardar.disabled = true
+
+      const res = await fetch('/cooperativas/mi-cooperativa', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(datos)
+      })
+
+      const resultado = await res.json()
+      btnGuardar.disabled = false
+
+      if (!res.ok) {
+        mostrarError(resultado.error)
+        return
+      }
+
+      mostrarToast(resultado.message)
+      cargarHeader()      // por si cambio el nombre de la cooperativa
+      cargarCooperativa()
+    })
+
+    // Deshacer: vuelve a traer los datos guardados y descarta lo tipeado
+    document.getElementById('btn-deshacer').addEventListener('click', () => {
+      errorDiv.classList.add('d-none')
+      cargarCooperativa()
+    })
+
+    // Primero averiguamos quien es el usuario; recien despues pedimos los datos,
+    // porque el superadmin no tiene cooperativa y no hay nada que traer.
+    async function iniciar() {
+
+      const user = await cargarHeader()
+      if (!user || user.rol === 'superadmin') return
+
+      cargarCooperativa()
+    }
+
+    iniciar()
+
+  </script>
+</body>
+</html>
