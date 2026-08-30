@@ -1,0 +1,156 @@
+/* ===== Base general ===== */
+body {
+  background-color: #f0f7f3;
+  font-family: Arial, Helvetica, sans-serif;
+  margin: 0;
+  padding: 0;
+}
+
+/* ===== Encabezado ===== */
+.page-header {
+  background: linear-gradient(135deg, #2d7a4f, #3a9e65);
+  color: white;
+  padding: 20px;
+  display: flex;
+  flex-direction: column; /* mobile: apilado */
+  align-items: flex-start;
+  gap: 6px;
+}
+
+.page-header h4 {
+  font-size: 1.3rem;
+  margin: 0;
+}
+
+.page-header small {
+  font-size: 0.85rem;
+  opacity: 0.8;
+}
+
+/* ===== Contenido principal ===== */
+.content {
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+/* ===== Tarjeta del formulario ===== */
+.card-form {
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 2px 12px rgba(0,0,0,0.07);
+  padding: 24px;
+  width: 100%;
+  max-width: 95%;
+}
+
+/* ===== Secciones ===== */
+.seccion-titulo {
+  color: #2d7a4f;
+  font-size: 0.82rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  font-weight: 700;
+  border-bottom: 2px solid #a8d5bc;
+  padding-bottom: 6px;
+  margin-bottom: 18px;
+}
+
+/* ===== Formularios ===== */
+.form-label {
+  color: #2d7a4f;
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+
+.form-control {
+  border-radius: 6px;
+  border: 1px solid #cfd8d5;
+}
+
+.form-control:focus {
+  border-color: #2d7a4f;
+  box-shadow: 0 0 0 3px rgba(45,122,79,0.15);
+}
+
+.form-control[readonly] {
+  background-color: #f2faf6;
+  color: #6c757d;
+}
+
+/* ===== Estados ===== */
+.badge-estado {
+  font-size: 0.78rem;
+  padding: 4px 12px;
+  border-radius: 20px;
+  font-weight: 600;
+}
+
+.badge-activa     { background-color: #d1f5e0; color: #1a6b3a; }
+.badge-pendiente  { background-color: #fff3cd; color: #856404; }
+.badge-suspendida { background-color: #fde8e8; color: #a01c1c; }
+
+/* ===== Botones ===== */
+.btn-guardar {
+  background-color: #2d7a4f;
+  color: white;
+  font-weight: bold;
+  padding: 9px 28px;
+  border: none;
+  border-radius: 8px;
+  transition: background-color 0.3s ease;
+}
+
+.btn-guardar:hover {
+  background-color: #24623f;
+}
+
+.btn-guardar:disabled {
+  opacity: 0.6;
+}
+
+/* ===== Nota informativa ===== */
+.nota-solo-lectura {
+  background-color: #f2faf6;
+  border-left: 3px solid #a8d5bc;
+  padding: 10px 14px;
+  font-size: 0.85rem;
+  color: #4a6b58;
+  border-radius: 4px;
+}
+
+/* ===== Media Queries ===== */
+
+/* Tablet */
+@media (min-width: 768px) {
+  .page-header {
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  .card-form {
+    max-width: 800px;
+  }
+
+  .content {
+    padding: 32px;
+  }
+}
+
+/* Desktop */
+@media (min-width: 1024px) {
+  .page-header h4 {
+    font-size: 1.5rem;
+  }
+
+  .card-form {
+    max-width: 900px;
+    padding: 32px;
+  }
+
+  .content {
+    padding: 48px;
+  }
+}

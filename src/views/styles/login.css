@@ -1,0 +1,130 @@
+/* ===== Fondo del login ===== */
+.fondo-login-con-lineas {
+  background-image: url('../images/background_login.png');
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  min-height: 100vh;
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* ===== Contenedor principal ===== */
+main {
+  display: flex;
+  flex-direction: column; /* Mobile: apilado */
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  padding: 1rem;
+  color: white;
+}
+
+/* ===== Formulario ===== */
+#formulario-login {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  max-width: 95%;
+  padding: 1rem;
+}
+
+#formulario-login input {
+  width: 100%;
+  height: 45px;
+  padding: 10px;
+  margin-bottom: 1rem;
+  border-radius: 5px;
+  border: 3px solid rgba(25, 222, 117, 0.5);
+  background-color: rgba(25, 222, 117, 0.3);
+  color: #fff;
+}
+
+#formulario-login input::placeholder {
+  color: #fff;
+  opacity: 0.8;
+}
+
+/* ===== Input con ícono ===== */
+.input-con-icono {
+  position: relative;
+}
+
+.input-con-icono input {
+  width: 100%;
+  height: 45px;
+  padding-right: 40px; /* espacio para el ícono */
+  border-radius: 5px;
+  border: 3px solid rgba(25, 222, 117, 0.5);
+  background-color: rgba(25, 222, 117, 0.3);
+  color: #fff;
+  box-sizing: border-box;
+}
+
+/* Ícono centrado */
+.input-con-icono i {
+  position: absolute;
+  right: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 18px;
+  line-height: 1;      /* evita que se desplace por la altura de fuente */
+  vertical-align: middle; /* fuerza alineación */
+  color: #fff;
+  opacity: 0.9;
+}
+
+/* ===== Botón de login ===== */
+#boton-login button {
+  width: 100%;
+  padding: 12px;
+  border: none;
+  border-radius: 50px;
+  cursor: pointer;
+  background: linear-gradient(180deg, #19de75 0%, #128c4a 100%);
+  color: #fff;
+  font-weight: bold;
+  box-shadow: 0 6px 12px rgba(0,0,0,0.25);
+  transition: all 0.3s ease;
+}
+
+#boton-login button:hover {
+  background: linear-gradient(180deg, #9fc1cb 0%, #19de75 100%);
+  box-shadow: 0 8px 16px rgba(0,0,0,0.35);
+  transform: translateY(-2px);
+}
+
+/* ===== Media Queries ===== */
+
+/* Tablet */
+@media (min-width: 768px) {
+  #formulario-login {
+    max-width: 70%;
+  }
+  main {
+    font-size: 1.1rem;
+  }
+}
+
+/* Desktop */
+@media (min-width: 1024px) {
+    #formulario-login {
+        max-width: 400px;
+        padding: 1rem;
+        border-radius: 12px;
+    }
+    main {
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+    }
+    #formulario-login {
+    margin: 2rem 0;
+    }
+
+    .registro-coop {
+    margin-top: 2rem;
+    }
+}

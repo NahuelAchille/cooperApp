@@ -1,0 +1,182 @@
+/* ===== VARIABLES ===== */
+:root {
+  --verde-primario: #2d7a4f;
+  --verde-secundario: #3a9e65;
+  --verde-oscuro: #1a6b3a;
+  --bg-page: #f0f7f3;
+  --card-bg: #ffffff;
+  --card-shadow: 0 2px 12px rgba(0,0,0,0.07);
+  --danger: #a01c1c;
+  --warning: #856404;
+}
+
+/* ===== BASE ===== */
+body {
+  background-color: var(--bg-page);
+  margin: 0;
+  padding: 0;
+  font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
+  color: #1a2e23;
+}
+
+/* ===== HEADER ===== */
+.page-header {
+  background: linear-gradient(135deg, var(--verde-primario), var(--verde-secundario));
+  color: white;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  align-items: flex-start;
+}
+
+.page-header h4 {
+  margin: 0;
+  font-weight: 700;
+}
+
+.page-header small {
+  opacity: 0.8;
+}
+
+/* Botón nuevo usuario */
+.btn-nuevo {
+  background: white;
+  color: var(--verde-primario);
+  border: none;
+  border-radius: 8px;
+  font-weight: bold;
+  padding: 8px 20px;
+  transition: background-color 0.3s ease;
+}
+
+.btn-nuevo:hover {
+  background-color: #e4f2eb;
+  color: var(--verde-primario);
+}
+
+/* ===== CONTENIDO ===== */
+.content {
+  padding: 16px;
+}
+
+.card-tabla {
+  background: var(--card-bg);
+  border-radius: 12px;
+  box-shadow: var(--card-shadow);
+  overflow: hidden;
+}
+
+/* ===== TABLA ===== */
+.table thead th {
+  background-color: #e4f2eb;
+  color: var(--verde-primario);
+  border-bottom: 2px solid #a8d5bc;
+  font-size: 0.82rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.table td {
+  vertical-align: middle;
+  color: #1a2e23;
+}
+
+.table tbody tr:hover {
+  background-color: #f2faf6;
+}
+
+/* Badges */
+.badge-rol {
+  background-color: #e4f2eb;
+  color: var(--verde-primario);
+  font-size: 0.78rem;
+  padding: 4px 10px;
+  border-radius: 20px;
+  font-weight: 600;
+}
+
+.badge-activo   { background-color: #d1f5e0; color: var(--verde-oscuro); }
+.badge-inactivo { background-color: #fde8e8; color: var(--danger); }
+.badge-temp     { background-color: #fff3cd; color: var(--warning); }
+
+/* ===== BOTONES DE ACCIÓN ===== */
+.btn-reset,
+.btn-accion {
+  background: none;
+  border: 1.5px solid #c8e6d5;
+  color: var(--verde-primario);
+  border-radius: 8px;
+  padding: 5px 12px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.btn-reset:hover,
+.btn-accion:hover {
+  background-color: #e4f2eb;
+}
+
+.btn-reset:disabled { opacity: 0.5; }
+
+.btn-accion.peligro {
+  border-color: #f0c2c2;
+  color: var(--danger);
+}
+
+.btn-accion.peligro:hover {
+  background-color: #fde8e8;
+}
+
+/* Fila inactiva */
+.fila-inactiva td { opacity: 0.55; }
+
+/* ===== MODALES ===== */
+.modal-content {
+  border-radius: 12px;
+  overflow: hidden;
+  border: none;
+}
+
+.modal-header {
+  background-color: var(--verde-primario);
+  color: white;
+  border: none;
+}
+
+.modal-footer {
+  background-color: var(--bg-page);
+  border-top: 1px solid #c8e6d5;
+}
+
+.form-label {
+  color: var(--verde-primario);
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+
+.form-control:focus,
+.form-select:focus {
+  border-color: var(--verde-primario);
+  box-shadow: 0 0 0 3px rgba(45,122,79,0.15);
+}
+
+/* ===== RESPONSIVE ===== */
+
+/* Tablet */
+@media (min-width: 768px) {
+  .page-header {
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: center;
+    padding: 20px 32px;
+  }
+
+  .content { padding: 24px; }
+}
+
+/* Desktop */
+@media (min-width: 1024px) {
+  .content { padding: 32px; }
+}

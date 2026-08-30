@@ -1,0 +1,100 @@
+/* ===== Reset y tipografía ===== */
+html, body {
+  margin: 0;
+  padding: 0;
+  font-family: Arial, Helvetica, sans-serif;
+  height: 100%;
+  overflow-x: hidden;
+  background-color: #f7f9f8; /* color base neutro */
+}
+
+/* ===== Layout general ===== */
+main {
+  display: flex;
+  flex-direction: column; /* mobile: apilado */
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  gap: 20px;
+  font-size: 1rem;
+}
+
+/* ===== Inputs y formularios ===== */
+input, select, textarea {
+  width: 100%; /* mobile: siempre ancho completo */
+  padding: 0.8rem;
+  border-radius: 6px;
+  border: 1px solid #ccc;
+  font-size: 1rem;
+  box-sizing: border-box;
+}
+
+input::placeholder {
+  color: rgba(0,0,0,0.5);
+}
+
+button {
+  width: 100%;
+  padding: 0.8rem;
+  border-radius: 50px;
+  border: none;
+  cursor: pointer;
+  font-weight: bold;
+  transition: all 0.3s ease;
+}
+
+/* Botones genéricos */
+button.primary {
+  background: linear-gradient(180deg, #19de75 0%, #128c4a 100%);
+  color: #fff;
+}
+button.primary:hover {
+  background: linear-gradient(180deg, #9fc1cb 0%, #19de75 100%);
+}
+
+/* ===== Tablas ===== */
+table {
+  width: 100%;
+  border-collapse: collapse;
+}
+thead {
+  border-bottom: 2px solid #ccc;
+}
+th, td {
+  padding: 12px;
+  text-align: left;
+}
+tbody tr:nth-child(even) {
+  background-color: #f1f1f1;
+}
+
+/* Mobile: scroll horizontal para tablas */
+.table-responsive {
+  display: block;
+  width: 100%;
+  overflow-x: auto;
+}
+
+/* ===== Media Queries ===== */
+
+/* Tablet */
+@media (min-width: 768px) {
+  main {
+    font-size: 1.1rem;
+  }
+  input, button {
+    max-width: 70%;
+  }
+}
+
+/* Desktop */
+@media (min-width: 1024px) {
+  main {
+    flex-direction: row; /* escritorio: disposición en fila */
+    justify-content: center;
+    align-items: center;
+  }
+  input, button {
+    max-width: 400px;
+  }
+}
