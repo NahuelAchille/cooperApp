@@ -43,114 +43,173 @@
                 }
             })
     }
+
+    // ================= DATOS REALES DEL DASHBOARD =================
+
+    // Formatea numeros como plata argentina ($ 1.234,56)
+    const formatoMoneda = new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'ARS', minimumFractionDigits: 2 })
+    const formatMoneda = (n) => formatoMoneda.format(Number(n) || 0)
+
+    // Devuelve el rango de un mes en formato AAAA-MM-DD.
+    // offset 0 = mes actual, -1 = mes anterior. Se arma manual para no tener
+    // lios de zona horaria.
+    function rangoMes(offset) {
+        const hoy = new Date()
+        const primero = new Date(hoy.getFullYear(), hoy.getMonth() + offset, 1)
+        const ultimo  = new Date(hoy.getFullYear(), hoy.getMonth() + offset + 1, 0) // dia 0 = ultimo del mes
+        const fmt = (d) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+        return { desde: fmt(primero), hasta: fmt(ultimo) }
+    }
+
+    // Calcula la variacion % de este mes contra el anterior.
+    function variacion(actual, anterior) {
+        if (anterior === 0) return actual === 0 ? 'Sin datos del mes anterior' : 'Nuevo este mes'
+        const pct = ((actual - anterior) / anterior) * 100
+        return `${pct >= 0 ? '+' : ''}${pct.toFixed(0)}% vs mes anterior`
+    }
+
+    async function cargarDashboard() {
+        cargarResumen()
+        cargarRecientes()
+        cargarUsuarios()
+    }
+
+    // KPIs de ingresos / egresos / balance: mes actual, con comparacion contra
+    // el mes anterior.
+    async function cargarResumen() {
+        const mesActual   = rangoMes(0)
+        const mesAnterior = rangoMes(-1)
+
+        const [actual, anterior] = await Promise.all([
+            fetch(`/movimientos/resumen?desde=${mesActual.desde}&hasta=${mesActual.hasta}`).then(r => r.ok ? r.json() : null),
+            fetch(`/movimientos/resumen?desde=${mesAnterior.desde}&hasta=${mesAnterior.hasta}`).then(r => r.ok ? r.json() : null)
+        ])
+
+        // Si no hay permiso (ej: operador) o falla, se dejan los guiones.
+        if (!actual) return
+
+        document.getElementById('kpi-ingresos').textContent = formatMoneda(actual.total_ingresos)
+        document.getElementById('kpi-egresos').textContent  = formatMoneda(actual.total_egresos)
+        document.getElementById('kpi-balance').textContent  = formatMoneda(actual.balance)
+
+        if (anterior) {
+            document.getElementById('kpi-ingresos-var').textContent = variacion(actual.total_ingresos, anterior.total_ingresos)
+            document.getElementById('kpi-egresos-var').textContent  = variacion(actual.total_egresos, anterior.total_egresos)
+        }
+    }
+
+    // Ultimos 5 movimientos (no anulados, que es el default del endpoint).
+    async function cargarRecientes() {
+        const tbody = document.getElementById('tabla-recientes')
+        const res = await fetch('/movimientos')
+
+        if (!res.ok) {
+            tbody.innerHTML = '<tr><td class="text-muted">No disponible.</td></tr>'
+            return
+        }
+
+        const movimientos = (await res.json()).slice(0, 5)
+
+        if (!movimientos.length) {
+            tbody.innerHTML = '<tr><td class="text-muted">Todavía no hay movimientos.</td></tr>'
+            return
+        }
+
+        tbody.innerHTML = movimientos.map(m => {
+            const esIngreso = m.naturaleza === 'ingreso'
+            const signo = esIngreso ? '+' : '-'
+            const fecha = new Date(m.fecha).toLocaleDateString('es-AR', { day: '2-digit', month: '2-digit' })
+            return `
+                <tr>
+                    <td class="${esIngreso ? 'positivo' : 'negativo'}">${m.descripcion || m.tipo_nombre}</td>
+                    <td>${m.categoria_nombre}</td>
+                    <td class="monto ${esIngreso ? 'positivo' : 'negativo'}">${signo}${formatMoneda(m.monto)}</td>
+                    <td>${fecha}</td>
+                </tr>`
+        }).join('')
+    }
+
+    // Cuenta de usuarios activos de la cooperativa.
+    async function cargarUsuarios() {
+        const res = await fetch('/users')
+        if (!res.ok) return
+
+        const usuarios = await res.json()
+        const activos = Array.isArray(usuarios) ? usuarios.filter(u => u.activo).length : 0
+        document.getElementById('kpi-usuarios').textContent = activos
+    }
+
+    // El script esta antes del <main>, asi que esperamos a que el DOM este
+    // armado para poder tocar los elementos del dashboard.
+    document.addEventListener('DOMContentLoaded', cargarDashboard)
     </script>
 
     <nav id="secondary-nav">
         <h2>Acciones Rápidas</h2>
             <ul>
-                <li id="btn-ingreso"><a href="#">+ Registrar ingreso</a></li>
-                <li id="btn-egreso"><a href="#">- Registrar egreso</a></li>
+                <li id="btn-ingreso"><a href="/pages/movimientos.html?nuevo=ingreso">+ Registrar ingreso</a></li>
+                <li id="btn-egreso"><a href="/pages/movimientos.html?nuevo=egreso">- Registrar egreso</a></li>
                 <li id="btn-stock"><a href="#">Ajustar stock</a></li>
-                <li id="btn-reporte"><a href="#">Ver reporte</a></li>
+                <li id="btn-reporte"><a href="/pages/movimientos.html">Ver reporte</a></li>
             </ul>
     </nav>
     <main id="dashboard-main">
         <section id="dashboard-kpis">
             <section class="dashboard-kpi" id="dashboard-kpis-1">
                 <h3>Ingresos del mes</h3>
-                <h4>$342.000</h4>
-                <h5>+12% vs anterior</h5>
+                <h4 id="kpi-ingresos">—</h4>
+                <h5 id="kpi-ingresos-var"></h5>
             </section>
             <section class="dashboard-kpi" id="dashboard-kpis-2">
                 <h3>Egresos del mes</h3>
-                <h4>$120.000</h4>
-                <h5>-5% vs anterior</h5>
+                <h4 id="kpi-egresos">—</h4>
+                <h5 id="kpi-egresos-var"></h5>
             </section>
             <section class="dashboard-kpi" id="dashboard-kpis-3">
-                <h3>Balance</h3>
-                <h4>$222.000</h4>
-                <h5>+18% vs anterior</h5>
+                <h3>Balance del mes</h3>
+                <h4 id="kpi-balance">—</h4>
+                <h5>Ingresos − Egresos</h5>
             </section>
             <section class="dashboard-kpi" id="dashboard-kpis-4">
-                <h3>Socios activos</h3>
-                <h4>48</h4>
-                <h5>+2 este mes</h5>
+                <h3>Usuarios activos</h3>
+                <h4 id="kpi-usuarios">—</h4>
+                <h5>En tu cooperativa</h5>
             </section>
             <section class="dashboard-kpi" id="dashboard-kpis-5">
                 <h3>Productos en stock</h3>
-                <h4>134</h4>
-                <h5>3 alertas</h5>
+                <h4>—</h4>
+                <h5>Módulo en desarrollo</h5>
             </section>
         </section>
         <section id="dashboard-charts">
             <section class="dashboard-block" id="dashboard-movimientos">
                 <div class="dashboard-block-header">
                     <h3>Movimientos recientes</h3>
-                    <a href="#">Ver todos →</a>
+                    <a href="/pages/movimientos.html">Ver todos →</a>
                 </div>
-                <table class="dashboard-table">
-                    <tr>
-                        <td class="positivo">Venta conservas</td>
-                        <td>Ventas</td>
-                        <td class="monto">+$120.000</td>
-                        <td>12/05</td>
-                    </tr>
-                    <tr>
-                        <td class="negativo">Pago proveedor</td>
-                        <td>Proveedores</td>
-                        <td class="monto">-$45.000</td>
-                        <td>10/05</td>
-                    </tr>
-                    <tr>
-                        <td class="positivo">Subsidio INAES</td>
-                        <td>Subsidios</td>
-                        <td class="monto">+$80.000</td>
-                        <td>08/05</td>
-                    </tr>
-                </table>
+                <div class="table-responsive">
+                    <table class="dashboard-table">
+                        <tbody id="tabla-recientes">
+                            <tr><td class="text-muted">Cargando...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
             </section>
             <section class="dashboard-block" id="dashboard-stock">
                 <div class="dashboard-block-header">
                     <h3>Alertas de stock</h3>
-                    <a href="#">Ver stock →</a>
                 </div>
-                <table class="dashboard-table">
-                    <tr>
-                        <td>Conserva tomate 350g</td>
-                        <td class="estado ok">OK</td>
-                    </tr>
-                    <tr>
-                        <td>Mermelada frambuesa</td>
-                        <td class="estado bajo">Bajo</td>
-                    </tr>
-                    <tr>
-                        <td>Tapas metálicas</td>
-                        <td class="estado sin-stock">Sin stock</td>
-                    </tr>
-                </table>
+                <p class="text-muted" style="padding:12px 4px;margin:0;">
+                    <i class="fa-solid fa-screwdriver-wrench me-1"></i>Módulo en desarrollo.
+                </p>
             </section>
             <section class="dashboard-block" id="dashboard-matches">
                 <div class="dashboard-block-header">
                     <h3>Matches</h3>
-                    <a href="#">Ver todos →</a>
                 </div>
-                <table class="dashboard-table">
-                    <tr>
-                        <td>Coop. La Verdecita</td>
-                        <td>Necesita frío</td>
-                        <td class="porcentaje alto">92%</td>
-                    </tr>
-                    <tr>
-                        <td>Coop. Sol y Fruto</td>
-                        <td>Ofrece transporte</td>
-                        <td class="porcentaje medio">78%</td>
-                    </tr>
-                    <tr>
-                        <td>Coop. Norte Fuerte</td>
-                        <td>Necesita maquinaria</td>
-                        <td class="porcentaje bajo">65%</td>
-                    </tr>
-                </table>
+                <p class="text-muted" style="padding:12px 4px;margin:0;">
+                    <i class="fa-solid fa-screwdriver-wrench me-1"></i>Módulo en desarrollo.
+                </p>
             </section>
         </section>
     </main>

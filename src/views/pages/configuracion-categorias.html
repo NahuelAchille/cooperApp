@@ -1,0 +1,474 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css">
+  <link rel="stylesheet" href="/styles/header.css">
+  <link rel="stylesheet" href="/styles/configuracion-categorias.css">
+  <title>Clasificación de movimientos - CooperApp</title>
+</head>
+<body>
+
+  <div id="header"></div>
+
+  <script>
+    fetch('/components/header.html')
+      .then(res => res.text())
+      .then(html => {
+        document.getElementById('header').innerHTML = html
+        fetch('/users/me')
+          .then(r => r.json())
+          .then(user => {
+            if (!user || user.error) return
+
+            const iniciales = (user.nombre[0] + user.apellido[0]).toUpperCase()
+            document.getElementById('user-avatar').textContent = iniciales
+            document.getElementById('user-nombre').textContent = `${user.nombre} ${user.apellido}`
+            document.getElementById('dropdown-coop').textContent = user.cooperativa?.nombre || ''
+
+            if (user.rol === 'admin_cooperativa') {
+              document.getElementById('item-usuarios').classList.remove('d-none')
+            }
+            if (user.rol === 'superadmin') {
+              document.getElementById('item-superadmin').classList.remove('d-none')
+            }
+          })
+      })
+  </script>
+
+  <div class="page-header">
+    <div>
+      <h4 class="mb-0 fw-bold"><i class="fa-solid fa-sitemap me-2"></i>Clasificación de movimientos</h4>
+      <small>Categorías y tipos con los que se ordenan los ingresos y egresos</small>
+    </div>
+    <a class="btn btn-volver" href="/pages/movimientos.html">
+      <i class="fa-solid fa-arrow-left me-2"></i>Volver a movimientos
+    </a>
+  </div>
+
+  <div class="content">
+
+    <!-- Se muestra si el usuario no es admin -->
+    <div class="aviso-permiso d-none" id="aviso-permiso">
+      <i class="fa-solid fa-lock fa-2x mb-3"></i>
+      <p class="mb-0">Solo el administrador de la cooperativa puede configurar la clasificación de movimientos.</p>
+    </div>
+
+    <div class="columnas d-none" id="columnas">
+
+      <div class="columna ingresos">
+        <div class="columna-header">
+          <h5><i class="fa-solid fa-arrow-down"></i>Ingresos</h5>
+          <button class="btn-add-cat" data-add-cat data-naturaleza="ingreso">
+            <i class="fa-solid fa-plus me-1"></i>Nueva categoría
+          </button>
+        </div>
+        <div id="col-ingresos">
+          <div class="text-center py-3 text-muted"><i class="fa-solid fa-spinner fa-spin"></i></div>
+        </div>
+      </div>
+
+      <div class="columna egresos">
+        <div class="columna-header">
+          <h5><i class="fa-solid fa-arrow-up"></i>Egresos</h5>
+          <button class="btn-add-cat" data-add-cat data-naturaleza="egreso">
+            <i class="fa-solid fa-plus me-1"></i>Nueva categoría
+          </button>
+        </div>
+        <div id="col-egresos">
+          <div class="text-center py-3 text-muted"><i class="fa-solid fa-spinner fa-spin"></i></div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- Modal categoria (crear / editar) -->
+  <div class="modal fade" id="modalCategoria" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title fw-bold" id="cat-titulo"></h5>
+          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          <form id="form-categoria" novalidate>
+            <input type="hidden" name="id">
+            <input type="hidden" name="naturaleza">
+            <div class="mb-3">
+              <label class="form-label">Naturaleza</label>
+              <div id="cat-naturaleza-texto" class="fw-bold"></div>
+            </div>
+            <div>
+              <label class="form-label">Nombre de la categoría</label>
+              <input type="text" class="form-control" name="nombre" maxlength="80" placeholder="Ej: Ventas, Sueldos, Servicios" required>
+            </div>
+            <div id="cat-error" class="text-danger small mt-2 d-none"></div>
+          </form>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
+          <button type="button" id="btn-guardar-cat" class="btn fw-bold px-4" style="background-color:#2d7a4f;color:white;">
+            <i class="fa-solid fa-floppy-disk me-2"></i>Guardar
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal tipo (crear / editar) -->
+  <div class="modal fade" id="modalTipo" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title fw-bold" id="tipo-titulo"></h5>
+          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          <form id="form-tipo" novalidate>
+            <input type="hidden" name="id">
+            <input type="hidden" name="id_categoria">
+            <div class="mb-3">
+              <label class="form-label">Categoría</label>
+              <div id="tipo-cat-texto" class="fw-bold"></div>
+            </div>
+            <div>
+              <label class="form-label">Nombre del tipo</label>
+              <input type="text" class="form-control" name="nombre" maxlength="80" placeholder="Ej: Luz, Internet, Venta mayorista" required>
+            </div>
+            <div id="tipo-error" class="text-danger small mt-2 d-none"></div>
+          </form>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
+          <button type="button" id="btn-guardar-tipo" class="btn fw-bold px-4" style="background-color:#2d7a4f;color:white;">
+            <i class="fa-solid fa-floppy-disk me-2"></i>Guardar
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal confirmar activar / desactivar -->
+  <div class="modal fade" id="modalEstado" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title fw-bold" id="estado-titulo"></h5>
+          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          <p class="mb-2" id="estado-pregunta"></p>
+          <div class="alert alert-warning mb-0 py-2 small" id="estado-aviso"></div>
+          <div id="estado-error" class="text-danger small mt-2 d-none"></div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
+          <button type="button" id="btn-confirmar-estado" class="btn fw-bold px-4"></button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+
+  <script>
+
+    let usuarioActual = null
+
+    function mostrarToast(mensaje) {
+      const toast = document.createElement('div')
+      toast.style = 'position:fixed;top:24px;left:50%;transform:translateX(-50%);background:#2d7a4f;color:white;padding:14px 24px;border-radius:10px;z-index:9999;font-weight:500;box-shadow:0 4px 16px rgba(0,0,0,0.2)'
+      toast.innerHTML = `<i class="fa-solid fa-circle-check me-2"></i>${mensaje}`
+      document.body.appendChild(toast)
+      setTimeout(() => toast.remove(), 6000)
+    }
+
+    // Evita romper el HTML si un nombre trae comillas
+    function esc(texto) {
+      return String(texto).replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+    }
+
+    async function iniciar() {
+      usuarioActual = await fetch('/users/me').then(r => r.json())
+
+      if (!usuarioActual || usuarioActual.error) {
+        window.location.href = '/pages/login.html'
+        return
+      }
+
+      if (usuarioActual.rol !== 'admin_cooperativa') {
+        document.getElementById('aviso-permiso').classList.remove('d-none')
+        return
+      }
+
+      document.getElementById('columnas').classList.remove('d-none')
+      cargarArbol()
+    }
+
+    // Trae categorias y, para cada una, sus tipos. Arma las dos columnas.
+    async function cargarArbol() {
+      const categorias = await fetch('/categorias').then(r => r.ok ? r.json() : [])
+
+      // Tipos de cada categoria, en paralelo
+      const conTipos = await Promise.all(categorias.map(async (c) => {
+        const tipos = await fetch(`/categorias/${c.id_categoria}/tipos`).then(r => r.ok ? r.json() : [])
+        return { ...c, tipos }
+      }))
+
+      pintarColumna('ingreso', conTipos.filter(c => c.naturaleza === 'ingreso'))
+      pintarColumna('egreso',  conTipos.filter(c => c.naturaleza === 'egreso'))
+    }
+
+    function pintarColumna(naturaleza, cats) {
+      const cont = document.getElementById(naturaleza === 'ingreso' ? 'col-ingresos' : 'col-egresos')
+
+      if (!cats.length) {
+        cont.innerHTML = '<div class="columna-vacia">Todavía no hay categorías. Creá la primera con el botón de arriba.</div>'
+        return
+      }
+
+      cont.innerHTML = cats.map(c => {
+        const tiposHtml = c.tipos.length
+          ? `<ul class="tipos-lista">${c.tipos.map(t => `
+              <li class="tipo-item">
+                <span class="tipo-nombre ${t.activo ? '' : 'inactivo'}">
+                  <i class="fa-solid fa-tag" style="opacity:.4"></i>${esc(t.nombre)}
+                  ${t.activo ? '' : '<span class="badge-inactivo">Inactivo</span>'}
+                </span>
+                <span class="tipo-acciones">
+                  <button class="btn-mini" data-accion="editar-tipo" data-tipo-id="${t.id_tipo}" data-tipo-nombre="${esc(t.nombre)}" data-cat-nombre="${esc(c.nombre)}" title="Renombrar"><i class="fa-solid fa-pen"></i></button>
+                  <button class="btn-mini ${t.activo ? 'peligro' : ''}" data-accion="toggle-tipo" data-tipo-id="${t.id_tipo}" data-tipo-nombre="${esc(t.nombre)}" data-activo="${t.activo}" title="${t.activo ? 'Desactivar' : 'Activar'}">
+                    <i class="fa-solid ${t.activo ? 'fa-eye-slash' : 'fa-eye'}"></i>
+                  </button>
+                </span>
+              </li>`).join('')}</ul>`
+          : '<div class="sin-tipos">Sin tipos todavía. Agregá uno con el botón +.</div>'
+
+        return `
+          <div class="cat-card ${c.activo ? '' : 'inactiva'}">
+            <div class="cat-header">
+              <span class="cat-nombre">
+                ${esc(c.nombre)}
+                ${c.activo ? '' : '<span class="badge-inactivo">Inactiva</span>'}
+              </span>
+              <span class="cat-acciones">
+                <button class="btn-mini" data-accion="add-tipo" data-cat-id="${c.id_categoria}" data-cat-nombre="${esc(c.nombre)}" title="Agregar tipo"><i class="fa-solid fa-plus"></i></button>
+                <button class="btn-mini" data-accion="editar-cat" data-cat-id="${c.id_categoria}" data-cat-nombre="${esc(c.nombre)}" data-naturaleza="${c.naturaleza}" title="Renombrar"><i class="fa-solid fa-pen"></i></button>
+                <button class="btn-mini ${c.activo ? 'peligro' : ''}" data-accion="toggle-cat" data-cat-id="${c.id_categoria}" data-cat-nombre="${esc(c.nombre)}" data-activo="${c.activo}" title="${c.activo ? 'Desactivar' : 'Activar'}">
+                  <i class="fa-solid ${c.activo ? 'fa-eye-slash' : 'fa-eye'}"></i>
+                </button>
+              </span>
+            </div>
+            ${tiposHtml}
+          </div>`
+      }).join('')
+    }
+
+    // ================= ACCIONES (delegacion sobre toda la seccion) =================
+    document.getElementById('columnas').addEventListener('click', (evento) => {
+      const boton = evento.target.closest('button')
+      if (!boton) return
+
+      // Nueva categoria
+      if (boton.hasAttribute('data-add-cat')) {
+        abrirModalCategoria(null, boton.dataset.naturaleza)
+        return
+      }
+
+      const accion = boton.dataset.accion
+
+      if (accion === 'editar-cat') {
+        abrirModalCategoria({ id: boton.dataset.catId, nombre: boton.dataset.catNombre }, boton.dataset.naturaleza)
+      } else if (accion === 'toggle-cat') {
+        abrirModalEstado('categoria', boton.dataset.catId, boton.dataset.catNombre, boton.dataset.activo === '1')
+      } else if (accion === 'add-tipo') {
+        abrirModalTipo(null, boton.dataset.catId, boton.dataset.catNombre)
+      } else if (accion === 'editar-tipo') {
+        abrirModalTipo({ id: boton.dataset.tipoId, nombre: boton.dataset.tipoNombre }, null, boton.dataset.catNombre)
+      } else if (accion === 'toggle-tipo') {
+        abrirModalEstado('tipo', boton.dataset.tipoId, boton.dataset.tipoNombre, boton.dataset.activo === '1')
+      }
+    })
+
+    // ================= CATEGORIA =================
+    function abrirModalCategoria(cat, naturaleza) {
+      const form = document.getElementById('form-categoria')
+      form.reset()
+      document.getElementById('cat-error').classList.add('d-none')
+
+      const esEdicion = !!cat
+      form.id.value = esEdicion ? cat.id : ''
+      form.naturaleza.value = naturaleza
+      document.getElementById('cat-naturaleza-texto').textContent = naturaleza === 'ingreso' ? 'Ingreso' : 'Egreso'
+      document.getElementById('cat-titulo').innerHTML = esEdicion
+        ? '<i class="fa-solid fa-pen me-2"></i>Renombrar categoría'
+        : '<i class="fa-solid fa-plus me-2"></i>Nueva categoría'
+
+      if (esEdicion) form.nombre.value = cat.nombre
+
+      new bootstrap.Modal(document.getElementById('modalCategoria')).show()
+    }
+
+    document.getElementById('btn-guardar-cat').addEventListener('click', async (evento) => {
+      const boton = evento.currentTarget
+      const form = document.getElementById('form-categoria')
+      const errorDiv = document.getElementById('cat-error')
+      errorDiv.classList.add('d-none')
+
+      const datos = Object.fromEntries(new FormData(form))
+      if (!datos.nombre.trim()) {
+        errorDiv.textContent = 'El nombre es obligatorio.'
+        errorDiv.classList.remove('d-none')
+        return
+      }
+
+      boton.disabled = true
+
+      const esEdicion = !!datos.id
+      const url = esEdicion ? `/categorias/${datos.id}` : '/categorias'
+      const method = esEdicion ? 'PUT' : 'POST'
+      const body = esEdicion ? { nombre: datos.nombre } : { nombre: datos.nombre, naturaleza: datos.naturaleza }
+
+      const res = await fetch(url, {
+        method,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body)
+      })
+      const resultado = await res.json()
+      boton.disabled = false
+
+      if (!res.ok) {
+        errorDiv.textContent = resultado.error
+        errorDiv.classList.remove('d-none')
+        return
+      }
+
+      bootstrap.Modal.getInstance(document.getElementById('modalCategoria')).hide()
+      mostrarToast(resultado.message)
+      cargarArbol()
+    })
+
+    // ================= TIPO =================
+    function abrirModalTipo(tipo, idCategoria, nombreCategoria) {
+      const form = document.getElementById('form-tipo')
+      form.reset()
+      document.getElementById('tipo-error').classList.add('d-none')
+
+      const esEdicion = !!tipo
+      form.id.value = esEdicion ? tipo.id : ''
+      form.id_categoria.value = idCategoria || ''
+      document.getElementById('tipo-cat-texto').textContent = nombreCategoria
+      document.getElementById('tipo-titulo').innerHTML = esEdicion
+        ? '<i class="fa-solid fa-pen me-2"></i>Renombrar tipo'
+        : '<i class="fa-solid fa-plus me-2"></i>Nuevo tipo'
+
+      if (esEdicion) form.nombre.value = tipo.nombre
+
+      new bootstrap.Modal(document.getElementById('modalTipo')).show()
+    }
+
+    document.getElementById('btn-guardar-tipo').addEventListener('click', async (evento) => {
+      const boton = evento.currentTarget
+      const form = document.getElementById('form-tipo')
+      const errorDiv = document.getElementById('tipo-error')
+      errorDiv.classList.add('d-none')
+
+      const datos = Object.fromEntries(new FormData(form))
+      if (!datos.nombre.trim()) {
+        errorDiv.textContent = 'El nombre es obligatorio.'
+        errorDiv.classList.remove('d-none')
+        return
+      }
+
+      boton.disabled = true
+
+      const esEdicion = !!datos.id
+      const url = esEdicion ? `/categorias/tipos/${datos.id}` : `/categorias/${datos.id_categoria}/tipos`
+      const method = esEdicion ? 'PUT' : 'POST'
+
+      const res = await fetch(url, {
+        method,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ nombre: datos.nombre })
+      })
+      const resultado = await res.json()
+      boton.disabled = false
+
+      if (!res.ok) {
+        errorDiv.textContent = resultado.error
+        errorDiv.classList.remove('d-none')
+        return
+      }
+
+      bootstrap.Modal.getInstance(document.getElementById('modalTipo')).hide()
+      mostrarToast(resultado.message)
+      cargarArbol()
+    })
+
+    // ================= ACTIVAR / DESACTIVAR =================
+    function abrirModalEstado(destino, id, nombre, estaActiva) {
+      const desactivando = estaActiva
+      const esCat = destino === 'categoria'
+
+      document.getElementById('estado-titulo').innerHTML = desactivando
+        ? `<i class="fa-solid fa-eye-slash me-2"></i>Desactivar ${esCat ? 'categoría' : 'tipo'}`
+        : `<i class="fa-solid fa-eye me-2"></i>Activar ${esCat ? 'categoría' : 'tipo'}`
+
+      document.getElementById('estado-pregunta').innerHTML = desactivando
+        ? `¿Desactivar <strong>${esc(nombre)}</strong>?`
+        : `¿Activar <strong>${esc(nombre)}</strong>?`
+
+      document.getElementById('estado-aviso').innerHTML = desactivando
+        ? `<i class="fa-solid fa-circle-info me-1"></i>No se borra: deja de aparecer al cargar nuevos movimientos, pero los movimientos históricos se conservan.${esCat ? ' Al desactivar la categoría, sus tipos también quedan inactivos.' : ''}`
+        : '<i class="fa-solid fa-circle-info me-1"></i>Vuelve a estar disponible para cargar movimientos.'
+
+      const btn = document.getElementById('btn-confirmar-estado')
+      btn.innerHTML = desactivando
+        ? '<i class="fa-solid fa-eye-slash me-2"></i>Desactivar'
+        : '<i class="fa-solid fa-eye me-2"></i>Activar'
+      btn.style.backgroundColor = desactivando ? '#a01c1c' : '#2d7a4f'
+      btn.style.color = 'white'
+      btn.dataset.destino = destino
+      btn.dataset.id = id
+      btn.dataset.activo = desactivando ? '0' : '1'
+
+      document.getElementById('estado-error').classList.add('d-none')
+      new bootstrap.Modal(document.getElementById('modalEstado')).show()
+    }
+
+    document.getElementById('btn-confirmar-estado').addEventListener('click', async (evento) => {
+      const boton = evento.currentTarget
+      const errorDiv = document.getElementById('estado-error')
+
+      boton.disabled = true
+
+      const url = boton.dataset.destino === 'categoria'
+        ? `/categorias/${boton.dataset.id}/estado`
+        : `/categorias/tipos/${boton.dataset.id}/estado`
+
+      const res = await fetch(url, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ activo: Number(boton.dataset.activo) })
+      })
+      const resultado = await res.json()
+      boton.disabled = false
+
+      if (!res.ok) {
+        errorDiv.textContent = resultado.error
+        errorDiv.classList.remove('d-none')
+        return
+      }
+
+      bootstrap.Modal.getInstance(document.getElementById('modalEstado')).hide()
+      mostrarToast(resultado.message)
+      cargarArbol()
+    })
+
+    iniciar()
+  </script>
+</body>
+</html>

@@ -1,1 +1,4 @@
 node_modules/
+
+# Archivos temporales de Office (Excel/Word) mientras el archivo esta abierto
+~$*

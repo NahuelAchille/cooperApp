@@ -1,0 +1,181 @@
+/* ===== VARIABLES ===== */
+:root {
+  --verde-primario: #2d7a4f;
+  --verde-secundario: #3a9e65;
+  --verde-oscuro: #1a6b3a;
+  --bg-page: #f0f7f3;
+  --card-bg: #ffffff;
+  --card-shadow: 0 2px 12px rgba(0,0,0,0.07);
+  --danger: #a01c1c;
+  --warning: #856404;
+}
+
+body {
+  background-color: var(--bg-page);
+  margin: 0;
+  padding: 0;
+  font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
+  color: #1a2e23;
+}
+
+/* ===== HEADER DE PAGINA ===== */
+.page-header {
+  background: linear-gradient(135deg, var(--verde-primario), var(--verde-secundario));
+  color: white;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  align-items: flex-start;
+}
+.page-header h4 { margin: 0; font-weight: 700; }
+.page-header small { opacity: 0.8; }
+
+.btn-volver {
+  background: transparent;
+  color: white;
+  border: 1.5px solid rgba(255,255,255,0.6);
+  border-radius: 8px;
+  font-weight: 600;
+  padding: 8px 16px;
+}
+.btn-volver:hover { background-color: rgba(255,255,255,0.15); color: white; }
+
+/* ===== CONTENIDO ===== */
+.content { padding: 16px; }
+
+.columnas {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 16px;
+}
+
+/* Columna de una naturaleza (ingresos / egresos) */
+.columna { display: flex; flex-direction: column; }
+
+.columna-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+}
+.columna-header h5 { margin: 0; font-weight: 700; display: flex; align-items: center; gap: 8px; }
+.columna.ingresos .columna-header h5 { color: var(--verde-oscuro); }
+.columna.egresos  .columna-header h5 { color: var(--danger); }
+
+.btn-add-cat {
+  border: none;
+  border-radius: 8px;
+  font-weight: 600;
+  font-size: 0.82rem;
+  padding: 6px 14px;
+  color: white;
+}
+.columna.ingresos .btn-add-cat { background-color: var(--verde-primario); }
+.columna.egresos  .btn-add-cat { background-color: var(--danger); }
+
+/* Tarjeta de categoria */
+.cat-card {
+  background: var(--card-bg);
+  border-radius: 12px;
+  box-shadow: var(--card-shadow);
+  margin-bottom: 12px;
+  overflow: hidden;
+}
+.cat-card.inactiva { opacity: 0.6; }
+
+.cat-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 16px;
+  background-color: #e4f2eb;
+  gap: 8px;
+}
+.columna.egresos .cat-header { background-color: #fbeaea; }
+
+.cat-nombre { font-weight: 700; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.cat-acciones { display: flex; gap: 6px; flex-shrink: 0; }
+
+/* Lista de tipos */
+.tipos-lista { list-style: none; margin: 0; padding: 6px 0; }
+.tipo-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 16px 8px 32px;
+  gap: 8px;
+  border-top: 1px solid #f0f4f2;
+}
+.tipo-item:first-child { border-top: none; }
+.tipo-nombre { display: flex; align-items: center; gap: 8px; }
+.tipo-nombre.inactivo { opacity: 0.5; text-decoration: line-through; }
+.tipo-acciones { display: flex; gap: 6px; }
+
+.sin-tipos { padding: 10px 16px 12px 32px; color: #8aa596; font-size: 0.85rem; font-style: italic; }
+
+/* Badges de estado */
+.badge-activo   { background-color: #d1f5e0; color: var(--verde-oscuro); font-size: 0.72rem; padding: 3px 9px; border-radius: 20px; font-weight: 600; }
+.badge-inactivo { background-color: #fde8e8; color: var(--danger);       font-size: 0.72rem; padding: 3px 9px; border-radius: 20px; font-weight: 600; }
+
+/* Botones de accion chicos */
+.btn-mini {
+  background: none;
+  border: 1.5px solid #c8e6d5;
+  color: var(--verde-primario);
+  border-radius: 7px;
+  padding: 4px 9px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
+.btn-mini:hover { background-color: #e4f2eb; }
+.btn-mini.peligro { border-color: #f0c2c2; color: var(--danger); }
+.btn-mini.peligro:hover { background-color: #fde8e8; }
+.btn-mini:disabled { opacity: 0.5; }
+
+.columna-vacia {
+  background: var(--card-bg);
+  border-radius: 12px;
+  box-shadow: var(--card-shadow);
+  padding: 24px;
+  text-align: center;
+  color: #8aa596;
+  font-size: 0.9rem;
+}
+
+/* ===== MODALES ===== */
+.modal-content { border-radius: 12px; overflow: hidden; border: none; }
+.modal-header { background-color: var(--verde-primario); color: white; border: none; }
+.modal-footer { background-color: var(--bg-page); border-top: 1px solid #c8e6d5; }
+.form-label { color: var(--verde-primario); font-size: 0.85rem; font-weight: 600; }
+.form-control:focus, .form-select:focus {
+  border-color: var(--verde-primario);
+  box-shadow: 0 0 0 3px rgba(45,122,79,0.15);
+}
+
+/* Aviso de "sin permiso" */
+.aviso-permiso {
+  background: var(--card-bg);
+  border-radius: 12px;
+  box-shadow: var(--card-shadow);
+  padding: 40px 20px;
+  text-align: center;
+  color: #6c8a7a;
+}
+
+/* ===== RESPONSIVE ===== */
+@media (min-width: 768px) {
+  .page-header {
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: center;
+    padding: 20px 32px;
+  }
+  .content { padding: 24px; }
+  .columnas { grid-template-columns: 1fr 1fr; }
+}
+
+@media (min-width: 1024px) {
+  .content { padding: 32px; }
+}

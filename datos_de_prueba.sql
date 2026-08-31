@@ -24,6 +24,8 @@
 --   · 1 administrador por cooperativa, más tesoreros y operadores
 --   · 3 usuarios con contraseña temporal sin cambiar
 --   · 2 usuarios dados de baja
+--   · Finanzas en las 3 cooperativas activas: categorías, tipos y movimientos
+--     (ingresos y egresos) con fechas recientes, más 1 movimiento anulado
 -- =============================================================================
 
 SET NAMES utf8mb4;
@@ -31,7 +33,20 @@ SET NAMES utf8mb4;
 USE cooperApp;
 
 -- ---------------------------------------------------------------- limpieza --
+-- El orden respeta las claves foraneas: primero los movimientos, despues su
+-- clasificacion (tipos -> categorias), y recien ahi usuarios y cooperativas.
 DELETE FROM movimientos WHERE id_cooperativa IN (
+  SELECT id_cooperativa FROM cooperativas WHERE email IN (
+    'contacto@laesperanza.coop', 'contacto@elamanecer.coop',
+    'contacto@metaloeste.coop',  'contacto@huertanorte.coop'));
+
+DELETE FROM tipos_movimiento WHERE id_categoria IN (
+  SELECT id_categoria FROM categorias_movimiento WHERE id_cooperativa IN (
+    SELECT id_cooperativa FROM cooperativas WHERE email IN (
+      'contacto@laesperanza.coop', 'contacto@elamanecer.coop',
+      'contacto@metaloeste.coop',  'contacto@huertanorte.coop')));
+
+DELETE FROM categorias_movimiento WHERE id_cooperativa IN (
   SELECT id_cooperativa FROM cooperativas WHERE email IN (
     'contacto@laesperanza.coop', 'contacto@elamanecer.coop',
     'contacto@metaloeste.coop',  'contacto@huertanorte.coop'));
@@ -134,9 +149,145 @@ VALUES
   ('Diego',  'Cáceres',   'diego@huertanorte.coop',  '$2b$10$PjeltbH8E0BboqNDV//HI.yHxwvN8uJtQ9umbfnOc0u7Ye9wO3TnK', '30456789', 3, 1, 0, (SELECT id_cooperativa FROM cooperativas WHERE email = 'contacto@huertanorte.coop')),
   ('Rocío',  'Benegas',   'rocio@huertanorte.coop',  '$2b$10$PjeltbH8E0BboqNDV//HI.yHxwvN8uJtQ9umbfnOc0u7Ye9wO3TnK', '33567890', 3, 1, 0, (SELECT id_cooperativa FROM cooperativas WHERE email = 'contacto@huertanorte.coop'));
 
+-- =============================================================================
+-- FINANZAS DE PRUEBA
+-- =============================================================================
+-- Categorias, tipos y movimientos para las 3 cooperativas ACTIVAS. La 4ta
+-- (Huerta Norte) esta pendiente, asi que no opera y no lleva finanzas.
+--
+-- Las fechas son relativas a hoy (CURDATE() - INTERVAL n DAY) para que el
+-- dashboard "del mes" siempre muestre datos, con algunos del mes anterior
+-- para que funcione la comparacion. Los montos van siempre positivos: el
+-- signo lo da la naturaleza de la categoria. Se incluye 1 movimiento anulado
+-- por cooperativa para probar la baja logica.
+--
+-- Se referencia todo por variables (@coop, @cat_*) para no depender de ids
+-- autoincrementales.
+
+-- ------------------------------------------------------ 1 · La Esperanza --
+SET @coop     := (SELECT id_cooperativa FROM cooperativas WHERE email = 'contacto@laesperanza.coop');
+SET @tesorero := (SELECT id FROM usuarios WHERE email = 'roberto@laesperanza.coop');
+
+INSERT INTO categorias_movimiento (nombre, naturaleza, id_cooperativa) VALUES
+  ('Ventas',    'ingreso', @coop),
+  ('Subsidios', 'ingreso', @coop),
+  ('Sueldos',   'egreso',  @coop),
+  ('Servicios', 'egreso',  @coop),
+  ('Insumos',   'egreso',  @coop);
+
+SET @cat_ventas    := (SELECT id_categoria FROM categorias_movimiento WHERE id_cooperativa = @coop AND naturaleza = 'ingreso' AND nombre = 'Ventas');
+SET @cat_subsidios := (SELECT id_categoria FROM categorias_movimiento WHERE id_cooperativa = @coop AND naturaleza = 'ingreso' AND nombre = 'Subsidios');
+SET @cat_sueldos   := (SELECT id_categoria FROM categorias_movimiento WHERE id_cooperativa = @coop AND naturaleza = 'egreso'  AND nombre = 'Sueldos');
+SET @cat_servicios := (SELECT id_categoria FROM categorias_movimiento WHERE id_cooperativa = @coop AND naturaleza = 'egreso'  AND nombre = 'Servicios');
+SET @cat_insumos   := (SELECT id_categoria FROM categorias_movimiento WHERE id_cooperativa = @coop AND naturaleza = 'egreso'  AND nombre = 'Insumos');
+
+INSERT INTO tipos_movimiento (nombre, id_categoria) VALUES
+  ('Venta mayorista', @cat_ventas),
+  ('Venta minorista', @cat_ventas),
+  ('Subsidio INAES',  @cat_subsidios),
+  ('Retiro de socios',@cat_sueldos),
+  ('Luz',             @cat_servicios),
+  ('Internet',        @cat_servicios),
+  ('Tela',            @cat_insumos),
+  ('Hilo',            @cat_insumos);
+
+INSERT INTO movimientos (id_tipo, monto, descripcion, fecha, id_cooperativa, id_usuario, anulado) VALUES
+  ((SELECT id_tipo FROM tipos_movimiento WHERE id_categoria = @cat_ventas    AND nombre = 'Venta mayorista'),  350000.00, 'Venta a comercio del Once',          CURDATE() - INTERVAL 2  DAY, @coop, @tesorero, 0),
+  ((SELECT id_tipo FROM tipos_movimiento WHERE id_categoria = @cat_ventas    AND nombre = 'Venta minorista'),   48000.00, 'Ventas del local',                   CURDATE() - INTERVAL 4  DAY, @coop, @tesorero, 0),
+  ((SELECT id_tipo FROM tipos_movimiento WHERE id_categoria = @cat_subsidios AND nombre = 'Subsidio INAES'),    200000.00, 'Programa Trabajo Autogestionado',   CURDATE() - INTERVAL 9  DAY, @coop, @tesorero, 0),
+  ((SELECT id_tipo FROM tipos_movimiento WHERE id_categoria = @cat_sueldos   AND nombre = 'Retiro de socios'),  180000.00, 'Retiros de socios del mes',         CURDATE() - INTERVAL 3  DAY, @coop, @tesorero, 0),
+  ((SELECT id_tipo FROM tipos_movimiento WHERE id_categoria = @cat_servicios AND nombre = 'Luz'),                32000.00, 'Factura de luz',                    CURDATE() - INTERVAL 6  DAY, @coop, @tesorero, 0),
+  ((SELECT id_tipo FROM tipos_movimiento WHERE id_categoria = @cat_servicios AND nombre = 'Internet'),           15000.00, 'Abono de internet',                 CURDATE() - INTERVAL 6  DAY, @coop, @tesorero, 0),
+  ((SELECT id_tipo FROM tipos_movimiento WHERE id_categoria = @cat_insumos   AND nombre = 'Tela'),               90000.00, 'Compra de tela por rollo',          CURDATE() - INTERVAL 10 DAY, @coop, @tesorero, 0),
+  ((SELECT id_tipo FROM tipos_movimiento WHERE id_categoria = @cat_ventas    AND nombre = 'Venta mayorista'),   275000.00, 'Venta del mes anterior',            CURDATE() - INTERVAL 35 DAY, @coop, @tesorero, 0),
+  ((SELECT id_tipo FROM tipos_movimiento WHERE id_categoria = @cat_insumos   AND nombre = 'Hilo'),               12000.00, 'Compra de hilos (mes anterior)',    CURDATE() - INTERVAL 38 DAY, @coop, @tesorero, 0),
+  ((SELECT id_tipo FROM tipos_movimiento WHERE id_categoria = @cat_ventas    AND nombre = 'Venta minorista'),     5000.00, 'Cargado por error (anulado)',       CURDATE() - INTERVAL 5  DAY, @coop, @tesorero, 1);
+
+-- ------------------------------------------------------ 2 · El Amanecer --
+SET @coop     := (SELECT id_cooperativa FROM cooperativas WHERE email = 'contacto@elamanecer.coop');
+SET @tesorero := (SELECT id FROM usuarios WHERE email = 'lucia@elamanecer.coop');
+
+INSERT INTO categorias_movimiento (nombre, naturaleza, id_cooperativa) VALUES
+  ('Ventas',    'ingreso', @coop),
+  ('Sueldos',   'egreso',  @coop),
+  ('Servicios', 'egreso',  @coop),
+  ('Insumos',   'egreso',  @coop);
+
+SET @cat_ventas    := (SELECT id_categoria FROM categorias_movimiento WHERE id_cooperativa = @coop AND naturaleza = 'ingreso' AND nombre = 'Ventas');
+SET @cat_sueldos   := (SELECT id_categoria FROM categorias_movimiento WHERE id_cooperativa = @coop AND naturaleza = 'egreso'  AND nombre = 'Sueldos');
+SET @cat_servicios := (SELECT id_categoria FROM categorias_movimiento WHERE id_cooperativa = @coop AND naturaleza = 'egreso'  AND nombre = 'Servicios');
+SET @cat_insumos   := (SELECT id_categoria FROM categorias_movimiento WHERE id_cooperativa = @coop AND naturaleza = 'egreso'  AND nombre = 'Insumos');
+
+INSERT INTO tipos_movimiento (nombre, id_categoria) VALUES
+  ('Venta mayorista', @cat_ventas),
+  ('Venta minorista', @cat_ventas),
+  ('Retiro de socios',@cat_sueldos),
+  ('Luz',             @cat_servicios),
+  ('Alquiler',        @cat_servicios),
+  ('Tela',            @cat_insumos);
+
+INSERT INTO movimientos (id_tipo, monto, descripcion, fecha, id_cooperativa, id_usuario, anulado) VALUES
+  ((SELECT id_tipo FROM tipos_movimiento WHERE id_categoria = @cat_ventas    AND nombre = 'Venta mayorista'),  210000.00, 'Pedido de remeras',            CURDATE() - INTERVAL 1  DAY, @coop, @tesorero, 0),
+  ((SELECT id_tipo FROM tipos_movimiento WHERE id_categoria = @cat_ventas    AND nombre = 'Venta minorista'),   60000.00, 'Ventas de la semana',          CURDATE() - INTERVAL 7  DAY, @coop, @tesorero, 0),
+  ((SELECT id_tipo FROM tipos_movimiento WHERE id_categoria = @cat_sueldos   AND nombre = 'Retiro de socios'),  150000.00, 'Retiros de socios del mes',    CURDATE() - INTERVAL 3  DAY, @coop, @tesorero, 0),
+  ((SELECT id_tipo FROM tipos_movimiento WHERE id_categoria = @cat_servicios AND nombre = 'Luz'),                21000.00, 'Factura de luz',               CURDATE() - INTERVAL 5  DAY, @coop, @tesorero, 0),
+  ((SELECT id_tipo FROM tipos_movimiento WHERE id_categoria = @cat_servicios AND nombre = 'Alquiler'),          120000.00, 'Alquiler del taller',          CURDATE() - INTERVAL 8  DAY, @coop, @tesorero, 0),
+  ((SELECT id_tipo FROM tipos_movimiento WHERE id_categoria = @cat_insumos   AND nombre = 'Tela'),               70000.00, 'Compra de tela',               CURDATE() - INTERVAL 11 DAY, @coop, @tesorero, 0),
+  ((SELECT id_tipo FROM tipos_movimiento WHERE id_categoria = @cat_ventas    AND nombre = 'Venta mayorista'),  190000.00, 'Venta del mes anterior',       CURDATE() - INTERVAL 34 DAY, @coop, @tesorero, 0);
+
+-- ------------------------------------------------ 3 · Metalúrgica del Oeste --
+SET @coop     := (SELECT id_cooperativa FROM cooperativas WHERE email = 'contacto@metaloeste.coop');
+SET @tesorero := (SELECT id FROM usuarios WHERE email = 'daniel@metaloeste.coop');
+
+INSERT INTO categorias_movimiento (nombre, naturaleza, id_cooperativa) VALUES
+  ('Ventas',              'ingreso', @coop),
+  ('Trabajos a terceros', 'ingreso', @coop),
+  ('Sueldos',             'egreso',  @coop),
+  ('Insumos',             'egreso',  @coop),
+  ('Servicios',           'egreso',  @coop);
+
+SET @cat_ventas    := (SELECT id_categoria FROM categorias_movimiento WHERE id_cooperativa = @coop AND naturaleza = 'ingreso' AND nombre = 'Ventas');
+SET @cat_terceros  := (SELECT id_categoria FROM categorias_movimiento WHERE id_cooperativa = @coop AND naturaleza = 'ingreso' AND nombre = 'Trabajos a terceros');
+SET @cat_sueldos   := (SELECT id_categoria FROM categorias_movimiento WHERE id_cooperativa = @coop AND naturaleza = 'egreso'  AND nombre = 'Sueldos');
+SET @cat_insumos   := (SELECT id_categoria FROM categorias_movimiento WHERE id_cooperativa = @coop AND naturaleza = 'egreso'  AND nombre = 'Insumos');
+SET @cat_servicios := (SELECT id_categoria FROM categorias_movimiento WHERE id_cooperativa = @coop AND naturaleza = 'egreso'  AND nombre = 'Servicios');
+
+INSERT INTO tipos_movimiento (nombre, id_categoria) VALUES
+  ('Venta de piezas', @cat_ventas),
+  ('Torneado',        @cat_terceros),
+  ('Soldadura',       @cat_terceros),
+  ('Retiro de socios',@cat_sueldos),
+  ('Chapa',           @cat_insumos),
+  ('Electrodos',      @cat_insumos),
+  ('Luz',             @cat_servicios),
+  ('Gas',             @cat_servicios);
+
+INSERT INTO movimientos (id_tipo, monto, descripcion, fecha, id_cooperativa, id_usuario, anulado) VALUES
+  ((SELECT id_tipo FROM tipos_movimiento WHERE id_categoria = @cat_ventas   AND nombre = 'Venta de piezas'),  520000.00, 'Venta de piezas a fábrica',     CURDATE() - INTERVAL 2  DAY, @coop, @tesorero, 0),
+  ((SELECT id_tipo FROM tipos_movimiento WHERE id_categoria = @cat_terceros AND nombre = 'Torneado'),         130000.00, 'Trabajo para automotriz',       CURDATE() - INTERVAL 6  DAY, @coop, @tesorero, 0),
+  ((SELECT id_tipo FROM tipos_movimiento WHERE id_categoria = @cat_terceros AND nombre = 'Soldadura'),         85000.00, 'Soldadura de estructura',       CURDATE() - INTERVAL 4  DAY, @coop, @tesorero, 0),
+  ((SELECT id_tipo FROM tipos_movimiento WHERE id_categoria = @cat_sueldos  AND nombre = 'Retiro de socios'), 300000.00, 'Retiros de socios del mes',     CURDATE() - INTERVAL 3  DAY, @coop, @tesorero, 0),
+  ((SELECT id_tipo FROM tipos_movimiento WHERE id_categoria = @cat_insumos  AND nombre = 'Chapa'),            160000.00, 'Compra de chapa',               CURDATE() - INTERVAL 9  DAY, @coop, @tesorero, 0),
+  ((SELECT id_tipo FROM tipos_movimiento WHERE id_categoria = @cat_insumos  AND nombre = 'Electrodos'),        22000.00, 'Compra de electrodos',          CURDATE() - INTERVAL 9  DAY, @coop, @tesorero, 0),
+  ((SELECT id_tipo FROM tipos_movimiento WHERE id_categoria = @cat_servicios AND nombre = 'Luz'),              45000.00, 'Factura de luz',                CURDATE() - INTERVAL 6  DAY, @coop, @tesorero, 0),
+  ((SELECT id_tipo FROM tipos_movimiento WHERE id_categoria = @cat_servicios AND nombre = 'Gas'),              38000.00, 'Factura de gas (mes anterior)', CURDATE() - INTERVAL 40 DAY, @coop, @tesorero, 0);
+
 -- ------------------------------------------------------------ comprobación --
 SELECT c.nombre AS cooperativa, c.estado, COUNT(u.id) AS miembros
 FROM cooperativas c
 LEFT JOIN usuarios u ON u.id_cooperativa = c.id_cooperativa
+GROUP BY c.id_cooperativa
+ORDER BY c.id_cooperativa;
+
+-- Resumen de finanzas por cooperativa (los anulados no suman)
+SELECT c.nombre AS cooperativa,
+       COUNT(m.id_movimiento)                                                    AS movimientos,
+       COALESCE(SUM(CASE WHEN cat.naturaleza = 'ingreso' AND m.anulado = 0 THEN m.monto ELSE 0 END), 0) AS ingresos,
+       COALESCE(SUM(CASE WHEN cat.naturaleza = 'egreso'  AND m.anulado = 0 THEN m.monto ELSE 0 END), 0) AS egresos
+FROM cooperativas c
+LEFT JOIN movimientos m           ON m.id_cooperativa = c.id_cooperativa
+LEFT JOIN tipos_movimiento t      ON t.id_tipo = m.id_tipo
+LEFT JOIN categorias_movimiento cat ON cat.id_categoria = t.id_categoria
+WHERE c.estado = 'activa'
 GROUP BY c.id_cooperativa
 ORDER BY c.id_cooperativa;

@@ -121,25 +121,53 @@ CREATE TABLE usuarios (
 );
 
 -- =============================================
--- FINANZAS
+-- FINANZAS (movimientos: ingresos y egresos)
 -- =============================================
+--
+-- La clasificacion tiene tres niveles:
+--   1. Naturaleza  -> ingreso / egreso   (fija, va como ENUM en la categoria)
+--   2. Categoria   -> agrupa movimientos (ej: "Sueldos", "Ventas")   [ABM por empresa]
+--   3. Tipo        -> el detalle dentro de una categoria (ej: "Luz")  [ABM por empresa]
+--
+-- Un movimiento apunta al TIPO (la hoja); la categoria y la naturaleza se
+-- deducen subiendo por las claves foraneas.
 
-CREATE TABLE tipoMovimiento (
-  id_tipoMov INT AUTO_INCREMENT PRIMARY KEY,
-  nombre VARCHAR(50) NOT NULL
+-- Nivel 2: categorias. Cada empresa arma las suyas, colgadas de una naturaleza.
+CREATE TABLE categorias_movimiento (
+  id_categoria   INT AUTO_INCREMENT PRIMARY KEY,
+  nombre         VARCHAR(80) NOT NULL,
+  naturaleza     ENUM('ingreso', 'egreso') NOT NULL,
+  id_cooperativa INT NOT NULL,
+  activo         TINYINT(1) DEFAULT 1,
+  FOREIGN KEY (id_cooperativa) REFERENCES cooperativas(id_cooperativa),
+  UNIQUE (id_cooperativa, naturaleza, nombre)
 );
 
+-- Nivel 3: tipos. Cuelgan de una categoria.
+CREATE TABLE tipos_movimiento (
+  id_tipo      INT AUTO_INCREMENT PRIMARY KEY,
+  nombre       VARCHAR(80) NOT NULL,
+  id_categoria INT NOT NULL,
+  activo       TINYINT(1) DEFAULT 1,
+  FOREIGN KEY (id_categoria) REFERENCES categorias_movimiento(id_categoria),
+  UNIQUE (id_categoria, nombre)
+);
+
+-- El movimiento en si. El monto siempre es positivo: el signo lo da la
+-- naturaleza de la categoria. Los movimientos no se borran: se anulan.
 CREATE TABLE movimientos (
-  id_movimiento INT AUTO_INCREMENT PRIMARY KEY,
-  id_tipoMov INT NOT NULL,
-  monto DECIMAL(12,2) NOT NULL,
-  descripcion VARCHAR(255),
-  fecha DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  id_movimiento  INT AUTO_INCREMENT PRIMARY KEY,
+  id_tipo        INT NOT NULL,
+  monto          DECIMAL(14,2) NOT NULL,
+  descripcion    VARCHAR(255),
+  fecha          DATE NOT NULL,
   id_cooperativa INT NOT NULL,
-  id_usuario INT NOT NULL,
-  FOREIGN KEY (id_tipoMov) REFERENCES tipoMovimiento(id_tipoMov),
+  id_usuario     INT NOT NULL,
+  anulado        TINYINT(1) DEFAULT 0,
+  creado_en      DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (id_tipo)        REFERENCES tipos_movimiento(id_tipo),
   FOREIGN KEY (id_cooperativa) REFERENCES cooperativas(id_cooperativa),
-  FOREIGN KEY (id_usuario) REFERENCES usuarios(id)
+  FOREIGN KEY (id_usuario)     REFERENCES usuarios(id)
 );
 
 -- =============================================
@@ -187,10 +215,9 @@ SELECT 3, id_permiso FROM permisos WHERE nombre IN (
   'inventario.ver', 'inventario.cargar'
 );
 
--- Tipos de movimiento
-INSERT INTO tipoMovimiento (nombre) VALUES
-('Ingreso'),
-('Egreso');
+-- Nota: las categorias y tipos de movimiento son por empresa, asi que no se
+-- siembran aca. Se crean desde el ABM de cada cooperativa (o al aprobarla,
+-- con un set por defecto). Ver datos_de_prueba.sql para ejemplos cargados.
 
 -- Usuario superadmin (contraseña: password)
 -- El superadmin administra la plataforma, no una cooperativa: id_cooperativa queda en NULL.

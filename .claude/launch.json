@@ -2,7 +2,7 @@
   "version": "0.0.1",
   "configurations": [
     {
-      "name": "cooperApp",
+      "name": "cooperapp",
       "runtimeExecutable": "node",
       "runtimeArgs": ["app.js"],
       "port": 3000
