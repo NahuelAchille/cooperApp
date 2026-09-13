@@ -1,17 +1,17 @@
 const bcrypt = require('bcrypt')
 const userModel = require('../models/user.model')
-const cooperativaModel = require('../models/cooperativa.model')
+const empresaModel = require('../models/empresa.model')
 
 const ID_ROL_ADMIN = 1
 
-exports.registerCooperativa = async (req, res) => {
+exports.registerEmpresa = async (req, res) => {
 
   try {
 
-    const {coop_nombre, coop_email, coop_cuit, coop_matricula, coop_federacion, coop_domicilio,nombre, apellido, email, dni, password, password_confirm} = req.body
+    const {empresa_nombre, empresa_email, empresa_cuit, empresa_matricula, empresa_federacion, empresa_domicilio,nombre, apellido, email, dni, password, password_confirm} = req.body
 
-    if (!coop_nombre || !coop_email || !coop_cuit || !coop_matricula) {
-      return res.status(400).json({ error: 'Faltan datos obligatorios de la cooperativa' })
+    if (!empresa_nombre || !empresa_email || !empresa_cuit || !empresa_matricula) {
+      return res.status(400).json({ error: 'Faltan datos obligatorios de la empresa' })
     }
 
     if (!nombre || !apellido || !email || !dni || !password) {
@@ -22,16 +22,16 @@ exports.registerCooperativa = async (req, res) => {
       return res.status(400).json({ error: 'Las contraseñas no coinciden' })
     }
 
-    if (await cooperativaModel.findByEmail(coop_email)) {
-      return res.status(400).json({ error: 'Ya existe una cooperativa con ese email' })
+    if (await empresaModel.findByEmail(empresa_email)) {
+      return res.status(400).json({ error: 'Ya existe una empresa con ese email' })
     }
 
-    if (await cooperativaModel.findByCuit(coop_cuit)) {
-      return res.status(400).json({ error: 'Ya existe una cooperativa con ese CUIT' })
+    if (await empresaModel.findByCuit(empresa_cuit)) {
+      return res.status(400).json({ error: 'Ya existe una empresa con ese CUIT' })
     }
 
-    if (await cooperativaModel.findByMatricula(coop_matricula)) {
-      return res.status(400).json({ error: 'Ya existe una cooperativa con esa matrícula' })
+    if (await empresaModel.findByMatricula(empresa_matricula)) {
+      return res.status(400).json({ error: 'Ya existe una empresa con esa matrícula' })
     }
 
     if (await userModel.findByEmail(email)) {
@@ -42,13 +42,13 @@ exports.registerCooperativa = async (req, res) => {
       return res.status(400).json({ error: 'Ya existe un usuario con ese DNI' })
     }
 
-    const id_cooperativa = await cooperativaModel.create({
-      nombre: coop_nombre,
-      email: coop_email,
-      cuit: coop_cuit,
-      matricula: coop_matricula,
-      federacion: coop_federacion,
-      domicilio: coop_domicilio
+    const id_empresa = await empresaModel.create({
+      nombre: empresa_nombre,
+      email: empresa_email,
+      cuit: empresa_cuit,
+      matricula: empresa_matricula,
+      federacion: empresa_federacion,
+      domicilio: empresa_domicilio
     })
 
     const hashedPassword = await bcrypt.hash(password, 10)
@@ -56,10 +56,10 @@ exports.registerCooperativa = async (req, res) => {
       nombre, apellido, email, dni,
       password_hash: hashedPassword,
       id_rol: ID_ROL_ADMIN,
-      id_cooperativa
+      id_empresa
     })
 
-    res.status(201).json({ message: 'Registro enviado. Tu cooperativa está pendiente de aprobación' })
+    res.status(201).json({ message: 'Registro enviado. Tu empresa está pendiente de aprobación' })
 
   } catch (error) {
     console.error(error)

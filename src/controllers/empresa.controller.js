@@ -1,4 +1,4 @@
-const cooperativaModel = require('../models/cooperativa.model')
+const empresaModel = require('../models/empresa.model')
 
 // Convierte un campo de cantidad del formulario a numero.
 // Devuelve null si vino vacio, o undefined si el valor no sirve.
@@ -15,12 +15,12 @@ const aCantidad = (valor) => {
 exports.getPendientes = async (req, res) => {
 
   try {
-    const pendientes = await cooperativaModel.findPendientes()
+    const pendientes = await empresaModel.findPendientes()
     res.json(pendientes)
 
   } catch (error) {
     console.error(error)
-    res.status(500).json({ error: 'Error al obtener cooperativas pendientes' })
+    res.status(500).json({ error: 'Error al obtener empresas pendientes' })
   }
 
 }
@@ -28,47 +28,47 @@ exports.getPendientes = async (req, res) => {
 exports.getAll = async (req, res) => {
 
   try {
-    const cooperativas = await cooperativaModel.findAll()
-    res.json(cooperativas)
+    const empresas = await empresaModel.findAll()
+    res.json(empresas)
   } catch (error) {
     console.error(error)
-    res.status(500).json({ error: 'Error al obtener cooperativas' })
+    res.status(500).json({ error: 'Error al obtener empresas' })
   }
 }
 
-exports.getMiCooperativa = async (req, res) => {
+exports.getMiEmpresa = async (req, res) => {
 
   try {
-    const id_cooperativa = req.session.user.cooperativa?.id
+    const id_empresa = req.session.user.empresa?.id
 
-    // El superadmin administra la plataforma, no una cooperativa
-    if (!id_cooperativa) {
-      return res.status(404).json({ error: 'Tu usuario no pertenece a ninguna cooperativa' })
+    // El superadmin administra la plataforma, no una empresa
+    if (!id_empresa) {
+      return res.status(404).json({ error: 'Tu usuario no pertenece a ninguna empresa' })
     }
 
-    const cooperativa = await cooperativaModel.findById(id_cooperativa)
-    if (!cooperativa) {
-      return res.status(404).json({ error: 'No se encontró la cooperativa' })
+    const empresa = await empresaModel.findById(id_empresa)
+    if (!empresa) {
+      return res.status(404).json({ error: 'No se encontró la empresa' })
     }
 
-    res.json(cooperativa)
+    res.json(empresa)
 
   } catch (error) {
     console.error(error)
-    res.status(500).json({ error: 'Error al obtener los datos de la cooperativa' })
+    res.status(500).json({ error: 'Error al obtener los datos de la empresa' })
   }
 
 }
 
-exports.actualizarMiCooperativa = async (req, res) => {
+exports.actualizarMiEmpresa = async (req, res) => {
 
   try {
 
-    const id_cooperativa = req.session.user.cooperativa.id
+    const id_empresa = req.session.user.empresa.id
     const { nombre, email, federacion, domicilio } = req.body
 
     if (!nombre || !nombre.trim()) {
-      return res.status(400).json({ error: 'El nombre de la cooperativa es obligatorio' })
+      return res.status(400).json({ error: 'El nombre de la empresa es obligatorio' })
     }
 
     if (!email || !email.trim()) {
@@ -81,8 +81,8 @@ exports.actualizarMiCooperativa = async (req, res) => {
       return res.status(400).json({ error: 'El email no tiene un formato válido' })
     }
 
-    if (await cooperativaModel.findByEmailExcluyendo(emailLimpio, id_cooperativa)) {
-      return res.status(400).json({ error: 'Ya existe otra cooperativa registrada con ese email' })
+    if (await empresaModel.findByEmailExcluyendo(emailLimpio, id_empresa)) {
+      return res.status(400).json({ error: 'Ya existe otra empresa registrada con ese email' })
     }
 
     const cantidadTrabajadores = aCantidad(req.body.cantidadTrabajadores)
@@ -94,7 +94,7 @@ exports.actualizarMiCooperativa = async (req, res) => {
       return res.status(400).json({ error: 'Las cantidades deben ser números enteros de cero o más' })
     }
 
-    await cooperativaModel.update(id_cooperativa, {
+    await empresaModel.update(id_empresa, {
       nombre: nombre.trim(),
       email: emailLimpio,
       federacion: federacion?.trim() || null,
@@ -105,15 +105,15 @@ exports.actualizarMiCooperativa = async (req, res) => {
       cantidadMujer
     })
 
-    // La sesion guarda el nombre de la cooperativa: hay que refrescarlo
+    // La sesion guarda el nombre de la empresa: hay que refrescarlo
     // para que el header no siga mostrando el nombre viejo.
-    req.session.user.cooperativa.nombre = nombre.trim()
+    req.session.user.empresa.nombre = nombre.trim()
 
     res.json({ message: 'Datos actualizados correctamente' })
 
   } catch (error) {
     console.error(error)
-    res.status(500).json({ error: 'Error al actualizar los datos de la cooperativa' })
+    res.status(500).json({ error: 'Error al actualizar los datos de la empresa' })
   }
 
 }
@@ -123,13 +123,13 @@ exports.aprobar = async (req, res) => {
   try {
     const { id } = req.params
 
-    await cooperativaModel.updateEstado(id, 'activa')
-    await cooperativaModel.activarUsuarioAdmin(id)
-    res.json({ message: 'Cooperativa aprobada correctamente' })
+    await empresaModel.updateEstado(id, 'activa')
+    await empresaModel.activarUsuarioAdmin(id)
+    res.json({ message: 'Empresa aprobada correctamente' })
 
   } catch (error) {
     console.error(error)
-    res.status(500).json({ error: 'Error al aprobar la cooperativa' })
+    res.status(500).json({ error: 'Error al aprobar la empresa' })
   }
 
 }
@@ -139,12 +139,12 @@ exports.rechazar = async (req, res) => {
   try {
     const { id } = req.params
     
-    await cooperativaModel.updateEstado(id, 'suspendida')
-    res.json({ message: 'Cooperativa rechazada' })
+    await empresaModel.updateEstado(id, 'suspendida')
+    res.json({ message: 'Empresa rechazada' })
     
   } catch (error) {
     console.error(error)
-    res.status(500).json({ error: 'Error al rechazar la cooperativa' })
+    res.status(500).json({ error: 'Error al rechazar la empresa' })
   }
 
 }

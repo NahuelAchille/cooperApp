@@ -10,18 +10,18 @@
   <title>Login - CooperApp</title>
   <style>
 
-    .modal-content-coop {
+    .modal-content-empresa {
       background-color: #2d7a4f;
       border: none;
       border-radius: 14px;
       overflow: hidden;
     }
-    .modal-header-coop {
+    .modal-header-empresa {
       background-color: rgba(0,0,0,0.2);
       border-bottom: 1px solid rgba(255,255,255,0.15);
       color: white;
     }
-    .modal-footer-coop {
+    .modal-footer-empresa {
       background-color: rgba(0,0,0,0.15);
       border-top: 1px solid rgba(255,255,255,0.15);
     }
@@ -98,7 +98,7 @@
     <p class="text-white mt-2">
       ¿No tenés cuenta?
       <a href="#" class="text-success fw-bold" data-bs-toggle="modal" data-bs-target="#modalRegistro">
-        Registrar mi cooperativa
+        Registrar mi empresa
       </a>
     </p>
   </main>
@@ -106,42 +106,42 @@
   <!-- Registro -->
   <div class="modal fade" id="modalRegistro" tabindex="-1" aria-labelledby="modalRegistroLabel" aria-hidden="true" data-bs-backdrop="static" data-bs-keyboard="false">
     <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
-      <div class="modal-content modal-content-coop text-white">
+      <div class="modal-content modal-content-empresa text-white">
 
-        <div class="modal-header-coop p-3 px-4">
-          <h5 class="modal-title fw-bold mb-0"><i class="fa-solid fa-building me-2"></i>Registro de cooperativa</h5>
+        <div class="modal-header-empresa p-3 px-4">
+          <h5 class="modal-title fw-bold mb-0"><i class="fa-solid fa-building me-2"></i>Registro de empresa</h5>
           <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
         </div>
 
         <div class="modal-body">
           <form id="form-registro" novalidate autocomplete="new-password">
 
-            <!-- Datos de la cooperativa -->
-            <h6 class="mb-3" style="color:white;font-weight:700;"><i class="fa-solid fa-building me-2"></i>Datos de la cooperativa</h6>
+            <!-- Datos de la empresa -->
+            <h6 class="mb-3" style="color:white;font-weight:700;"><i class="fa-solid fa-building me-2"></i>Datos de la empresa</h6>
             <div class="row g-3">
               <div class="col-md-8">
-                <label class="form-label">Nombre de la cooperativa</label>
-                <input type="text" class="form-control form-control-registro" name="coop_nombre" placeholder="Cooperativa Ejemplo Ltda." autocomplete="new-password" required>
+                <label class="form-label">Nombre de la empresa</label>
+                <input type="text" class="form-control form-control-registro" name="empresa_nombre" placeholder="Mi Empresa S.R.L." autocomplete="new-password" required>
               </div>
               <div class="col-md-4">
                 <label class="form-label">CUIT</label>
-                <input type="text" class="form-control form-control-registro" name="coop_cuit" placeholder="20123456789" autocomplete="new-password" required>
+                <input type="text" class="form-control form-control-registro" name="empresa_cuit" placeholder="20123456789" autocomplete="new-password" required>
               </div>
               <div class="col-md-6">
-                <label class="form-label">Email de la cooperativa</label>
-                <input type="email" class="form-control form-control-registro" name="coop_email" placeholder="contacto@coop.com" autocomplete="new-password" required>
+                <label class="form-label">Email de la empresa</label>
+                <input type="email" class="form-control form-control-registro" name="empresa_email" placeholder="contacto@miempresa.com" autocomplete="new-password" required>
               </div>
               <div class="col-md-6">
                 <label class="form-label">Matrícula</label>
-                <input type="text" class="form-control form-control-registro" name="coop_matricula" placeholder="Nro. de matrícula" autocomplete="new-password" required>
+                <input type="text" class="form-control form-control-registro" name="empresa_matricula" placeholder="Nro. de matrícula" autocomplete="new-password" required>
               </div>
               <div class="col-md-6">
                 <label class="form-label">Domicilio</label>
-                <input type="text" class="form-control form-control-registro" name="coop_domicilio" placeholder="Av. Siempre Viva 123" autocomplete="new-password">
+                <input type="text" class="form-control form-control-registro" name="empresa_domicilio" placeholder="Av. Siempre Viva 123" autocomplete="new-password">
               </div>
               <div class="col-md-6">
                 <label class="form-label">Federación</label>
-                <input type="text" class="form-control form-control-registro" name="coop_federacion" placeholder="Nombre de la federación (opcional)" autocomplete="new-password">
+                <input type="text" class="form-control form-control-registro" name="empresa_federacion" placeholder="Nombre de la federación (opcional)" autocomplete="new-password">
               </div>
             </div>
 
@@ -160,7 +160,7 @@
               </div>
               <div class="col-md-6">
                 <label class="form-label">Email</label>
-                <input type="email" class="form-control form-control-registro" name="email" placeholder="juan@coop.com" autocomplete="new-password" required>
+                <input type="email" class="form-control form-control-registro" name="email" placeholder="juan@miempresa.com" autocomplete="new-password" required>
               </div>
               <div class="col-md-6">
                 <label class="form-label">DNI</label>
@@ -185,13 +185,13 @@
 
             <div class="alert alert-warning mt-4 mb-0 py-2 small">
               <i class="fa-solid fa-circle-info me-1"></i>
-              El registro quedará <strong>pendiente de aprobación</strong> hasta que un administrador de la plataforma valide la cooperativa.
+              El registro quedará <strong>pendiente de aprobación</strong> hasta que un administrador de la plataforma valide la empresa.
             </div>
 
           </form>
         </div>
 
-        <div class="modal-footer-coop p-3 px-4">
+        <div class="modal-footer-empresa p-3 px-4">
           <button type="button" class="btn btn-outline-light" data-bs-dismiss="modal">Cancelar</button>
           <button type="button" id="btn-enviar-registro" class="btn btn-registro-enviar px-4">
             <i class="fa-solid fa-paper-plane me-2"></i>Enviar registro

@@ -2,10 +2,10 @@ const db = require('../config/db')
 
 // Arma la clausula WHERE y sus parametros a partir de los filtros opcionales.
 // Se reutiliza en el listado y en el resumen para que ambos filtren igual.
-const construirFiltro = (id_cooperativa, filtros = {}) => {
+const construirFiltro = (id_empresa, filtros = {}) => {
 
-  const condiciones = ['m.id_cooperativa = ?']
-  const params = [id_cooperativa]
+  const condiciones = ['m.id_empresa = ?']
+  const params = [id_empresa]
 
   // Por defecto los anulados no se muestran; hay que pedirlos explicitamente.
   if (!filtros.incluirAnulados) condiciones.push('m.anulado = 0')
@@ -36,9 +36,9 @@ const construirFiltro = (id_cooperativa, filtros = {}) => {
 
 // Listado de movimientos ya resuelto: cada fila trae el tipo, su categoria,
 // la naturaleza y quien lo cargo, listo para mostrar sin mas joins.
-const findByCoop = async (id_cooperativa, filtros = {}) => {
+const findByEmpresa = async (id_empresa, filtros = {}) => {
 
-  const { where, params } = construirFiltro(id_cooperativa, filtros)
+  const { where, params } = construirFiltro(id_empresa, filtros)
 
   // El limite se agrega solo si el controlador lo valido como entero positivo.
   const limite = filtros.limite ? 'LIMIT ?' : ''
@@ -61,40 +61,40 @@ const findByCoop = async (id_cooperativa, filtros = {}) => {
   return rows
 }
 
-const findById = async (id_movimiento, id_cooperativa) => {
+const findById = async (id_movimiento, id_empresa) => {
 
   const [rows] = await db.query(`
     SELECT m.id_movimiento, m.monto, m.descripcion, m.fecha, m.anulado, m.id_tipo
     FROM movimientos m
-    WHERE m.id_movimiento = ? AND m.id_cooperativa = ?
-  `, [id_movimiento, id_cooperativa])
+    WHERE m.id_movimiento = ? AND m.id_empresa = ?
+  `, [id_movimiento, id_empresa])
 
   return rows[0] || null
 }
 
-const create = async ({ id_tipo, monto, descripcion, fecha, id_cooperativa, id_usuario }) => {
+const create = async ({ id_tipo, monto, descripcion, fecha, id_empresa, id_usuario }) => {
 
   const [result] = await db.query(`
-    INSERT INTO movimientos (id_tipo, monto, descripcion, fecha, id_cooperativa, id_usuario)
+    INSERT INTO movimientos (id_tipo, monto, descripcion, fecha, id_empresa, id_usuario)
     VALUES (?, ?, ?, ?, ?, ?)
-  `, [id_tipo, monto, descripcion || null, fecha, id_cooperativa, id_usuario])
+  `, [id_tipo, monto, descripcion || null, fecha, id_empresa, id_usuario])
 
   return result.insertId
 }
 
 // Los movimientos no se borran: se marcan como anulados (baja logica).
-const anular = async (id_movimiento, id_cooperativa) => {
+const anular = async (id_movimiento, id_empresa) => {
   await db.query(
-    'UPDATE movimientos SET anulado = 1 WHERE id_movimiento = ? AND id_cooperativa = ?',
-    [id_movimiento, id_cooperativa]
+    'UPDATE movimientos SET anulado = 1 WHERE id_movimiento = ? AND id_empresa = ?',
+    [id_movimiento, id_empresa]
   )
 }
 
 // Totales de ingresos, egresos y balance, respetando los mismos filtros que
 // el listado. Ignora siempre los anulados.
-const resumen = async (id_cooperativa, filtros = {}) => {
+const resumen = async (id_empresa, filtros = {}) => {
 
-  const { where, params } = construirFiltro(id_cooperativa, { ...filtros, incluirAnulados: false })
+  const { where, params } = construirFiltro(id_empresa, { ...filtros, incluirAnulados: false })
 
   const [rows] = await db.query(`
     SELECT
@@ -116,4 +116,4 @@ const resumen = async (id_cooperativa, filtros = {}) => {
   }
 }
 
-module.exports = { findByCoop, findById, create, anular, resumen }
+module.exports = { findByEmpresa, findById, create, anular, resumen }

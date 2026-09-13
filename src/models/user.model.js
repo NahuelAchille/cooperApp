@@ -19,10 +19,10 @@ const findByEmailWithContext = async (email) => {
   const [rows] = await db.query(`
     SELECT
       u.id, u.nombre, u.apellido, u.email, u.password_hash, u.activo, u.debe_cambiar_password,
-      c.id_cooperativa, c.nombre AS cooperativa_nombre, c.estado AS cooperativa_estado,
+      c.id_empresa, c.nombre AS empresa_nombre, c.estado AS empresa_estado,
       r.id_rol, r.nombre AS rol
     FROM usuarios u
-    LEFT JOIN cooperativas c ON u.id_cooperativa = c.id_cooperativa
+    LEFT JOIN empresas c ON u.id_empresa = c.id_empresa
     JOIN roles r ON u.id_rol = r.id_rol
     WHERE u.email = ?
   `, [email])
@@ -30,38 +30,38 @@ const findByEmailWithContext = async (email) => {
   return rows[0] || null
 }
 
-const create = async ({ nombre, apellido, email, password_hash, dni, fecha_nacimiento, domicilio, codigo_postal, id_rol, id_cooperativa }) => {
+const create = async ({ nombre, apellido, email, password_hash, dni, fecha_nacimiento, domicilio, codigo_postal, id_rol, id_empresa }) => {
 
   const [result] = await db.query(
-    `INSERT INTO usuarios (nombre, apellido, email, password_hash, dni, fecha_nacimiento, domicilio, codigo_postal, id_rol, id_cooperativa)
+    `INSERT INTO usuarios (nombre, apellido, email, password_hash, dni, fecha_nacimiento, domicilio, codigo_postal, id_rol, id_empresa)
      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-    [nombre, apellido, email, password_hash, dni, fecha_nacimiento || null, domicilio || null, codigo_postal || null, id_rol, id_cooperativa]
+    [nombre, apellido, email, password_hash, dni, fecha_nacimiento || null, domicilio || null, codigo_postal || null, id_rol, id_empresa]
   )
 
   return result.insertId
 }
 
-const createInterno = async ({ nombre, apellido, email, password_hash, dni, id_rol, id_cooperativa, debe_cambiar_password }) => {
+const createInterno = async ({ nombre, apellido, email, password_hash, dni, id_rol, id_empresa, debe_cambiar_password }) => {
 
   const [result] = await db.query(
-    `INSERT INTO usuarios (nombre, apellido, email, password_hash, dni, id_rol, id_cooperativa, debe_cambiar_password)
+    `INSERT INTO usuarios (nombre, apellido, email, password_hash, dni, id_rol, id_empresa, debe_cambiar_password)
      VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
-    [nombre, apellido, email, password_hash, dni, id_rol, id_cooperativa, debe_cambiar_password]
+    [nombre, apellido, email, password_hash, dni, id_rol, id_empresa, debe_cambiar_password]
   )
 
   return result.insertId
 }
 
-const findByCooperativa = async (id_cooperativa) => {
+const findByEmpresa = async (id_empresa) => {
 
   const [rows] = await db.query(`
     SELECT u.id, u.nombre, u.apellido, u.email, u.dni, u.activo, u.fecha_registro, u.debe_cambiar_password,
            u.id_rol, r.nombre AS rol
     FROM usuarios u
     JOIN roles r ON u.id_rol = r.id_rol
-    WHERE u.id_cooperativa = ?
+    WHERE u.id_empresa = ?
     ORDER BY u.fecha_registro DESC
-  `, [id_cooperativa])
+  `, [id_empresa])
 
   return rows
 }
@@ -123,4 +123,4 @@ const findById = async (id) => {
   return rows[0] || null
 }
 
-module.exports = { findByEmail, findByDni, findByEmailExcluyendo, findByDniExcluyendo, findByEmailWithContext, create, createInterno, findByCooperativa, update, setActivo, updatePassword, resetPassword, findById }
+module.exports = { findByEmail, findByDni, findByEmailExcluyendo, findByDniExcluyendo, findByEmailWithContext, create, createInterno, findByEmpresa, update, setActivo, updatePassword, resetPassword, findById }

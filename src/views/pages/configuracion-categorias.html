@@ -26,14 +26,14 @@
             const iniciales = (user.nombre[0] + user.apellido[0]).toUpperCase()
             document.getElementById('user-avatar').textContent = iniciales
             document.getElementById('user-nombre').textContent = `${user.nombre} ${user.apellido}`
-            document.getElementById('dropdown-coop').textContent = user.cooperativa?.nombre || ''
+            document.getElementById('dropdown-empresa').textContent = user.empresa?.nombre || ''
 
             // El menu de arriba solo ofrece lo que el rol puede usar: si no,
             // el usuario entra y se come un cartel de "sin permiso".
-            if (user.rol === 'admin_cooperativa') document.getElementById('nav-usuarios').classList.remove('d-none')
-            if (user.rol === 'admin_cooperativa' || user.rol === 'tesorero') document.getElementById('nav-movimientos').classList.remove('d-none')
+            if (user.rol === 'admin_empresa') document.getElementById('nav-usuarios').classList.remove('d-none')
+            if (user.rol === 'admin_empresa' || user.rol === 'tesorero') document.getElementById('nav-movimientos').classList.remove('d-none')
 
-            if (user.rol === 'admin_cooperativa') {
+            if (user.rol === 'admin_empresa') {
               document.getElementById('item-usuarios').classList.remove('d-none')
             }
             if (user.rol === 'superadmin') {
@@ -58,7 +58,7 @@
     <!-- Se muestra si el usuario no es admin -->
     <div class="aviso-permiso d-none" id="aviso-permiso">
       <i class="fa-solid fa-lock fa-2x mb-3"></i>
-      <p class="mb-0">Solo el administrador de la cooperativa puede configurar la clasificación de movimientos.</p>
+      <p class="mb-0">Solo el administrador de la empresa puede configurar la clasificación de movimientos.</p>
     </div>
 
     <div class="columnas d-none" id="columnas">
@@ -204,7 +204,7 @@
         return
       }
 
-      if (usuarioActual.rol !== 'admin_cooperativa') {
+      if (usuarioActual.rol !== 'admin_empresa') {
         document.getElementById('aviso-permiso').classList.remove('d-none')
         return
       }

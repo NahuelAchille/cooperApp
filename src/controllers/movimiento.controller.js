@@ -82,8 +82,8 @@ const filtrosDeQuery = (query) => {
 exports.getMovimientos = async (req, res) => {
 
   try {
-    const id_cooperativa = req.session.user.cooperativa.id
-    const movimientos = await movimientoModel.findByCoop(id_cooperativa, filtrosDeQuery(req.query))
+    const id_empresa = req.session.user.empresa.id
+    const movimientos = await movimientoModel.findByEmpresa(id_empresa, filtrosDeQuery(req.query))
     res.json(movimientos)
 
   } catch (error) {
@@ -95,8 +95,8 @@ exports.getMovimientos = async (req, res) => {
 exports.getResumen = async (req, res) => {
 
   try {
-    const id_cooperativa = req.session.user.cooperativa.id
-    const resumen = await movimientoModel.resumen(id_cooperativa, filtrosDeQuery(req.query))
+    const id_empresa = req.session.user.empresa.id
+    const resumen = await movimientoModel.resumen(id_empresa, filtrosDeQuery(req.query))
     res.json(resumen)
 
   } catch (error) {
@@ -108,11 +108,11 @@ exports.getResumen = async (req, res) => {
 exports.crearMovimiento = async (req, res) => {
 
   try {
-    const id_cooperativa = req.session.user.cooperativa.id
+    const id_empresa = req.session.user.empresa.id
     const id_usuario = req.session.user.id
 
     // El tipo debe existir, ser de esta empresa y estar activo.
-    const tipo = await categoriaModel.findTipoById(req.body.id_tipo, id_cooperativa)
+    const tipo = await categoriaModel.findTipoById(req.body.id_tipo, id_empresa)
     if (!tipo) {
       return res.status(400).json({ error: 'El tipo de movimiento no es válido' })
     }
@@ -149,7 +149,7 @@ exports.crearMovimiento = async (req, res) => {
     const descripcion = typeof req.body.descripcion === 'string' ? req.body.descripcion.trim().slice(0, 255) : null
 
     const id_movimiento = await movimientoModel.create({
-      id_tipo: tipo.id_tipo, monto, descripcion, fecha, id_cooperativa, id_usuario
+      id_tipo: tipo.id_tipo, monto, descripcion, fecha, id_empresa, id_usuario
     })
 
     res.status(201).json({ id_movimiento, message: 'Movimiento registrado correctamente' })
@@ -163,10 +163,10 @@ exports.crearMovimiento = async (req, res) => {
 exports.anularMovimiento = async (req, res) => {
 
   try {
-    const id_cooperativa = req.session.user.cooperativa.id
+    const id_empresa = req.session.user.empresa.id
     const { id } = req.params
 
-    const movimiento = await movimientoModel.findById(id, id_cooperativa)
+    const movimiento = await movimientoModel.findById(id, id_empresa)
     if (!movimiento) {
       return res.status(404).json({ error: 'No se encontró el movimiento' })
     }
@@ -174,7 +174,7 @@ exports.anularMovimiento = async (req, res) => {
       return res.status(400).json({ error: 'El movimiento ya estaba anulado' })
     }
 
-    await movimientoModel.anular(id, id_cooperativa)
+    await movimientoModel.anular(id, id_empresa)
     res.json({ message: 'Movimiento anulado correctamente' })
 
   } catch (error) {

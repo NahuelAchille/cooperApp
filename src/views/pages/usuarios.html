@@ -27,14 +27,14 @@
             const iniciales = (user.nombre[0] + user.apellido[0]).toUpperCase()
             document.getElementById('user-avatar').textContent = iniciales
             document.getElementById('user-nombre').textContent = `${user.nombre} ${user.apellido}`
-            document.getElementById('dropdown-coop').textContent = user.cooperativa?.nombre || ''
+            document.getElementById('dropdown-empresa').textContent = user.empresa?.nombre || ''
 
             // El menu de arriba solo ofrece lo que el rol puede usar: si no,
             // el usuario entra y se come un cartel de "sin permiso".
-            if (user.rol === 'admin_cooperativa') document.getElementById('nav-usuarios').classList.remove('d-none')
-            if (user.rol === 'admin_cooperativa' || user.rol === 'tesorero') document.getElementById('nav-movimientos').classList.remove('d-none')
+            if (user.rol === 'admin_empresa') document.getElementById('nav-usuarios').classList.remove('d-none')
+            if (user.rol === 'admin_empresa' || user.rol === 'tesorero') document.getElementById('nav-movimientos').classList.remove('d-none')
 
-            if (user.rol === 'admin_cooperativa') {
+            if (user.rol === 'admin_empresa') {
               document.getElementById('item-usuarios').classList.remove('d-none')
             }
 
@@ -43,11 +43,11 @@
             }
 
             // Solo admin puede crear usuarios
-            if (user.rol !== 'admin_cooperativa' && user.rol !== 'superadmin') {
+            if (user.rol !== 'admin_empresa' && user.rol !== 'superadmin') {
               document.getElementById('btn-nuevo-usuario').style.display = 'none'
             }
 
-            document.getElementById('nombre-cooperativa').textContent = user.cooperativa?.nombre || ''
+            document.getElementById('nombre-empresa').textContent = user.empresa?.nombre || ''
 
           })
 
@@ -56,8 +56,8 @@
 
   <div class="page-header">
     <div>
-      <h4 class="mb-0 fw-bold"><i class="fa-solid fa-users me-2"></i>Usuarios de la cooperativa</h4>
-      <small style="opacity:0.8;" id="nombre-cooperativa"></small>
+      <h4 class="mb-0 fw-bold"><i class="fa-solid fa-users me-2"></i>Usuarios de la empresa</h4>
+      <small style="opacity:0.8;" id="nombre-empresa"></small>
     </div>
     <button class="btn btn-nuevo" id="btn-nuevo-usuario" data-bs-toggle="modal" data-bs-target="#modalNuevoUsuario">
       <i class="fa-solid fa-user-plus me-2"></i>Nuevo usuario
@@ -263,15 +263,15 @@
       setTimeout(() => toast.remove(), 6000)
     }
 
-    // El administrador puede gestionar a los usuarios comunes de su cooperativa,
+    // El administrador puede gestionar a los usuarios comunes de su empresa,
     // pero no a si mismo ni a otro administrador. Es la misma regla que aplica el
     // servidor: aca solo se oculta lo que no corresponde, la seguridad esta alla.
     function puedeGestionar(u) {
 
       return usuarioActual
-        && usuarioActual.rol === 'admin_cooperativa'
+        && usuarioActual.rol === 'admin_empresa'
         && u.id !== usuarioActual.id
-        && u.rol !== 'admin_cooperativa'
+        && u.rol !== 'admin_empresa'
         && u.rol !== 'superadmin'
     }
 
@@ -302,7 +302,7 @@
         usuarioActual = await fetch('/users/me').then(r => r.json())
       }
 
-      document.getElementById('nombre-cooperativa').textContent = usuarioActual.cooperativa?.nombre || ''
+      document.getElementById('nombre-empresa').textContent = usuarioActual.empresa?.nombre || ''
 
       const res = await fetch('/users')
       const data = await res.json()

@@ -6,35 +6,35 @@ const db = require('../config/db')
 
 // Devuelve las categorias de una empresa con la cantidad de tipos que tiene
 // cada una. Por defecto trae todas; con soloActivas = true filtra las de baja.
-const findCategorias = async (id_cooperativa, { soloActivas = false } = {}) => {
+const findCategorias = async (id_empresa, { soloActivas = false } = {}) => {
 
   const [rows] = await db.query(`
     SELECT c.id_categoria, c.nombre, c.naturaleza, c.activo,
            (SELECT COUNT(*) FROM tipos_movimiento t WHERE t.id_categoria = c.id_categoria) AS cantidad_tipos
     FROM categorias_movimiento c
-    WHERE c.id_cooperativa = ? ${soloActivas ? 'AND c.activo = 1' : ''}
+    WHERE c.id_empresa = ? ${soloActivas ? 'AND c.activo = 1' : ''}
     ORDER BY c.naturaleza, c.nombre
-  `, [id_cooperativa])
+  `, [id_empresa])
 
   return rows
 }
 
 // Busca una categoria propia de la empresa (sirve para validar pertenencia).
-const findCategoriaById = async (id_categoria, id_cooperativa) => {
+const findCategoriaById = async (id_categoria, id_empresa) => {
 
   const [rows] = await db.query(
-    'SELECT id_categoria, nombre, naturaleza, activo FROM categorias_movimiento WHERE id_categoria = ? AND id_cooperativa = ?',
-    [id_categoria, id_cooperativa]
+    'SELECT id_categoria, nombre, naturaleza, activo FROM categorias_movimiento WHERE id_categoria = ? AND id_empresa = ?',
+    [id_categoria, id_empresa]
   )
 
   return rows[0] || null
 }
 
-const createCategoria = async ({ nombre, naturaleza, id_cooperativa }) => {
+const createCategoria = async ({ nombre, naturaleza, id_empresa }) => {
 
   const [result] = await db.query(
-    'INSERT INTO categorias_movimiento (nombre, naturaleza, id_cooperativa) VALUES (?, ?, ?)',
-    [nombre, naturaleza, id_cooperativa]
+    'INSERT INTO categorias_movimiento (nombre, naturaleza, id_empresa) VALUES (?, ?, ?)',
+    [nombre, naturaleza, id_empresa]
   )
 
   return result.insertId
@@ -42,21 +42,21 @@ const createCategoria = async ({ nombre, naturaleza, id_cooperativa }) => {
 
 // Solo se puede renombrar. La naturaleza no se cambia: si estuviera mal,
 // se da de baja la categoria y se crea otra, para no romper el historial.
-const updateCategoria = async (id_categoria, id_cooperativa, { nombre }) => {
+const updateCategoria = async (id_categoria, id_empresa, { nombre }) => {
   await db.query(
-    'UPDATE categorias_movimiento SET nombre = ? WHERE id_categoria = ? AND id_cooperativa = ?',
-    [nombre, id_categoria, id_cooperativa]
+    'UPDATE categorias_movimiento SET nombre = ? WHERE id_categoria = ? AND id_empresa = ?',
+    [nombre, id_categoria, id_empresa]
   )
 }
 
 // Baja / alta logica de la categoria y, en cascada logica, de sus tipos.
 // La cascada va para los dos lados a proposito: si al reactivar la categoria
 // los tipos quedaran en baja, volveria "activa" pero vacia, imposible de usar.
-const setActivoCategoria = async (id_categoria, id_cooperativa, activo) => {
+const setActivoCategoria = async (id_categoria, id_empresa, activo) => {
 
   await db.query(
-    'UPDATE categorias_movimiento SET activo = ? WHERE id_categoria = ? AND id_cooperativa = ?',
-    [activo, id_categoria, id_cooperativa]
+    'UPDATE categorias_movimiento SET activo = ? WHERE id_categoria = ? AND id_empresa = ?',
+    [activo, id_categoria, id_empresa]
   )
 
   await db.query('UPDATE tipos_movimiento SET activo = ? WHERE id_categoria = ?', [activo, id_categoria])
@@ -78,15 +78,15 @@ const findTiposByCategoria = async (id_categoria) => {
 
 // Busca un tipo verificando que pertenezca a la empresa (subiendo por la
 // categoria). Devuelve tambien la naturaleza, util al cargar un movimiento.
-const findTipoById = async (id_tipo, id_cooperativa) => {
+const findTipoById = async (id_tipo, id_empresa) => {
 
   const [rows] = await db.query(`
     SELECT t.id_tipo, t.nombre, t.activo, t.id_categoria,
            c.naturaleza, c.nombre AS categoria_nombre, c.activo AS categoria_activa
     FROM tipos_movimiento t
     JOIN categorias_movimiento c ON c.id_categoria = t.id_categoria
-    WHERE t.id_tipo = ? AND c.id_cooperativa = ?
-  `, [id_tipo, id_cooperativa])
+    WHERE t.id_tipo = ? AND c.id_empresa = ?
+  `, [id_tipo, id_empresa])
 
   return rows[0] || null
 }

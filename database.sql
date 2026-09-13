@@ -54,7 +54,7 @@ CREATE TABLE localidades (
 );
 
 -- =============================================
--- CLASIFICACIÓN DE COOPERATIVAS
+-- CLASIFICACIÓN DE EMPRESAS
 -- =============================================
 
 CREATE TABLE sector (
@@ -62,22 +62,22 @@ CREATE TABLE sector (
   nombre VARCHAR(50)
 );
 
-CREATE TABLE tipoCoop (
-  id_tipo TINYINT(2) PRIMARY KEY,
+CREATE TABLE tipos_empresa (
+  id_tipo_empresa TINYINT(2) PRIMARY KEY,
   nombre VARCHAR(50) NOT NULL UNIQUE,
   descripcion TEXT
 );
 
 -- =============================================
--- COOPERATIVAS
+-- EMPRESAS
 -- =============================================
 
-CREATE TABLE cooperativas (
-  id_cooperativa INT AUTO_INCREMENT PRIMARY KEY,
+CREATE TABLE empresas (
+  id_empresa INT AUTO_INCREMENT PRIMARY KEY,
   nombre VARCHAR(100) NOT NULL,
   email VARCHAR(150) NOT NULL UNIQUE,
   cuit BIGINT NOT NULL UNIQUE,
-  id_tipo TINYINT(2),
+  id_tipo_empresa TINYINT(2),
   matricula INT NOT NULL UNIQUE,
   federacion VARCHAR(255),
   domicilio VARCHAR(255),
@@ -94,7 +94,7 @@ CREATE TABLE cooperativas (
   FOREIGN KEY (id_provincia) REFERENCES provincias(id_provincia),
   FOREIGN KEY (id_localidad) REFERENCES localidades(id_localidad),
   FOREIGN KEY (id_sector) REFERENCES sector(id_sector),
-  FOREIGN KEY (id_tipo) REFERENCES tipoCoop(id_tipo)
+  FOREIGN KEY (id_tipo_empresa) REFERENCES tipos_empresa(id_tipo_empresa)
 );
 
 -- =============================================
@@ -115,8 +115,8 @@ CREATE TABLE usuarios (
   activo TINYINT(1) DEFAULT 1,
   debe_cambiar_password TINYINT(1) DEFAULT 0,
   fecha_registro DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  id_cooperativa INT,
-  FOREIGN KEY (id_cooperativa) REFERENCES cooperativas(id_cooperativa),
+  id_empresa INT,
+  FOREIGN KEY (id_empresa) REFERENCES empresas(id_empresa),
   FOREIGN KEY (id_rol) REFERENCES roles(id_rol)
 );
 
@@ -137,10 +137,10 @@ CREATE TABLE categorias_movimiento (
   id_categoria   INT AUTO_INCREMENT PRIMARY KEY,
   nombre         VARCHAR(80) NOT NULL,
   naturaleza     ENUM('ingreso', 'egreso') NOT NULL,
-  id_cooperativa INT NOT NULL,
+  id_empresa INT NOT NULL,
   activo         TINYINT(1) DEFAULT 1,
-  FOREIGN KEY (id_cooperativa) REFERENCES cooperativas(id_cooperativa),
-  UNIQUE (id_cooperativa, naturaleza, nombre)
+  FOREIGN KEY (id_empresa) REFERENCES empresas(id_empresa),
+  UNIQUE (id_empresa, naturaleza, nombre)
 );
 
 -- Nivel 3: tipos. Cuelgan de una categoria.
@@ -161,12 +161,12 @@ CREATE TABLE movimientos (
   monto          DECIMAL(14,2) NOT NULL,
   descripcion    VARCHAR(255),
   fecha          DATE NOT NULL,
-  id_cooperativa INT NOT NULL,
+  id_empresa INT NOT NULL,
   id_usuario     INT NOT NULL,
   anulado        TINYINT(1) DEFAULT 0,
   creado_en      DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
   FOREIGN KEY (id_tipo)        REFERENCES tipos_movimiento(id_tipo),
-  FOREIGN KEY (id_cooperativa) REFERENCES cooperativas(id_cooperativa),
+  FOREIGN KEY (id_empresa) REFERENCES empresas(id_empresa),
   FOREIGN KEY (id_usuario)     REFERENCES usuarios(id)
 );
 
@@ -176,7 +176,7 @@ CREATE TABLE movimientos (
 
 -- Roles
 INSERT INTO roles (id_rol, nombre, descripcion) VALUES
-(1, 'admin_cooperativa', 'Administrador de una cooperativa'),
+(1, 'admin_empresa', 'Administrador de una empresa'),
 (2, 'tesorero',          'Registra movimientos financieros'),
 (3, 'operador',          'Carga y gestiona inventario'),
 (4, 'superadmin',        'Administrador de la plataforma');
@@ -187,15 +187,15 @@ INSERT INTO permisos (nombre, descripcion) VALUES
 ('movimientos.crear',  'Registrar ingresos y egresos'),
 ('inventario.ver',     'Ver inventario'),
 ('inventario.cargar',  'Cargar y modificar inventario'),
-('usuarios.gestionar', 'Crear y editar usuarios de la cooperativa'),
-('cooperativas.admin', 'Administrar todas las cooperativas');
+('usuarios.gestionar', 'Crear y editar usuarios de la empresa'),
+('empresas.admin', 'Administrar todas las empresas');
 
 -- Permisos por rol
 -- superadmin: todos
 INSERT INTO rol_permisos (id_rol, id_permiso)
 SELECT 4, id_permiso FROM permisos;
 
--- admin_cooperativa
+-- admin_empresa
 INSERT INTO rol_permisos (id_rol, id_permiso)
 SELECT 1, id_permiso FROM permisos WHERE nombre IN (
   'movimientos.ver', 'movimientos.crear',
@@ -216,10 +216,10 @@ SELECT 3, id_permiso FROM permisos WHERE nombre IN (
 );
 
 -- Nota: las categorias y tipos de movimiento son por empresa, asi que no se
--- siembran aca. Se crean desde el ABM de cada cooperativa (o al aprobarla,
+-- siembran aca. Se crean desde el ABM de cada empresa (o al aprobarla,
 -- con un set por defecto). Ver datos_de_prueba.sql para ejemplos cargados.
 
 -- Usuario superadmin (contraseña: password)
--- El superadmin administra la plataforma, no una cooperativa: id_cooperativa queda en NULL.
+-- El superadmin administra la plataforma, no una empresa: id_empresa queda en NULL.
 INSERT INTO usuarios (nombre, apellido, email, password_hash, dni, id_rol, activo) VALUES
 ('Super', 'Admin', 'superadmin@cooperapp.com', '$2b$10$pNHXgoOkGWp2xM0twt4f7OJwg7YhCW0w/T82hCTkDrtzfyd8EJsoS', '00000001', 4, 1);

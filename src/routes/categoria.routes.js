@@ -4,12 +4,12 @@ const categoriaController = require('../controllers/categoria.controller')
 const { requireLogin, requireRol } = require('../middlewares/auth.middleware')
 
 // Modificar el arbol de clasificacion (crear/editar/dar de baja categorias y
-// tipos) lo hace solo el admin de la cooperativa.
-const soloAdmin = [requireLogin, requireRol('admin_cooperativa')]
+// tipos) lo hace solo el admin de la empresa.
+const soloAdmin = [requireLogin, requireRol('admin_empresa')]
 
 // Leerlo, en cambio, tambien lo necesita el tesorero: sin la lista de
 // categorias y tipos no podria elegir al cargar un movimiento.
-const puedeLeer = [requireLogin, requireRol('admin_cooperativa', 'tesorero')]
+const puedeLeer = [requireLogin, requireRol('admin_empresa', 'tesorero')]
 
 // --- Categorias (nivel 2) ---
 router.get('/',              ...puedeLeer, categoriaController.getCategorias)

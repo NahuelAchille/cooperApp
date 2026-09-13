@@ -3,7 +3,7 @@ const session = require('express-session')
 const app = express()
 
 const userRoutes = require('./src/routes/user.routes')
-const cooperativaRoutes = require('./src/routes/cooperativa.routes')
+const empresaRoutes = require('./src/routes/empresa.routes')
 const categoriaRoutes = require('./src/routes/categoria.routes')
 const movimientoRoutes = require('./src/routes/movimiento.routes')
 
@@ -20,7 +20,7 @@ app.get('/', (req, res) => res.redirect('/pages/login.html'))
 app.use(express.static('src/views'))
 
 app.use('/users', userRoutes)
-app.use('/cooperativas', cooperativaRoutes)
+app.use('/empresas', empresaRoutes)
 app.use('/categorias', categoriaRoutes)
 app.use('/movimientos', movimientoRoutes)
 

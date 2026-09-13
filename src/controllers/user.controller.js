@@ -1,16 +1,16 @@
 const bcrypt = require('bcrypt')
 const userModel = require('../models/user.model')
 
-const ID_ROL_ADMIN_COOP = 1
+const ID_ROL_ADMIN_EMPRESA = 1
 const ID_ROL_SUPERADMIN = 4
 
-// Roles que el administrador de una cooperativa puede asignar a sus usuarios.
-// No incluye admin_cooperativa ni superadmin: nadie se promueve a si mismo ni
+// Roles que el administrador de una empresa puede asignar a sus usuarios.
+// No incluye admin_empresa ni superadmin: nadie se promueve a si mismo ni
 // crea administradores desde esta pantalla.
 const ROLES_ASIGNABLES = [2, 3]   // 2 = tesorero, 3 = operador
 
-// Reglas de quien puede gestionar a quien. El administrador de una cooperativa
-// puede tocar a los usuarios comunes de SU cooperativa, y a nadie mas.
+// Reglas de quien puede gestionar a quien. El administrador de una empresa
+// puede tocar a los usuarios comunes de SU empresa, y a nadie mas.
 // Devuelve null si esta permitido, o el error a responder si no lo esta.
 const validarGestion = (solicitante, objetivo) => {
 
@@ -18,11 +18,11 @@ const validarGestion = (solicitante, objetivo) => {
     return { status: 400, error: 'No podés modificar tu propio usuario desde esta pantalla' }
   }
 
-  if (objetivo.id_cooperativa !== solicitante.cooperativa.id) {
-    return { status: 403, error: 'Ese usuario no pertenece a tu cooperativa' }
+  if (objetivo.id_empresa !== solicitante.empresa.id) {
+    return { status: 403, error: 'Ese usuario no pertenece a tu empresa' }
   }
 
-  if (objetivo.id_rol === ID_ROL_ADMIN_COOP || objetivo.id_rol === ID_ROL_SUPERADMIN) {
+  if (objetivo.id_rol === ID_ROL_ADMIN_EMPRESA || objetivo.id_rol === ID_ROL_SUPERADMIN) {
     return { status: 403, error: 'No podés modificar a otro administrador' }
   }
 
@@ -51,12 +51,12 @@ exports.login = async (req, res) => {
     const esSuperadmin = user.rol === 'superadmin'
     if (!esSuperadmin) {
 
-      if (user.cooperativa_estado === 'pendiente') {
-        return res.status(403).json({ error: 'Tu cooperativa está pendiente de aprobación' })
+      if (user.empresa_estado === 'pendiente') {
+        return res.status(403).json({ error: 'Tu empresa está pendiente de aprobación' })
       }
 
-      if (user.cooperativa_estado === 'suspendida') {
-        return res.status(403).json({ error: 'Tu cooperativa está suspendida' })
+      if (user.empresa_estado === 'suspendida') {
+        return res.status(403).json({ error: 'Tu empresa está suspendida' })
       }
 
     }
@@ -73,9 +73,9 @@ exports.login = async (req, res) => {
       email: user.email,
       rol: user.rol,
       id_rol: user.id_rol,
-      cooperativa: {
-        id: user.id_cooperativa,
-        nombre: user.cooperativa_nombre
+      empresa: {
+        id: user.id_empresa,
+        nombre: user.empresa_nombre
       }
     }
 
@@ -100,13 +100,13 @@ exports.me = (req, res) => {
   res.json(req.session.user)
 }
 
-exports.getUsuariosCooperativa = async (req, res) => {
+exports.getUsuariosEmpresa = async (req, res) => {
 
   try {
 
-    const { id: id_cooperativa } = req.session.user.cooperativa
+    const { id: id_empresa } = req.session.user.empresa
 
-    const usuarios = await userModel.findByCooperativa(id_cooperativa)
+    const usuarios = await userModel.findByEmpresa(id_empresa)
     res.json(usuarios)
 
   } catch (error) {
@@ -120,13 +120,13 @@ exports.crearUsuario = async (req, res) => {
 
   try {
     const { nombre, apellido, email, dni, id_rol } = req.body
-    const id_cooperativa = req.session.user.cooperativa.id
+    const id_empresa = req.session.user.empresa.id
 
     if (!nombre || !apellido || !email || !dni || !id_rol) {
       return res.status(400).json({ error: 'Todos los campos son obligatorios' })
     }
 
-    // Sin esto, un administrador de cooperativa podria crear un superadmin
+    // Sin esto, un administrador de empresa podria crear un superadmin
     // mandando el pedido a mano, aunque la pantalla no le ofrezca esa opcion.
     if (!ROLES_ASIGNABLES.includes(Number(id_rol))) {
       return res.status(400).json({ error: 'El rol seleccionado no es válido' })
@@ -147,7 +147,7 @@ exports.crearUsuario = async (req, res) => {
       nombre, apellido, email, dni,
       password_hash: hashedPassword,
       id_rol,
-      id_cooperativa,
+      id_empresa,
       debe_cambiar_password: 1
     })
 
@@ -257,8 +257,8 @@ exports.cambiarEstadoUsuario = async (req, res) => {
 }
 
 // Reseteo de contraseña.
-// El superadmin resetea a los administradores de cooperativa.
-// El administrador de cooperativa resetea a los usuarios de SU cooperativa.
+// El superadmin resetea a los administradores de empresa.
+// El administrador de empresa resetea a los usuarios de SU empresa.
 // En los dos casos la contraseña vuelve a ser el DNI y hay que cambiarla al ingresar.
 exports.resetearPassword = async (req, res) => {
 
@@ -277,18 +277,18 @@ exports.resetearPassword = async (req, res) => {
 
     if (solicitante.rol === 'superadmin') {
 
-      if (objetivo.id_rol !== ID_ROL_ADMIN_COOP) {
-        return res.status(403).json({ error: 'Sólo podés resetear la contraseña de los administradores de cooperativa' })
+      if (objetivo.id_rol !== ID_ROL_ADMIN_EMPRESA) {
+        return res.status(403).json({ error: 'Sólo podés resetear la contraseña de los administradores de empresa' })
       }
 
     } else {
 
-      // admin_cooperativa
-      if (objetivo.id_cooperativa !== solicitante.cooperativa.id) {
-        return res.status(403).json({ error: 'Ese usuario no pertenece a tu cooperativa' })
+      // admin_empresa
+      if (objetivo.id_empresa !== solicitante.empresa.id) {
+        return res.status(403).json({ error: 'Ese usuario no pertenece a tu empresa' })
       }
 
-      if (objetivo.id_rol === ID_ROL_ADMIN_COOP || objetivo.id_rol === ID_ROL_SUPERADMIN) {
+      if (objetivo.id_rol === ID_ROL_ADMIN_EMPRESA || objetivo.id_rol === ID_ROL_SUPERADMIN) {
         return res.status(403).json({ error: 'No podés resetear la contraseña de otro administrador' })
       }
 

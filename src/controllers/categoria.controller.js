@@ -18,10 +18,10 @@ const limpiarNombre = (valor) => {
 exports.getCategorias = async (req, res) => {
 
   try {
-    const id_cooperativa = req.session.user.cooperativa.id
+    const id_empresa = req.session.user.empresa.id
     const soloActivas = req.query.soloActivas === 'true'
 
-    const categorias = await categoriaModel.findCategorias(id_cooperativa, { soloActivas })
+    const categorias = await categoriaModel.findCategorias(id_empresa, { soloActivas })
     res.json(categorias)
 
   } catch (error) {
@@ -33,7 +33,7 @@ exports.getCategorias = async (req, res) => {
 exports.crearCategoria = async (req, res) => {
 
   try {
-    const id_cooperativa = req.session.user.cooperativa.id
+    const id_empresa = req.session.user.empresa.id
 
     const nombre = limpiarNombre(req.body.nombre)
     if (!nombre) {
@@ -45,7 +45,7 @@ exports.crearCategoria = async (req, res) => {
       return res.status(400).json({ error: 'La naturaleza debe ser "ingreso" o "egreso"' })
     }
 
-    const id = await categoriaModel.createCategoria({ nombre, naturaleza, id_cooperativa })
+    const id = await categoriaModel.createCategoria({ nombre, naturaleza, id_empresa })
     res.status(201).json({ id_categoria: id, message: 'Categoría creada correctamente' })
 
   } catch (error) {
@@ -60,10 +60,10 @@ exports.crearCategoria = async (req, res) => {
 exports.actualizarCategoria = async (req, res) => {
 
   try {
-    const id_cooperativa = req.session.user.cooperativa.id
+    const id_empresa = req.session.user.empresa.id
     const { id } = req.params
 
-    const categoria = await categoriaModel.findCategoriaById(id, id_cooperativa)
+    const categoria = await categoriaModel.findCategoriaById(id, id_empresa)
     if (!categoria) {
       return res.status(404).json({ error: 'No se encontró la categoría' })
     }
@@ -73,7 +73,7 @@ exports.actualizarCategoria = async (req, res) => {
       return res.status(400).json({ error: 'El nombre de la categoría es obligatorio (máximo 80 caracteres)' })
     }
 
-    await categoriaModel.updateCategoria(id, id_cooperativa, { nombre })
+    await categoriaModel.updateCategoria(id, id_empresa, { nombre })
     res.json({ message: 'Categoría actualizada correctamente' })
 
   } catch (error) {
@@ -88,16 +88,16 @@ exports.actualizarCategoria = async (req, res) => {
 exports.cambiarEstadoCategoria = async (req, res) => {
 
   try {
-    const id_cooperativa = req.session.user.cooperativa.id
+    const id_empresa = req.session.user.empresa.id
     const { id } = req.params
 
-    const categoria = await categoriaModel.findCategoriaById(id, id_cooperativa)
+    const categoria = await categoriaModel.findCategoriaById(id, id_empresa)
     if (!categoria) {
       return res.status(404).json({ error: 'No se encontró la categoría' })
     }
 
     const activo = req.body.activo ? 1 : 0
-    await categoriaModel.setActivoCategoria(id, id_cooperativa, activo)
+    await categoriaModel.setActivoCategoria(id, id_empresa, activo)
 
     res.json({ message: activo ? 'Categoría activada (sus tipos también)' : 'Categoría desactivada (sus tipos también)' })
 
@@ -114,11 +114,11 @@ exports.cambiarEstadoCategoria = async (req, res) => {
 exports.getTipos = async (req, res) => {
 
   try {
-    const id_cooperativa = req.session.user.cooperativa.id
+    const id_empresa = req.session.user.empresa.id
     const { id } = req.params // id de la categoria
 
     // Verifica que la categoria sea de esta empresa antes de listar sus tipos.
-    const categoria = await categoriaModel.findCategoriaById(id, id_cooperativa)
+    const categoria = await categoriaModel.findCategoriaById(id, id_empresa)
     if (!categoria) {
       return res.status(404).json({ error: 'No se encontró la categoría' })
     }
@@ -135,10 +135,10 @@ exports.getTipos = async (req, res) => {
 exports.crearTipo = async (req, res) => {
 
   try {
-    const id_cooperativa = req.session.user.cooperativa.id
+    const id_empresa = req.session.user.empresa.id
     const { id } = req.params // id de la categoria
 
-    const categoria = await categoriaModel.findCategoriaById(id, id_cooperativa)
+    const categoria = await categoriaModel.findCategoriaById(id, id_empresa)
     if (!categoria) {
       return res.status(404).json({ error: 'No se encontró la categoría' })
     }
@@ -171,10 +171,10 @@ exports.crearTipo = async (req, res) => {
 exports.actualizarTipo = async (req, res) => {
 
   try {
-    const id_cooperativa = req.session.user.cooperativa.id
+    const id_empresa = req.session.user.empresa.id
     const { id } = req.params // id del tipo
 
-    const tipo = await categoriaModel.findTipoById(id, id_cooperativa)
+    const tipo = await categoriaModel.findTipoById(id, id_empresa)
     if (!tipo) {
       return res.status(404).json({ error: 'No se encontró el tipo' })
     }
@@ -199,17 +199,17 @@ exports.actualizarTipo = async (req, res) => {
 exports.cambiarEstadoTipo = async (req, res) => {
 
   try {
-    const id_cooperativa = req.session.user.cooperativa.id
+    const id_empresa = req.session.user.empresa.id
     const { id } = req.params // id del tipo
 
-    const tipo = await categoriaModel.findTipoById(id, id_cooperativa)
+    const tipo = await categoriaModel.findTipoById(id, id_empresa)
     if (!tipo) {
       return res.status(404).json({ error: 'No se encontró el tipo' })
     }
 
     // No se puede reactivar un tipo si su categoria esta dada de baja.
     const activo = req.body.activo ? 1 : 0
-    if (activo && !tipo.activo && !(await esCategoriaActiva(tipo.id_categoria, id_cooperativa))) {
+    if (activo && !tipo.activo && !(await esCategoriaActiva(tipo.id_categoria, id_empresa))) {
       return res.status(400).json({ error: 'No se puede activar el tipo: su categoría está desactivada' })
     }
 
@@ -222,7 +222,7 @@ exports.cambiarEstadoTipo = async (req, res) => {
   }
 }
 
-const esCategoriaActiva = async (id_categoria, id_cooperativa) => {
-  const categoria = await categoriaModel.findCategoriaById(id_categoria, id_cooperativa)
+const esCategoriaActiva = async (id_categoria, id_empresa) => {
+  const categoria = await categoriaModel.findCategoriaById(id_categoria, id_empresa)
   return categoria?.activo === 1
 }
