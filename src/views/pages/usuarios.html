@@ -29,6 +29,11 @@
             document.getElementById('user-nombre').textContent = `${user.nombre} ${user.apellido}`
             document.getElementById('dropdown-coop').textContent = user.cooperativa?.nombre || ''
 
+            // El menu de arriba solo ofrece lo que el rol puede usar: si no,
+            // el usuario entra y se come un cartel de "sin permiso".
+            if (user.rol === 'admin_cooperativa') document.getElementById('nav-usuarios').classList.remove('d-none')
+            if (user.rol === 'admin_cooperativa' || user.rol === 'tesorero') document.getElementById('nav-movimientos').classList.remove('d-none')
+
             if (user.rol === 'admin_cooperativa') {
               document.getElementById('item-usuarios').classList.remove('d-none')
             }

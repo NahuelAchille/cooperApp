@@ -28,6 +28,11 @@
             document.getElementById('user-nombre').textContent = `${user.nombre} ${user.apellido}`
             document.getElementById('dropdown-coop').textContent = user.cooperativa?.nombre || ''
 
+            // El menu de arriba solo ofrece lo que el rol puede usar: si no,
+            // el usuario entra y se come un cartel de "sin permiso".
+            if (user.rol === 'admin_cooperativa') document.getElementById('nav-usuarios').classList.remove('d-none')
+            if (user.rol === 'admin_cooperativa' || user.rol === 'tesorero') document.getElementById('nav-movimientos').classList.remove('d-none')
+
             if (user.rol === 'admin_cooperativa') {
               document.getElementById('item-usuarios').classList.remove('d-none')
             }
@@ -181,7 +186,7 @@
     function mostrarToast(mensaje) {
       const toast = document.createElement('div')
       toast.style = 'position:fixed;top:24px;left:50%;transform:translateX(-50%);background:#2d7a4f;color:white;padding:14px 24px;border-radius:10px;z-index:9999;font-weight:500;box-shadow:0 4px 16px rgba(0,0,0,0.2)'
-      toast.innerHTML = `<i class="fa-solid fa-circle-check me-2"></i>${mensaje}`
+      toast.innerHTML = `<i class="fa-solid fa-circle-check me-2"></i>${esc(mensaje)}`
       document.body.appendChild(toast)
       setTimeout(() => toast.remove(), 6000)
     }
@@ -423,7 +428,7 @@
 
       document.getElementById('estado-aviso').innerHTML = desactivando
         ? `<i class="fa-solid fa-circle-info me-1"></i>No se borra: deja de aparecer al cargar nuevos movimientos, pero los movimientos históricos se conservan.${esCat ? ' Al desactivar la categoría, sus tipos también quedan inactivos.' : ''}`
-        : '<i class="fa-solid fa-circle-info me-1"></i>Vuelve a estar disponible para cargar movimientos.'
+        : `<i class="fa-solid fa-circle-info me-1"></i>Vuelve a estar disponible para cargar movimientos.${esCat ? ' Sus tipos también vuelven a quedar activos.' : ''}`
 
       const btn = document.getElementById('btn-confirmar-estado')
       btn.innerHTML = desactivando

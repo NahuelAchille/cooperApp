@@ -3,32 +3,52 @@ const categoriaModel = require('../models/categoria.model')
 
 const NATURALEZAS = ['ingreso', 'egreso']
 
-// Valida un monto: debe ser un numero positivo con hasta 2 decimales 
+// Un movimiento no puede quedar fechado antes de esto ni despues de hoy.
+const FECHA_MINIMA = '2000-01-01'
+
+// Valida un monto: debe ser un numero positivo con hasta 2 decimales
 const parsearMonto = (valor) => {
 
   const numero = Number(valor)
 
-  // Rechaza si no es un numero finito (NaN, infinito) o si es cero/negativo.
-  if (!Number.isFinite(numero) || numero <= 0) return null
+  // Rechaza si no es un numero finito (NaN, infinito).
+  if (!Number.isFinite(numero)) return null
+
+  // Se redondea ANTES de comparar contra cero: si se hiciera al reves, un
+  // monto como 0.001 pasaria el control y terminaria guardado como 0.00.
+  const redondeado = Math.round(numero * 100) / 100
+
+  if (redondeado <= 0) return null
 
   // Rechaza si es mas grande de lo que entra en DECIMAL(14,2)
-  if (numero > 999999999999.99) return null
+  if (redondeado > 999999999999.99) return null
 
-  // Redondea a 2 decimales
-  return Math.round(numero * 100) / 100
+  return redondeado
 }
 
-// Valida una fecha en formato YYYY-MM-DD y que sea real
+// Fecha de hoy en hora local, como AAAA-MM-DD. Se arma a mano y no con
+// toISOString(), que trabaja en UTC: en Argentina (UTC-3) devolveria el dia
+// siguiente a partir de las 21:00.
+const fechaDeHoy = () => {
+  const hoy = new Date()
+  return `${hoy.getFullYear()}-${String(hoy.getMonth() + 1).padStart(2, '0')}-${String(hoy.getDate()).padStart(2, '0')}`
+}
+
+// Valida una fecha en formato AAAA-MM-DD y que sea un dia real del calendario.
+// No usa Date para comparar, asi no depende de la zona horaria.
 const parsearFecha = (valor) => {
 
   if (typeof valor !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(valor)) return null
 
-  const fecha = new Date(`${valor}T00:00:00`)
-  if (Number.isNaN(fecha.getTime())) return null
+  const [anio, mes, dia] = valor.split('-').map(Number)
+  if (mes < 1 || mes > 12) return null
 
-  //arregla fechas imposibles
-  const iso = fecha.toISOString().slice(0, 10)
-  return iso === valor ? valor : null
+  // El dia 0 del mes siguiente es el ultimo del mes buscado: sirve para saber
+  // cuantos dias tiene, contemplando los años bisiestos.
+  const diasDelMes = new Date(anio, mes, 0).getDate()
+  if (dia < 1 || dia > diasDelMes) return null
+
+  return valor
 }
 
 // Toma los filtros que vienen en la URL (?naturaleza=ingreso&desde=...) y arma
@@ -50,6 +70,11 @@ const filtrosDeQuery = (query) => {
 
   // Todo lo de la URL es texto, por eso se compara con el string 'true'.
   if (query.incluirAnulados === 'true') filtros.incluirAnulados = true
+
+  // Cantidad maxima de filas. Lo usa el dashboard, que solo muestra las
+  // ultimas 5 y no tiene por que traerse el historial entero.
+  const limite = Number(query.limit)
+  if (Number.isInteger(limite) && limite > 0) filtros.limite = Math.min(limite, 500)
 
   return filtros
 }
@@ -95,6 +120,12 @@ exports.crearMovimiento = async (req, res) => {
       return res.status(400).json({ error: 'No se puede usar un tipo de movimiento desactivado' })
     }
 
+    // Tambien hay que mirar la categoria: un tipo activo colgado de una
+    // categoria dada de baja no se puede usar.
+    if (!tipo.categoria_activa) {
+      return res.status(400).json({ error: 'No se puede usar un tipo cuya categoría está desactivada' })
+    }
+
     const monto = parsearMonto(req.body.monto)
     if (monto === null) {
       return res.status(400).json({ error: 'El monto debe ser un número mayor a cero' })
@@ -103,6 +134,16 @@ exports.crearMovimiento = async (req, res) => {
     const fecha = parsearFecha(req.body.fecha)
     if (!fecha) {
       return res.status(400).json({ error: 'La fecha no es válida (formato AAAA-MM-DD)' })
+    }
+
+    // Un movimiento no se puede fechar en el futuro (todavia no paso) ni en un
+    // año absurdo: casi siempre es un error de tipeo en el año.
+    const hoy = fechaDeHoy()
+    if (fecha > hoy) {
+      return res.status(400).json({ error: 'La fecha no puede ser posterior a hoy' })
+    }
+    if (fecha < FECHA_MINIMA) {
+      return res.status(400).json({ error: `La fecha no puede ser anterior al ${FECHA_MINIMA.split('-').reverse().join('/')}` })
     }
 
     const descripcion = typeof req.body.descripcion === 'string' ? req.body.descripcion.trim().slice(0, 255) : null

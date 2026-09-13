@@ -35,6 +35,11 @@
                 document.getElementById('user-nombre').textContent = `${user.nombre} ${user.apellido}`
                 document.getElementById('dropdown-coop').textContent = user.cooperativa?.nombre || ''
 
+                // El menu de arriba solo ofrece lo que el rol puede usar: si no,
+                // el usuario entra y se come un cartel de "sin permiso".
+                if (user.rol === 'admin_cooperativa') document.getElementById('nav-usuarios').classList.remove('d-none')
+                if (user.rol === 'admin_cooperativa' || user.rol === 'tesorero') document.getElementById('nav-movimientos').classList.remove('d-none')
+
                 if (user.rol === 'admin_cooperativa') {
                     document.getElementById('item-usuarios').classList.remove('d-none')
                 }
@@ -49,6 +54,12 @@
     // Formatea numeros como plata argentina ($ 1.234,56)
     const formatoMoneda = new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'ARS', minimumFractionDigits: 2 })
     const formatMoneda = (n) => formatoMoneda.format(Number(n) || 0)
+
+    // Neutraliza el HTML que pueda venir en un texto cargado por el usuario,
+    // para que no se ejecute al meterlo en innerHTML.
+    function esc(texto) {
+        return String(texto).replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+    }
 
     // Devuelve el rango de un mes en formato AAAA-MM-DD.
     // offset 0 = mes actual, -1 = mes anterior. Se arma manual para no tener
@@ -69,8 +80,29 @@
     }
 
     async function cargarDashboard() {
-        cargarResumen()
-        cargarRecientes()
+        const user = await fetch('/users/me').then(r => r.ok ? r.json() : null)
+        if (!user) return
+
+        const esFinanzas = user.rol === 'admin_cooperativa' || user.rol === 'tesorero'
+
+        // Los accesos rapidos de plata solo se ofrecen a quien despues va a
+        // poder usarlos: si no, el usuario clickea y termina en un cartel de
+        // "sin permiso".
+        if (esFinanzas) {
+            ['btn-ingreso', 'btn-egreso', 'btn-reporte', 'link-ver-movimientos']
+                .forEach(id => document.getElementById(id).classList.remove('d-none'))
+        }
+
+        // Si el rol no llega a finanzas ni se piden los datos: serian tres 403
+        // al pedazo, que ademas ensucian la consola.
+        if (esFinanzas) {
+            cargarResumen()
+            cargarRecientes()
+        } else {
+            document.getElementById('tabla-recientes').innerHTML =
+                '<tr><td class="text-muted">Tu usuario no tiene acceso a los movimientos.</td></tr>'
+        }
+
         cargarUsuarios()
     }
 
@@ -101,14 +133,14 @@
     // Ultimos 5 movimientos (no anulados, que es el default del endpoint).
     async function cargarRecientes() {
         const tbody = document.getElementById('tabla-recientes')
-        const res = await fetch('/movimientos')
+        const res = await fetch('/movimientos?limit=5')
 
         if (!res.ok) {
-            tbody.innerHTML = '<tr><td class="text-muted">No disponible.</td></tr>'
+            tbody.innerHTML = '<tr><td class="text-muted">Tu usuario no tiene acceso a los movimientos.</td></tr>'
             return
         }
 
-        const movimientos = (await res.json()).slice(0, 5)
+        const movimientos = await res.json()
 
         if (!movimientos.length) {
             tbody.innerHTML = '<tr><td class="text-muted">Todavía no hay movimientos.</td></tr>'
@@ -121,8 +153,8 @@
             const fecha = new Date(m.fecha).toLocaleDateString('es-AR', { day: '2-digit', month: '2-digit' })
             return `
                 <tr>
-                    <td class="${esIngreso ? 'positivo' : 'negativo'}">${m.descripcion || m.tipo_nombre}</td>
-                    <td>${m.categoria_nombre}</td>
+                    <td class="${esIngreso ? 'positivo' : 'negativo'}">${esc(m.descripcion || m.tipo_nombre)}</td>
+                    <td>${esc(m.categoria_nombre)}</td>
                     <td class="monto ${esIngreso ? 'positivo' : 'negativo'}">${signo}${formatMoneda(m.monto)}</td>
                     <td>${fecha}</td>
                 </tr>`
@@ -147,10 +179,10 @@
     <nav id="secondary-nav">
         <h2>Acciones Rápidas</h2>
             <ul>
-                <li id="btn-ingreso"><a href="/pages/movimientos.html?nuevo=ingreso">+ Registrar ingreso</a></li>
-                <li id="btn-egreso"><a href="/pages/movimientos.html?nuevo=egreso">- Registrar egreso</a></li>
+                <li id="btn-ingreso" class="d-none"><a href="/pages/movimientos.html?nuevo=ingreso">+ Registrar ingreso</a></li>
+                <li id="btn-egreso" class="d-none"><a href="/pages/movimientos.html?nuevo=egreso">- Registrar egreso</a></li>
                 <li id="btn-stock"><a href="#">Ajustar stock</a></li>
-                <li id="btn-reporte"><a href="/pages/movimientos.html">Ver reporte</a></li>
+                <li id="btn-reporte" class="d-none"><a href="/pages/movimientos.html">Ver reporte</a></li>
             </ul>
     </nav>
     <main id="dashboard-main">
@@ -185,7 +217,7 @@
             <section class="dashboard-block" id="dashboard-movimientos">
                 <div class="dashboard-block-header">
                     <h3>Movimientos recientes</h3>
-                    <a href="/pages/movimientos.html">Ver todos →</a>
+                    <a href="/pages/movimientos.html" id="link-ver-movimientos" class="d-none">Ver todos →</a>
                 </div>
                 <div class="table-responsive">
                     <table class="dashboard-table">

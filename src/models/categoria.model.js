@@ -50,6 +50,8 @@ const updateCategoria = async (id_categoria, id_cooperativa, { nombre }) => {
 }
 
 // Baja / alta logica de la categoria y, en cascada logica, de sus tipos.
+// La cascada va para los dos lados a proposito: si al reactivar la categoria
+// los tipos quedaran en baja, volveria "activa" pero vacia, imposible de usar.
 const setActivoCategoria = async (id_categoria, id_cooperativa, activo) => {
 
   await db.query(
@@ -57,10 +59,7 @@ const setActivoCategoria = async (id_categoria, id_cooperativa, activo) => {
     [activo, id_categoria, id_cooperativa]
   )
 
-  // Al desactivar una categoria, sus tipos tampoco deben poder usarse.
-  if (!activo) {
-    await db.query('UPDATE tipos_movimiento SET activo = 0 WHERE id_categoria = ?', [id_categoria])
-  }
+  await db.query('UPDATE tipos_movimiento SET activo = ? WHERE id_categoria = ?', [activo, id_categoria])
 }
 
 // =====================================================================
@@ -83,7 +82,7 @@ const findTipoById = async (id_tipo, id_cooperativa) => {
 
   const [rows] = await db.query(`
     SELECT t.id_tipo, t.nombre, t.activo, t.id_categoria,
-           c.naturaleza, c.nombre AS categoria_nombre
+           c.naturaleza, c.nombre AS categoria_nombre, c.activo AS categoria_activa
     FROM tipos_movimiento t
     JOIN categorias_movimiento c ON c.id_categoria = t.id_categoria
     WHERE t.id_tipo = ? AND c.id_cooperativa = ?
@@ -92,11 +91,13 @@ const findTipoById = async (id_tipo, id_cooperativa) => {
   return rows[0] || null
 }
 
-const createTipo = async ({ nombre, id_categoria }) => {
+// El tipo nace con el mismo estado que su categoria: si la categoria esta
+// dada de baja, no tiene sentido que el tipo nuevo quede activo.
+const createTipo = async ({ nombre, id_categoria, activo = 1 }) => {
 
   const [result] = await db.query(
-    'INSERT INTO tipos_movimiento (nombre, id_categoria) VALUES (?, ?)',
-    [nombre, id_categoria]
+    'INSERT INTO tipos_movimiento (nombre, id_categoria, activo) VALUES (?, ?, ?)',
+    [nombre, id_categoria, activo]
   )
 
   return result.insertId

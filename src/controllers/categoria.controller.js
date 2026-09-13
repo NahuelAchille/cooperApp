@@ -99,7 +99,7 @@ exports.cambiarEstadoCategoria = async (req, res) => {
     const activo = req.body.activo ? 1 : 0
     await categoriaModel.setActivoCategoria(id, id_cooperativa, activo)
 
-    res.json({ message: activo ? 'Categoría activada' : 'Categoría desactivada (sus tipos también)' })
+    res.json({ message: activo ? 'Categoría activada (sus tipos también)' : 'Categoría desactivada (sus tipos también)' })
 
   } catch (error) {
     console.error(error)
@@ -148,8 +148,16 @@ exports.crearTipo = async (req, res) => {
       return res.status(400).json({ error: 'El nombre del tipo es obligatorio (máximo 80 caracteres)' })
     }
 
-    const id_tipo = await categoriaModel.createTipo({ nombre, id_categoria: id })
-    res.status(201).json({ id_tipo, message: 'Tipo creado correctamente' })
+    // Hereda el estado de la categoria: dentro de una categoria de baja, el
+    // tipo nuevo tambien nace de baja.
+    const id_tipo = await categoriaModel.createTipo({ nombre, id_categoria: id, activo: categoria.activo })
+
+    res.status(201).json({
+      id_tipo,
+      message: categoria.activo
+        ? 'Tipo creado correctamente'
+        : 'Tipo creado, pero queda inactivo porque su categoría está desactivada'
+    })
 
   } catch (error) {
     if (error.code === 'ER_DUP_ENTRY') {

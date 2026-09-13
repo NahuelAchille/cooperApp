@@ -40,6 +40,10 @@ const findByCoop = async (id_cooperativa, filtros = {}) => {
 
   const { where, params } = construirFiltro(id_cooperativa, filtros)
 
+  // El limite se agrega solo si el controlador lo valido como entero positivo.
+  const limite = filtros.limite ? 'LIMIT ?' : ''
+  if (filtros.limite) params.push(filtros.limite)
+
   const [rows] = await db.query(`
     SELECT m.id_movimiento, m.monto, m.descripcion, m.fecha, m.anulado, m.creado_en,
            t.id_tipo, t.nombre AS tipo_nombre,
@@ -51,6 +55,7 @@ const findByCoop = async (id_cooperativa, filtros = {}) => {
     JOIN usuarios u              ON u.id = m.id_usuario
     WHERE ${where}
     ORDER BY m.fecha DESC, m.id_movimiento DESC
+    ${limite}
   `, params)
 
   return rows

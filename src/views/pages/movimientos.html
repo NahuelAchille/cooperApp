@@ -28,6 +28,11 @@
             document.getElementById('user-nombre').textContent = `${user.nombre} ${user.apellido}`
             document.getElementById('dropdown-coop').textContent = user.cooperativa?.nombre || ''
 
+            // El menu de arriba solo ofrece lo que el rol puede usar: si no,
+            // el usuario entra y se come un cartel de "sin permiso".
+            if (user.rol === 'admin_cooperativa') document.getElementById('nav-usuarios').classList.remove('d-none')
+            if (user.rol === 'admin_cooperativa' || user.rol === 'tesorero') document.getElementById('nav-movimientos').classList.remove('d-none')
+
             if (user.rol === 'admin_cooperativa') {
               document.getElementById('item-usuarios').classList.remove('d-none')
             }
@@ -186,7 +191,7 @@
               </div>
               <div class="col-md-6">
                 <label class="form-label">Fecha</label>
-                <input type="date" class="form-control" name="fecha" id="mov-fecha" required>
+                <input type="date" class="form-control" name="fecha" id="mov-fecha" min="2000-01-01" required>
               </div>
               <div class="col-12">
                 <label class="form-label">Descripción <span class="text-muted fw-normal">(opcional)</span></label>
@@ -244,10 +249,24 @@
     const formatoMoneda = new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'ARS', minimumFractionDigits: 2 })
     const formatMoneda = (n) => formatoMoneda.format(Number(n) || 0)
 
+    // Neutraliza el HTML que pueda venir en un texto cargado por el usuario.
+    // Sin esto, una descripcion como <img src=x onerror=...> se ejecutaria al
+    // meterla en innerHTML.
+    function esc(texto) {
+      return String(texto).replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+    }
+
+    // Fecha de hoy en hora local, como AAAA-MM-DD. No se usa toISOString()
+    // porque trabaja en UTC y despues de las 21:00 devolveria la de mañana.
+    function fechaDeHoy() {
+      const hoy = new Date()
+      return `${hoy.getFullYear()}-${String(hoy.getMonth() + 1).padStart(2, '0')}-${String(hoy.getDate()).padStart(2, '0')}`
+    }
+
     function mostrarToast(mensaje) {
       const toast = document.createElement('div')
       toast.style = 'position:fixed;top:24px;left:50%;transform:translateX(-50%);background:#2d7a4f;color:white;padding:14px 24px;border-radius:10px;z-index:9999;font-weight:500;box-shadow:0 4px 16px rgba(0,0,0,0.2)'
-      toast.innerHTML = `<i class="fa-solid fa-circle-check me-2"></i>${mensaje}`
+      toast.innerHTML = `<i class="fa-solid fa-circle-check me-2"></i>${esc(mensaje)}`
       document.body.appendChild(toast)
       setTimeout(() => toast.remove(), 6000)
     }
@@ -296,8 +315,10 @@
         document.getElementById('btn-configurar').classList.remove('d-none')
       }
 
-      // Fecha por defecto en el alta = hoy
-      document.getElementById('mov-fecha').value = new Date().toISOString().slice(0, 10)
+      // Fecha por defecto en el alta = hoy, y no se puede elegir mas adelante
+      const inputFecha = document.getElementById('mov-fecha')
+      inputFecha.value = fechaDeHoy()
+      inputFecha.max = fechaDeHoy()
 
       await cargarCategorias()
       await cargarMovimientos()
@@ -335,7 +356,7 @@
         visibles.map(c => {
           // Con naturaleza filtrada la flecha sobra; sin filtrar ayuda a distinguir.
           const flecha = naturaleza ? '' : (c.naturaleza === 'ingreso' ? '↓ ' : '↑ ')
-          return `<option value="${c.id_categoria}">${flecha}${c.nombre}</option>`
+          return `<option value="${c.id_categoria}">${flecha}${esc(c.nombre)}</option>`
         }).join('')
     }
 
@@ -369,16 +390,16 @@
         return `
           <tr class="${m.anulado ? 'fila-anulada' : ''}">
             <td>${new Date(m.fecha).toLocaleDateString('es-AR')}</td>
-            <td>${m.descripcion ? m.descripcion : '<span class="text-muted">—</span>'}</td>
-            <td><span class="badge-cat">${m.categoria_nombre}</span></td>
-            <td>${m.tipo_nombre}</td>
+            <td>${m.descripcion ? esc(m.descripcion) : '<span class="text-muted">—</span>'}</td>
+            <td><span class="badge-cat">${esc(m.categoria_nombre)}</span></td>
+            <td>${esc(m.tipo_nombre)}</td>
             <td><span class="badge-${m.naturaleza}">${esIngreso ? 'Ingreso' : 'Egreso'}</span></td>
             <td class="monto ${esIngreso ? 'positivo' : 'negativo'}">${signo}${formatMoneda(m.monto)}</td>
-            <td class="small">${m.usuario_nombre} ${m.usuario_apellido}</td>
+            <td class="small">${esc(m.usuario_nombre)} ${esc(m.usuario_apellido)}</td>
             <td class="text-end sin-tachado">${
               m.anulado
                 ? '<span class="badge-anulado">Anulado</span>'
-                : `<button class="btn-accion" data-id="${m.id_movimiento}" data-detalle="${signo}${formatMoneda(m.monto)} · ${m.tipo_nombre}" title="Anular"><i class="fa-solid fa-ban"></i></button>`
+                : `<button class="btn-accion" data-id="${m.id_movimiento}" data-detalle="${signo}${formatMoneda(m.monto)} · ${esc(m.tipo_nombre)}" title="Anular"><i class="fa-solid fa-ban"></i></button>`
             }</td>
           </tr>`
       }).join('')
@@ -407,7 +428,7 @@
       }
 
       selCat.innerHTML = '<option value="">Seleccioná...</option>' +
-        delTipo.map(c => `<option value="${c.id_categoria}">${c.nombre}</option>`).join('')
+        delTipo.map(c => `<option value="${c.id_categoria}">${esc(c.nombre)}</option>`).join('')
       selCat.disabled = false
     })
 
@@ -431,7 +452,7 @@
       }
 
       selTipo.innerHTML = '<option value="">Seleccioná...</option>' +
-        activos.map(t => `<option value="${t.id_tipo}">${t.nombre}</option>`).join('')
+        activos.map(t => `<option value="${t.id_tipo}">${esc(t.nombre)}</option>`).join('')
       selTipo.disabled = false
     })
 
@@ -474,7 +495,7 @@
 
       bootstrap.Modal.getInstance(document.getElementById('modalNuevoMov')).hide()
       form.reset()
-      document.getElementById('mov-fecha').value = new Date().toISOString().slice(0, 10)
+      document.getElementById('mov-fecha').value = fechaDeHoy()
       document.getElementById('mov-categoria').disabled = true
       document.getElementById('mov-tipo').disabled = true
       mostrarToast(resultado.message)
@@ -486,7 +507,7 @@
       const boton = evento.target.closest('.btn-accion')
       if (!boton) return
 
-      document.getElementById('anular-detalle').innerHTML = `¿Confirmás anular el movimiento <strong>${boton.dataset.detalle}</strong>?`
+      document.getElementById('anular-detalle').innerHTML = `¿Confirmás anular el movimiento <strong>${esc(boton.dataset.detalle)}</strong>?`
       document.getElementById('anular-error').classList.add('d-none')
       document.getElementById('btn-confirmar-anular').dataset.id = boton.dataset.id
       new bootstrap.Modal(document.getElementById('modalAnular')).show()
@@ -525,11 +546,24 @@
       document.getElementById(id).addEventListener('change', cargarMovimientos)
     })
 
+    // Evita que quede un rango imposible (desde posterior a hasta): cada input
+    // le pone el limite al otro, asi el navegador no deja elegir mal.
+    function sincronizarRango() {
+      const desde = document.getElementById('filtro-desde')
+      const hasta = document.getElementById('filtro-hasta')
+      hasta.min = desde.value || ''
+      desde.max = hasta.value || ''
+    }
+
+    document.getElementById('filtro-desde').addEventListener('change', sincronizarRango)
+    document.getElementById('filtro-hasta').addEventListener('change', sincronizarRango)
+
     document.getElementById('btn-limpiar').addEventListener('click', () => {
       document.getElementById('filtro-naturaleza').value = ''
       document.getElementById('filtro-desde').value = ''
       document.getElementById('filtro-hasta').value = ''
       document.getElementById('filtro-anulados').checked = false
+      sincronizarRango()
       poblarFiltroCategorias() // vuelve a mostrar todas y resetea la categoria
       cargarMovimientos()
     })
