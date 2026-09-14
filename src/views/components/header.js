@@ -12,6 +12,15 @@
 //   - el MODULO  -> que contrato esta empresa
 // Las dos tienen que dar bien para que la opcion aparezca.
 
+// Los modulos de la empresa quedan guardados aca despues de cargar el
+// encabezado, para que las pantallas puedan preguntar sin volver a pedirlos.
+let modulosEmpresa = []
+
+// ¿Esta empresa tiene prendido este modulo? Usar DESPUES de cargarHeader().
+function moduloActivo(clave) {
+  return modulosEmpresa.some(m => m.clave === clave && m.activo)
+}
+
 async function cargarHeader() {
 
   const html = await fetch('/components/header.html').then(r => r.text())
@@ -42,14 +51,15 @@ async function cargarHeader() {
   // El superadmin no pertenece a ninguna empresa: no tiene modulos y su menu
   // se queda solo con lo de la plataforma.
   if (user.empresa?.id) {
-    const modulos = await fetch('/modulos').then(r => r.ok ? r.json() : []).catch(() => [])
-    const activo = (clave) => modulos.some(m => m.clave === clave && m.activo)
+    modulosEmpresa = await fetch('/modulos').then(r => r.ok ? r.json() : []).catch(() => [])
 
-    if (activo('movimientos') && esFinanzas) mostrar('nav-movimientos')
-    if (activo('productos')) mostrar('nav-productos')
-    if (activo('servicios') && esFinanzas) mostrar('nav-servicios')
-    if (activo('reportes') && esFinanzas) mostrar('nav-reportes')
-    if (activo('articulacion')) mostrar('nav-articulacion')
+    if (moduloActivo('movimientos') && esFinanzas) mostrar('nav-movimientos')
+    if (moduloActivo('productos')) mostrar('nav-productos')
+    if (moduloActivo('servicios') && esFinanzas) mostrar('nav-servicios')
+    if (moduloActivo('reportes') && esFinanzas) mostrar('nav-reportes')
+    if (moduloActivo('articulacion')) mostrar('nav-articulacion')
+  } else {
+    modulosEmpresa = []
   }
 
   return user

@@ -38,6 +38,13 @@
       <p class="mb-0">No tenés permiso para ver los movimientos de la empresa.</p>
     </div>
 
+    <!-- Se muestra si la empresa tiene el módulo apagado -->
+    <div class="aviso-permiso d-none" id="aviso-modulo">
+      <i class="fa-solid fa-plug-circle-xmark fa-2x mb-3"></i>
+      <p class="mb-1">El módulo de <strong>Movimientos</strong> no está activo en tu empresa.</p>
+      <p class="mb-0 small">El administrador puede activarlo desde <em>Módulos del sistema</em>.</p>
+    </div>
+
     <div id="panel-finanzas" class="d-none">
 
       <!-- Resumen -->
@@ -276,6 +283,14 @@
 
       if (!esFinanzas) {
         document.getElementById('aviso-permiso').classList.remove('d-none')
+        return
+      }
+
+      // El rol alcanza, pero la empresa puede tener el módulo apagado.
+      if (!moduloActivo('movimientos')) {
+        document.getElementById('aviso-modulo').classList.remove('d-none')
+        document.getElementById('btn-nuevo-mov').classList.add('d-none')
+        document.getElementById('btn-configurar').classList.add('d-none')
         return
       }
 

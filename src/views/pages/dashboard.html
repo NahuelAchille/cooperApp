@@ -50,7 +50,11 @@
         const user = await cargarHeader()
         if (!user) return
 
-        const esFinanzas = user.rol === 'admin_empresa' || user.rol === 'tesorero'
+        // Hacen falta las dos cosas: el rol y que la empresa tenga el módulo.
+        // Se guardan por separado para poder explicar cuál de las dos falló.
+        const rolDeFinanzas = user.rol === 'admin_empresa' || user.rol === 'tesorero'
+        const hayModulo = moduloActivo('movimientos')
+        const esFinanzas = rolDeFinanzas && hayModulo
 
         // Los accesos rapidos de plata solo se ofrecen a quien despues va a
         // poder usarlos: si no, el usuario clickea y termina en un cartel de
@@ -67,7 +71,9 @@
             cargarRecientes()
         } else {
             document.getElementById('tabla-recientes').innerHTML =
-                '<tr><td class="text-muted">Tu usuario no tiene acceso a los movimientos.</td></tr>'
+                `<tr><td class="text-muted">${hayModulo
+                    ? 'Tu usuario no tiene acceso a los movimientos.'
+                    : 'El módulo de Movimientos no está activo en tu empresa.'}</td></tr>`
         }
 
         cargarUsuarios()

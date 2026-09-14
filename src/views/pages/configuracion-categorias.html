@@ -33,6 +33,13 @@
       <p class="mb-0">Solo el administrador de la empresa puede configurar la clasificación de movimientos.</p>
     </div>
 
+    <!-- Se muestra si la empresa tiene el módulo apagado -->
+    <div class="aviso-permiso d-none" id="aviso-modulo">
+      <i class="fa-solid fa-plug-circle-xmark fa-2x mb-3"></i>
+      <p class="mb-1">El módulo de <strong>Movimientos</strong> no está activo en tu empresa.</p>
+      <p class="mb-0 small">El administrador puede activarlo desde <em>Módulos del sistema</em>.</p>
+    </div>
+
     <div class="columnas d-none" id="columnas">
 
       <div class="columna ingresos">
@@ -178,6 +185,12 @@
 
       if (usuarioActual.rol !== 'admin_empresa') {
         document.getElementById('aviso-permiso').classList.remove('d-none')
+        return
+      }
+
+      // El rol alcanza, pero la empresa puede tener el módulo apagado.
+      if (!moduloActivo('movimientos')) {
+        document.getElementById('aviso-modulo').classList.remove('d-none')
         return
       }
 
