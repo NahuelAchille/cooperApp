@@ -1,4 +1,7 @@
 const empresaModel = require('../models/empresa.model')
+const moduloModel = require('../models/modulo.model')
+const categoriaModel = require('../models/categoria.model')
+const { CATEGORIAS_INICIALES } = require('../config/datos-iniciales')
 
 // Convierte un campo de cantidad del formulario a numero.
 // Devuelve null si vino vacio, o undefined si el valor no sirve.
@@ -118,6 +121,29 @@ exports.actualizarMiEmpresa = async (req, res) => {
 
 }
 
+// Deja la empresa lista para trabajar desde el primer dia: prende los modulos
+// basicos y le carga una clasificacion de movimientos para arrancar.
+//
+// Va aparte y con su propio try/catch a proposito: si algo de esto falla, la
+// empresa TIENE que quedar aprobada igual. Es preferible que el administrador
+// arme sus categorias a mano antes que dejarla sin poder entrar.
+const prepararEmpresaNueva = async (id_empresa) => {
+
+  try {
+    await moduloModel.activarPorDefecto(id_empresa)
+
+    // Si ya tiene categorias, no se toca: puede ser una empresa que se
+    // rechazo y se volvio a aprobar, y armo lo suyo en el medio.
+    const cuantas = await categoriaModel.contarCategorias(id_empresa)
+    if (cuantas === 0) {
+      await categoriaModel.crearCategoriasIniciales(id_empresa, CATEGORIAS_INICIALES)
+    }
+
+  } catch (error) {
+    console.error('No se pudo preparar la configuración inicial de la empresa', id_empresa, error)
+  }
+}
+
 exports.aprobar = async (req, res) => {
 
   try {
@@ -125,6 +151,8 @@ exports.aprobar = async (req, res) => {
 
     await empresaModel.updateEstado(id, 'activa')
     await empresaModel.activarUsuarioAdmin(id)
+    await prepararEmpresaNueva(id)
+
     res.json({ message: 'Empresa aprobada correctamente' })
 
   } catch (error) {

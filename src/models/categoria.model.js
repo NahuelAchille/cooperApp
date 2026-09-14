@@ -111,7 +111,42 @@ const setActivoTipo = async (id_tipo, activo) => {
   await db.query('UPDATE tipos_movimiento SET activo = ? WHERE id_tipo = ?', [activo, id_tipo])
 }
 
+// =====================================================================
+// CARGA INICIAL (al aprobar una empresa)
+// =====================================================================
+
+// Cuenta las categorias que tiene la empresa. Sirve para no volver a sembrar
+// encima de una empresa que ya armo su clasificacion.
+const contarCategorias = async (id_empresa) => {
+
+  const [rows] = await db.query(
+    'SELECT COUNT(*) AS cantidad FROM categorias_movimiento WHERE id_empresa = ?',
+    [id_empresa]
+  )
+
+  return rows[0].cantidad
+}
+
+// Carga la clasificacion inicial para que la empresa pueda registrar
+// movimientos desde el primer dia. Recibe la lista desde config/datos-iniciales.
+const crearCategoriasIniciales = async (id_empresa, categorias) => {
+
+  for (const categoria of categorias) {
+
+    const id_categoria = await createCategoria({
+      nombre: categoria.nombre,
+      naturaleza: categoria.naturaleza,
+      id_empresa
+    })
+
+    for (const nombreTipo of categoria.tipos) {
+      await createTipo({ nombre: nombreTipo, id_categoria })
+    }
+  }
+}
+
 module.exports = {
   findCategorias, findCategoriaById, createCategoria, updateCategoria, setActivoCategoria,
-  findTiposByCategoria, findTipoById, createTipo, updateTipo, setActivoTipo
+  findTiposByCategoria, findTipoById, createTipo, updateTipo, setActivoTipo,
+  contarCategorias, crearCategoriasIniciales
 }

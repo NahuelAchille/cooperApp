@@ -55,4 +55,17 @@ const setActivo = async (id_empresa, id_modulo, activo) => {
   `, [id_empresa, id_modulo, activo])
 }
 
-module.exports = { findByEmpresa, findByClave, estaActivo, setActivo }
+// Deja escritas las filas de la empresa con el valor por defecto del catalogo.
+// Hasta ahora el estado se deducia del catalogo; al aprobarla se materializa,
+// asi la configuracion de cada empresa queda fija y no cambia sola si mañana
+// se toca un valor por defecto del sistema.
+// El IGNORE es la red: si ya tenia filas, no se pisa lo que eligio.
+const activarPorDefecto = async (id_empresa) => {
+
+  await db.query(`
+    INSERT IGNORE INTO empresa_modulos (id_empresa, id_modulo, activo)
+    SELECT ?, id_modulo, activo_por_defecto FROM modulos
+  `, [id_empresa])
+}
+
+module.exports = { findByEmpresa, findByClave, estaActivo, setActivo, activarPorDefecto }
