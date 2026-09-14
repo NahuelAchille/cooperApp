@@ -51,6 +51,24 @@ DELETE FROM categorias_movimiento WHERE id_empresa IN (
     'contacto@laesperanza.com.ar', 'contacto@elamanecer.com.ar',
     'contacto@metaloeste.com.ar',  'contacto@huertanorte.com.ar'));
 
+-- Catalogo: primero los productos, despues su clasificacion
+-- (subcategorias -> categorias).
+DELETE FROM productos WHERE id_empresa IN (
+  SELECT id_empresa FROM empresas WHERE email IN (
+    'contacto@laesperanza.com.ar', 'contacto@elamanecer.com.ar',
+    'contacto@metaloeste.com.ar',  'contacto@huertanorte.com.ar'));
+
+DELETE FROM subcategorias_producto WHERE id_categoria_producto IN (
+  SELECT id_categoria_producto FROM categorias_producto WHERE id_empresa IN (
+    SELECT id_empresa FROM empresas WHERE email IN (
+      'contacto@laesperanza.com.ar', 'contacto@elamanecer.com.ar',
+      'contacto@metaloeste.com.ar',  'contacto@huertanorte.com.ar')));
+
+DELETE FROM categorias_producto WHERE id_empresa IN (
+  SELECT id_empresa FROM empresas WHERE email IN (
+    'contacto@laesperanza.com.ar', 'contacto@elamanecer.com.ar',
+    'contacto@metaloeste.com.ar',  'contacto@huertanorte.com.ar'));
+
 DELETE FROM empresa_modulos WHERE id_empresa IN (
   SELECT id_empresa FROM empresas WHERE email IN (
     'contacto@laesperanza.com.ar', 'contacto@elamanecer.com.ar',
@@ -296,6 +314,135 @@ INSERT INTO movimientos (id_tipo, monto, descripcion, fecha, id_empresa, id_usua
   ((SELECT id_tipo FROM tipos_movimiento WHERE id_categoria = @cat_servicios AND nombre = 'Luz'),              45000.00, 'Factura de luz',                CURDATE() - INTERVAL 6  DAY, @empresa, @tesorero, 0),
   ((SELECT id_tipo FROM tipos_movimiento WHERE id_categoria = @cat_servicios AND nombre = 'Gas'),              38000.00, 'Factura de gas (mes anterior)', CURDATE() - INTERVAL 40 DAY, @empresa, @tesorero, 0);
 
+-- =============================================================================
+-- Categorías y subcategorías de PRODUCTOS para las 3 empresas que tienen el
+-- módulo prendido. Es la clasificación del catálogo, no la del dinero: son
+-- cosas distintas y viven en tablas distintas.
+--
+-- La Esperanza lleva además una categoría desactivada con sus subcategorías
+-- inactivas, para poder ver en pantalla cómo se muestra una baja lógica.
+-- =============================================================================
+
+-- ------------------------------------------------------ 1 · La Esperanza --
+SET @empresa := (SELECT id_empresa FROM empresas WHERE email = 'contacto@laesperanza.com.ar');
+
+INSERT INTO categorias_producto (nombre, id_empresa, activo) VALUES
+  ('Alimentos',  @empresa, 1),
+  ('Bebidas',    @empresa, 1),
+  ('Promociones', @empresa, 0);
+
+SET @cat_alimentos   := (SELECT id_categoria_producto FROM categorias_producto WHERE id_empresa = @empresa AND nombre = 'Alimentos');
+SET @cat_bebidas     := (SELECT id_categoria_producto FROM categorias_producto WHERE id_empresa = @empresa AND nombre = 'Bebidas');
+SET @cat_promociones := (SELECT id_categoria_producto FROM categorias_producto WHERE id_empresa = @empresa AND nombre = 'Promociones');
+
+INSERT INTO subcategorias_producto (nombre, id_categoria_producto, activo) VALUES
+  ('Perecederos',    @cat_alimentos,   1),
+  ('No perecederos', @cat_alimentos,   1),
+  ('Congelados',     @cat_alimentos,   1),
+  ('Con alcohol',    @cat_bebidas,     1),
+  ('Sin alcohol',    @cat_bebidas,     1),
+  ('Combos',         @cat_promociones, 0);
+
+-- ------------------------------------------------------- 2 · El Amanecer --
+SET @empresa := (SELECT id_empresa FROM empresas WHERE email = 'contacto@elamanecer.com.ar');
+
+INSERT INTO categorias_producto (nombre, id_empresa, activo) VALUES
+  ('Telas',     @empresa, 1),
+  ('Confección', @empresa, 1);
+
+SET @cat_telas      := (SELECT id_categoria_producto FROM categorias_producto WHERE id_empresa = @empresa AND nombre = 'Telas');
+SET @cat_confeccion := (SELECT id_categoria_producto FROM categorias_producto WHERE id_empresa = @empresa AND nombre = 'Confección');
+
+INSERT INTO subcategorias_producto (nombre, id_categoria_producto, activo) VALUES
+  ('Algodón',     @cat_telas,      1),
+  ('Poliéster',   @cat_telas,      1),
+  ('Remeras',     @cat_confeccion, 1),
+  ('Pantalones',  @cat_confeccion, 1),
+  ('Uniformes',   @cat_confeccion, 1);
+
+-- ------------------------------------------------------- 3 · Metal Oeste --
+SET @empresa := (SELECT id_empresa FROM empresas WHERE email = 'contacto@metaloeste.com.ar');
+
+INSERT INTO categorias_producto (nombre, id_empresa, activo) VALUES
+  ('Materia prima', @empresa, 1),
+  ('Herramientas',  @empresa, 1);
+
+SET @cat_materia      := (SELECT id_categoria_producto FROM categorias_producto WHERE id_empresa = @empresa AND nombre = 'Materia prima');
+SET @cat_herramientas := (SELECT id_categoria_producto FROM categorias_producto WHERE id_empresa = @empresa AND nombre = 'Herramientas');
+
+INSERT INTO subcategorias_producto (nombre, id_categoria_producto, activo) VALUES
+  ('Chapa',       @cat_materia,      1),
+  ('Caño',        @cat_materia,      1),
+  ('Electrodos',  @cat_materia,      1),
+  ('Manuales',    @cat_herramientas, 1),
+  ('Eléctricas',  @cat_herramientas, 1);
+
+-- =============================================================================
+-- CATÁLOGO DE PRODUCTOS
+--
+-- Qué productos existen en cada empresa. Las cantidades son otra cosa (el
+-- stock) y todavía no están.
+--
+-- La subcategoría es opcional a propósito: hay productos cargados sin ella,
+-- para ver en pantalla que se puede clasificar sólo por categoría.
+-- =============================================================================
+
+-- ------------------------------------------------------ 1 · La Esperanza --
+SET @empresa := (SELECT id_empresa FROM empresas WHERE email = 'contacto@laesperanza.com.ar');
+
+SET @cat_alimentos := (SELECT id_categoria_producto FROM categorias_producto WHERE id_empresa = @empresa AND nombre = 'Alimentos');
+SET @cat_bebidas   := (SELECT id_categoria_producto FROM categorias_producto WHERE id_empresa = @empresa AND nombre = 'Bebidas');
+
+SET @sub_perecederos := (SELECT id_subcategoria_producto FROM subcategorias_producto WHERE id_categoria_producto = @cat_alimentos AND nombre = 'Perecederos');
+SET @sub_no_perec    := (SELECT id_subcategoria_producto FROM subcategorias_producto WHERE id_categoria_producto = @cat_alimentos AND nombre = 'No perecederos');
+SET @sub_congelados  := (SELECT id_subcategoria_producto FROM subcategorias_producto WHERE id_categoria_producto = @cat_alimentos AND nombre = 'Congelados');
+SET @sub_sin_alcohol := (SELECT id_subcategoria_producto FROM subcategorias_producto WHERE id_categoria_producto = @cat_bebidas AND nombre = 'Sin alcohol');
+
+INSERT INTO productos (nombre, descripcion, unidad_medida, stock_minimo, id_categoria_producto, id_subcategoria_producto, id_empresa, activo) VALUES
+  ('Queso cremoso',      'Horma entera',            'kg',      5.50, @cat_alimentos, @sub_perecederos, @empresa, 1),
+  ('Jamón cocido',       NULL,                      'kg',      3.00, @cat_alimentos, @sub_perecederos, @empresa, 1),
+  ('Fideos secos 500g',  'Paquete de medio kilo',   'paquete', 24,   @cat_alimentos, @sub_no_perec,    @empresa, 1),
+  ('Arroz largo fino',   NULL,                      'kg',      15,   @cat_alimentos, @sub_no_perec,    @empresa, 1),
+  ('Milanesas de soja',  'Caja x 12 unidades',      'caja',    4,    @cat_alimentos, @sub_congelados,  @empresa, 1),
+  ('Bolsa de pan',       'Sin subcategoría',        'bolsa',   0,    @cat_alimentos, NULL,             @empresa, 1),
+  ('Agua mineral 2L',    NULL,                      'unidad',  36,   @cat_bebidas,   @sub_sin_alcohol, @empresa, 1),
+  ('Gaseosa cola 2,25L', 'Producto discontinuado',  'unidad',  0,    @cat_bebidas,   @sub_sin_alcohol, @empresa, 0);
+
+-- ------------------------------------------------------- 2 · El Amanecer --
+SET @empresa := (SELECT id_empresa FROM empresas WHERE email = 'contacto@elamanecer.com.ar');
+
+SET @cat_telas      := (SELECT id_categoria_producto FROM categorias_producto WHERE id_empresa = @empresa AND nombre = 'Telas');
+SET @cat_confeccion := (SELECT id_categoria_producto FROM categorias_producto WHERE id_empresa = @empresa AND nombre = 'Confección');
+
+SET @sub_algodon    := (SELECT id_subcategoria_producto FROM subcategorias_producto WHERE id_categoria_producto = @cat_telas AND nombre = 'Algodón');
+SET @sub_remeras    := (SELECT id_subcategoria_producto FROM subcategorias_producto WHERE id_categoria_producto = @cat_confeccion AND nombre = 'Remeras');
+SET @sub_uniformes  := (SELECT id_subcategoria_producto FROM subcategorias_producto WHERE id_categoria_producto = @cat_confeccion AND nombre = 'Uniformes');
+
+INSERT INTO productos (nombre, descripcion, unidad_medida, stock_minimo, id_categoria_producto, id_subcategoria_producto, id_empresa, activo) VALUES
+  ('Tela algodón blanca',  'Ancho 1,50 m',          'metro',  50.5, @cat_telas,      @sub_algodon,   @empresa, 1),
+  ('Tela algodón azul',    NULL,                    'metro',  50,   @cat_telas,      @sub_algodon,   @empresa, 1),
+  ('Remera lisa talle M',  NULL,                    'unidad', 20,   @cat_confeccion, @sub_remeras,   @empresa, 1),
+  ('Ambo de trabajo',      'Pantalón y chaqueta',   'unidad', 6,    @cat_confeccion, @sub_uniformes, @empresa, 1),
+  ('Retazos surtidos',     'Sobrantes de corte',    'kg',     0,    @cat_telas,      NULL,           @empresa, 1);
+
+-- ------------------------------------------------------- 3 · Metal Oeste --
+SET @empresa := (SELECT id_empresa FROM empresas WHERE email = 'contacto@metaloeste.com.ar');
+
+SET @cat_materia      := (SELECT id_categoria_producto FROM categorias_producto WHERE id_empresa = @empresa AND nombre = 'Materia prima');
+SET @cat_herramientas := (SELECT id_categoria_producto FROM categorias_producto WHERE id_empresa = @empresa AND nombre = 'Herramientas');
+
+SET @sub_chapa      := (SELECT id_subcategoria_producto FROM subcategorias_producto WHERE id_categoria_producto = @cat_materia AND nombre = 'Chapa');
+SET @sub_cano       := (SELECT id_subcategoria_producto FROM subcategorias_producto WHERE id_categoria_producto = @cat_materia AND nombre = 'Caño');
+SET @sub_electrodos := (SELECT id_subcategoria_producto FROM subcategorias_producto WHERE id_categoria_producto = @cat_materia AND nombre = 'Electrodos');
+SET @sub_electricas := (SELECT id_subcategoria_producto FROM subcategorias_producto WHERE id_categoria_producto = @cat_herramientas AND nombre = 'Eléctricas');
+
+INSERT INTO productos (nombre, descripcion, unidad_medida, stock_minimo, id_categoria_producto, id_subcategoria_producto, id_empresa, activo) VALUES
+  ('Chapa galvanizada N°20', 'Hoja de 1 x 2 m',      'unidad', 10,  @cat_materia,      @sub_chapa,      @empresa, 1),
+  ('Caño estructural 40x40', 'Barra de 6 m',         'metro',  120, @cat_materia,      @sub_cano,       @empresa, 1),
+  ('Electrodo 2,5 mm',       'Caja de 5 kg',         'caja',   2,   @cat_materia,      @sub_electrodos, @empresa, 1),
+  ('Amoladora angular',      NULL,                   'unidad', 0,   @cat_herramientas, @sub_electricas, @empresa, 1),
+  ('Pintura antióxido',      'Balde de 4 litros',    'litro',  8,   @cat_materia,      NULL,            @empresa, 1);
+
 -- ------------------------------------------------------------ comprobación --
 SELECT c.nombre AS empresa, c.estado, COUNT(u.id) AS empleados
 FROM empresas c
@@ -315,3 +462,23 @@ LEFT JOIN categorias_movimiento cat ON cat.id_categoria = t.id_categoria
 WHERE c.estado = 'activa'
 GROUP BY c.id_empresa
 ORDER BY c.id_empresa;
+
+-- Clasificación del catálogo de productos por empresa
+SELECT e.nombre AS empresa,
+       COUNT(DISTINCT cp.id_categoria_producto) AS categorias,
+       COUNT(sp.id_subcategoria_producto)       AS subcategorias
+FROM empresas e
+JOIN categorias_producto cp     ON cp.id_empresa = e.id_empresa
+LEFT JOIN subcategorias_producto sp ON sp.id_categoria_producto = cp.id_categoria_producto
+GROUP BY e.id_empresa
+ORDER BY e.id_empresa;
+
+-- Catálogo de productos por empresa
+SELECT e.nombre AS empresa,
+       COUNT(p.id_producto)                                 AS productos,
+       SUM(CASE WHEN p.activo = 1 THEN 1 ELSE 0 END)        AS activos,
+       SUM(CASE WHEN p.id_subcategoria_producto IS NULL THEN 1 ELSE 0 END) AS sin_subcategoria
+FROM empresas e
+JOIN productos p ON p.id_empresa = e.id_empresa
+GROUP BY e.id_empresa
+ORDER BY e.id_empresa;

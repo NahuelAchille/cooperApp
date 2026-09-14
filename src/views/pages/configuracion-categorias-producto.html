@@ -1,0 +1,440 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css">
+  <link rel="stylesheet" href="/styles/header.css">
+  <link rel="stylesheet" href="/styles/configuracion-categorias-producto.css">
+  <title>Categorías de productos - CooperApp</title>
+</head>
+<body>
+
+  <div id="header"></div>
+
+  <script src="/components/header.js"></script>
+
+  <div class="page-header">
+    <div>
+      <h4 class="mb-0 fw-bold"><i class="fa-solid fa-boxes-stacked me-2"></i>Categorías de productos</h4>
+      <small>Cómo se ordena el catálogo: categorías y subcategorías propias de tu empresa</small>
+    </div>
+    <a class="btn btn-volver" href="/pages/dashboard.html">
+      <i class="fa-solid fa-arrow-left me-2"></i>Volver al panel
+    </a>
+  </div>
+
+  <div class="content">
+
+    <!-- Se muestra si el usuario no es admin -->
+    <div class="aviso-permiso d-none" id="aviso-permiso">
+      <i class="fa-solid fa-lock fa-2x mb-3"></i>
+      <p class="mb-0">Solo el administrador de la empresa puede configurar las categorías de productos.</p>
+    </div>
+
+    <!-- Se muestra si la empresa tiene el módulo apagado -->
+    <div class="aviso-permiso d-none" id="aviso-modulo">
+      <i class="fa-solid fa-plug-circle-xmark fa-2x mb-3"></i>
+      <p class="mb-1">El módulo de <strong>Productos</strong> no está activo en tu empresa.</p>
+      <p class="mb-0 small">El administrador puede activarlo desde <em>Módulos del sistema</em>.</p>
+    </div>
+
+    <div class="d-none" id="zona-categorias">
+
+      <div class="barra-acciones">
+        <h5><i class="fa-solid fa-sitemap"></i>Estructura del catálogo</h5>
+        <button class="btn-add-cat" id="btn-nueva-cat">
+          <i class="fa-solid fa-plus me-1"></i>Nueva categoría
+        </button>
+      </div>
+
+      <div class="grilla-categorias" id="grilla">
+        <div class="text-center py-3 text-muted"><i class="fa-solid fa-spinner fa-spin"></i></div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- Modal categoría (crear / renombrar) -->
+  <div class="modal fade" id="modalCategoria" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title fw-bold" id="cat-titulo"></h5>
+          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          <form id="form-categoria" novalidate>
+            <input type="hidden" name="id">
+            <div>
+              <label class="form-label">Nombre de la categoría</label>
+              <input type="text" class="form-control" name="nombre" maxlength="80" placeholder="Ej: Alimentos, Bebidas, Herramientas" required>
+            </div>
+            <div id="cat-error" class="text-danger small mt-2 d-none"></div>
+          </form>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
+          <button type="button" id="btn-guardar-cat" class="btn fw-bold px-4" style="background-color:#2d7a4f;color:white;">
+            <i class="fa-solid fa-floppy-disk me-2"></i>Guardar
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal subcategoría (crear / renombrar) -->
+  <div class="modal fade" id="modalSubcategoria" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title fw-bold" id="subcat-titulo"></h5>
+          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          <form id="form-subcategoria" novalidate>
+            <input type="hidden" name="id">
+            <input type="hidden" name="id_categoria">
+            <div class="mb-3">
+              <label class="form-label">Categoría</label>
+              <div id="subcat-cat-texto" class="fw-bold"></div>
+            </div>
+            <div>
+              <label class="form-label">Nombre de la subcategoría</label>
+              <input type="text" class="form-control" name="nombre" maxlength="80" placeholder="Ej: Perecederos, Congelados, Manuales" required>
+            </div>
+            <div id="subcat-error" class="text-danger small mt-2 d-none"></div>
+          </form>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
+          <button type="button" id="btn-guardar-subcat" class="btn fw-bold px-4" style="background-color:#2d7a4f;color:white;">
+            <i class="fa-solid fa-floppy-disk me-2"></i>Guardar
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal confirmar activar / desactivar -->
+  <div class="modal fade" id="modalEstado" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title fw-bold" id="estado-titulo"></h5>
+          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          <p class="mb-2" id="estado-pregunta"></p>
+          <div class="alert alert-warning mb-0 py-2 small" id="estado-aviso"></div>
+          <div id="estado-error" class="text-danger small mt-2 d-none"></div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
+          <button type="button" id="btn-confirmar-estado" class="btn fw-bold px-4"></button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+
+  <script>
+
+    let usuarioActual = null
+
+    function mostrarToast(mensaje) {
+      const toast = document.createElement('div')
+      toast.style = 'position:fixed;top:24px;left:50%;transform:translateX(-50%);background:#2d7a4f;color:white;padding:14px 24px;border-radius:10px;z-index:9999;font-weight:500;box-shadow:0 4px 16px rgba(0,0,0,0.2)'
+      toast.innerHTML = `<i class="fa-solid fa-circle-check me-2"></i>${esc(mensaje)}`
+      document.body.appendChild(toast)
+      setTimeout(() => toast.remove(), 6000)
+    }
+
+    // Evita romper el HTML (y que se ejecute código) si un nombre trae comillas o etiquetas
+    function esc(texto) {
+      return String(texto).replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+    }
+
+    async function iniciar() {
+      usuarioActual = await cargarHeader()
+
+      if (!usuarioActual || usuarioActual.error) {
+        window.location.href = '/pages/login.html'
+        return
+      }
+
+      if (usuarioActual.rol !== 'admin_empresa') {
+        document.getElementById('aviso-permiso').classList.remove('d-none')
+        return
+      }
+
+      // El rol alcanza, pero la empresa puede tener el módulo apagado.
+      // Son dos problemas distintos y se resuelven de maneras distintas.
+      if (!moduloActivo('productos')) {
+        document.getElementById('aviso-modulo').classList.remove('d-none')
+        return
+      }
+
+      document.getElementById('zona-categorias').classList.remove('d-none')
+      cargarArbol()
+    }
+
+    // Trae las categorías y, para cada una, sus subcategorías.
+    async function cargarArbol() {
+      const categorias = await fetch('/productos/categorias').then(r => r.ok ? r.json() : [])
+
+      const conSubcategorias = await Promise.all(categorias.map(async (c) => {
+        const subcategorias = await fetch(`/productos/categorias/${c.id_categoria_producto}/subcategorias`)
+          .then(r => r.ok ? r.json() : [])
+        return { ...c, subcategorias }
+      }))
+
+      pintarGrilla(conSubcategorias)
+    }
+
+    function pintarGrilla(cats) {
+      const cont = document.getElementById('grilla')
+
+      if (!cats.length) {
+        cont.innerHTML = '<div class="grilla-vacia">Todavía no hay categorías de productos. Creá la primera con el botón <strong>Nueva categoría</strong>.</div>'
+        return
+      }
+
+      cont.innerHTML = cats.map(c => {
+        const subcatHtml = c.subcategorias.length
+          ? `<ul class="subcat-lista">${c.subcategorias.map(s => `
+              <li class="subcat-item">
+                <span class="subcat-nombre ${s.activo ? '' : 'inactivo'}">
+                  <i class="fa-solid fa-tag" style="opacity:.4"></i>${esc(s.nombre)}
+                  ${s.activo ? '' : '<span class="badge-inactivo">Inactiva</span>'}
+                </span>
+                <span class="subcat-acciones">
+                  <button class="btn-mini" data-accion="editar-subcat" data-subcat-id="${s.id_subcategoria_producto}" data-subcat-nombre="${esc(s.nombre)}" data-cat-nombre="${esc(c.nombre)}" title="Renombrar"><i class="fa-solid fa-pen"></i></button>
+                  <button class="btn-mini ${s.activo ? 'peligro' : ''}" data-accion="toggle-subcat" data-subcat-id="${s.id_subcategoria_producto}" data-subcat-nombre="${esc(s.nombre)}" data-activo="${s.activo}" title="${s.activo ? 'Desactivar' : 'Activar'}">
+                    <i class="fa-solid ${s.activo ? 'fa-eye-slash' : 'fa-eye'}"></i>
+                  </button>
+                </span>
+              </li>`).join('')}</ul>`
+          : '<div class="sin-subcat">Sin subcategorías todavía. Agregá una con el botón +.</div>'
+
+        return `
+          <div class="cat-card ${c.activo ? '' : 'inactiva'}">
+            <div class="cat-header">
+              <span class="cat-nombre">
+                ${esc(c.nombre)}
+                ${c.activo ? '' : '<span class="badge-inactivo">Inactiva</span>'}
+              </span>
+              <span class="cat-acciones">
+                <button class="btn-mini" data-accion="add-subcat" data-cat-id="${c.id_categoria_producto}" data-cat-nombre="${esc(c.nombre)}" title="Agregar subcategoría"><i class="fa-solid fa-plus"></i></button>
+                <button class="btn-mini" data-accion="editar-cat" data-cat-id="${c.id_categoria_producto}" data-cat-nombre="${esc(c.nombre)}" title="Renombrar"><i class="fa-solid fa-pen"></i></button>
+                <button class="btn-mini ${c.activo ? 'peligro' : ''}" data-accion="toggle-cat" data-cat-id="${c.id_categoria_producto}" data-cat-nombre="${esc(c.nombre)}" data-activo="${c.activo}" title="${c.activo ? 'Desactivar' : 'Activar'}">
+                  <i class="fa-solid ${c.activo ? 'fa-eye-slash' : 'fa-eye'}"></i>
+                </button>
+              </span>
+            </div>
+            ${subcatHtml}
+          </div>`
+      }).join('')
+    }
+
+    // ================= ACCIONES (delegación sobre la grilla) =================
+    document.getElementById('btn-nueva-cat').addEventListener('click', () => abrirModalCategoria(null))
+
+    document.getElementById('grilla').addEventListener('click', (evento) => {
+      const boton = evento.target.closest('button')
+      if (!boton) return
+
+      const accion = boton.dataset.accion
+
+      if (accion === 'editar-cat') {
+        abrirModalCategoria({ id: boton.dataset.catId, nombre: boton.dataset.catNombre })
+      } else if (accion === 'toggle-cat') {
+        abrirModalEstado('categoria', boton.dataset.catId, boton.dataset.catNombre, boton.dataset.activo === '1')
+      } else if (accion === 'add-subcat') {
+        abrirModalSubcategoria(null, boton.dataset.catId, boton.dataset.catNombre)
+      } else if (accion === 'editar-subcat') {
+        abrirModalSubcategoria({ id: boton.dataset.subcatId, nombre: boton.dataset.subcatNombre }, null, boton.dataset.catNombre)
+      } else if (accion === 'toggle-subcat') {
+        abrirModalEstado('subcategoria', boton.dataset.subcatId, boton.dataset.subcatNombre, boton.dataset.activo === '1')
+      }
+    })
+
+    // ================= CATEGORÍA =================
+    function abrirModalCategoria(cat) {
+      const form = document.getElementById('form-categoria')
+      form.reset()
+      document.getElementById('cat-error').classList.add('d-none')
+
+      const esEdicion = !!cat
+      form.id.value = esEdicion ? cat.id : ''
+      document.getElementById('cat-titulo').innerHTML = esEdicion
+        ? '<i class="fa-solid fa-pen me-2"></i>Renombrar categoría'
+        : '<i class="fa-solid fa-plus me-2"></i>Nueva categoría'
+
+      if (esEdicion) form.nombre.value = cat.nombre
+
+      new bootstrap.Modal(document.getElementById('modalCategoria')).show()
+    }
+
+    document.getElementById('btn-guardar-cat').addEventListener('click', async (evento) => {
+      const boton = evento.currentTarget
+      const form = document.getElementById('form-categoria')
+      const errorDiv = document.getElementById('cat-error')
+      errorDiv.classList.add('d-none')
+
+      const datos = Object.fromEntries(new FormData(form))
+      if (!datos.nombre.trim()) {
+        errorDiv.textContent = 'El nombre es obligatorio.'
+        errorDiv.classList.remove('d-none')
+        return
+      }
+
+      boton.disabled = true
+
+      const esEdicion = !!datos.id
+      const url = esEdicion ? `/productos/categorias/${datos.id}` : '/productos/categorias'
+
+      const res = await fetch(url, {
+        method: esEdicion ? 'PUT' : 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ nombre: datos.nombre })
+      })
+      const resultado = await res.json()
+      boton.disabled = false
+
+      if (!res.ok) {
+        errorDiv.textContent = resultado.error
+        errorDiv.classList.remove('d-none')
+        return
+      }
+
+      bootstrap.Modal.getInstance(document.getElementById('modalCategoria')).hide()
+      mostrarToast(resultado.message)
+      cargarArbol()
+    })
+
+    // ================= SUBCATEGORÍA =================
+    function abrirModalSubcategoria(subcat, idCategoria, nombreCategoria) {
+      const form = document.getElementById('form-subcategoria')
+      form.reset()
+      document.getElementById('subcat-error').classList.add('d-none')
+
+      const esEdicion = !!subcat
+      form.id.value = esEdicion ? subcat.id : ''
+      form.id_categoria.value = idCategoria || ''
+      document.getElementById('subcat-cat-texto').textContent = nombreCategoria
+      document.getElementById('subcat-titulo').innerHTML = esEdicion
+        ? '<i class="fa-solid fa-pen me-2"></i>Renombrar subcategoría'
+        : '<i class="fa-solid fa-plus me-2"></i>Nueva subcategoría'
+
+      if (esEdicion) form.nombre.value = subcat.nombre
+
+      new bootstrap.Modal(document.getElementById('modalSubcategoria')).show()
+    }
+
+    document.getElementById('btn-guardar-subcat').addEventListener('click', async (evento) => {
+      const boton = evento.currentTarget
+      const form = document.getElementById('form-subcategoria')
+      const errorDiv = document.getElementById('subcat-error')
+      errorDiv.classList.add('d-none')
+
+      const datos = Object.fromEntries(new FormData(form))
+      if (!datos.nombre.trim()) {
+        errorDiv.textContent = 'El nombre es obligatorio.'
+        errorDiv.classList.remove('d-none')
+        return
+      }
+
+      boton.disabled = true
+
+      const esEdicion = !!datos.id
+      const url = esEdicion
+        ? `/productos/categorias/subcategorias/${datos.id}`
+        : `/productos/categorias/${datos.id_categoria}/subcategorias`
+
+      const res = await fetch(url, {
+        method: esEdicion ? 'PUT' : 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ nombre: datos.nombre })
+      })
+      const resultado = await res.json()
+      boton.disabled = false
+
+      if (!res.ok) {
+        errorDiv.textContent = resultado.error
+        errorDiv.classList.remove('d-none')
+        return
+      }
+
+      bootstrap.Modal.getInstance(document.getElementById('modalSubcategoria')).hide()
+      mostrarToast(resultado.message)
+      cargarArbol()
+    })
+
+    // ================= ACTIVAR / DESACTIVAR =================
+    function abrirModalEstado(destino, id, nombre, estaActiva) {
+      const desactivando = estaActiva
+      const esCat = destino === 'categoria'
+      const palabra = esCat ? 'categoría' : 'subcategoría'
+
+      document.getElementById('estado-titulo').innerHTML = desactivando
+        ? `<i class="fa-solid fa-eye-slash me-2"></i>Desactivar ${palabra}`
+        : `<i class="fa-solid fa-eye me-2"></i>Activar ${palabra}`
+
+      document.getElementById('estado-pregunta').innerHTML = desactivando
+        ? `¿Desactivar <strong>${esc(nombre)}</strong>?`
+        : `¿Activar <strong>${esc(nombre)}</strong>?`
+
+      document.getElementById('estado-aviso').innerHTML = desactivando
+        ? `<i class="fa-solid fa-circle-info me-1"></i>No se borra: deja de aparecer al cargar productos nuevos, pero lo que ya esté clasificado se conserva.${esCat ? ' Al desactivar la categoría, sus subcategorías también quedan inactivas.' : ''}`
+        : `<i class="fa-solid fa-circle-info me-1"></i>Vuelve a estar disponible para clasificar productos.${esCat ? ' Sus subcategorías también vuelven a quedar activas.' : ''}`
+
+      const btn = document.getElementById('btn-confirmar-estado')
+      btn.innerHTML = desactivando
+        ? '<i class="fa-solid fa-eye-slash me-2"></i>Desactivar'
+        : '<i class="fa-solid fa-eye me-2"></i>Activar'
+      btn.style.backgroundColor = desactivando ? '#a01c1c' : '#2d7a4f'
+      btn.style.color = 'white'
+      btn.dataset.destino = destino
+      btn.dataset.id = id
+      btn.dataset.activo = desactivando ? '0' : '1'
+
+      document.getElementById('estado-error').classList.add('d-none')
+      new bootstrap.Modal(document.getElementById('modalEstado')).show()
+    }
+
+    document.getElementById('btn-confirmar-estado').addEventListener('click', async (evento) => {
+      const boton = evento.currentTarget
+      const errorDiv = document.getElementById('estado-error')
+
+      boton.disabled = true
+
+      const url = boton.dataset.destino === 'categoria'
+        ? `/productos/categorias/${boton.dataset.id}/estado`
+        : `/productos/categorias/subcategorias/${boton.dataset.id}/estado`
+
+      const res = await fetch(url, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ activo: Number(boton.dataset.activo) })
+      })
+      const resultado = await res.json()
+      boton.disabled = false
+
+      if (!res.ok) {
+        errorDiv.textContent = resultado.error
+        errorDiv.classList.remove('d-none')
+        return
+      }
+
+      bootstrap.Modal.getInstance(document.getElementById('modalEstado')).hide()
+      mostrarToast(resultado.message)
+      cargarArbol()
+    })
+
+    iniciar()
+  </script>
+</body>
+</html>

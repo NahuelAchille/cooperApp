@@ -54,7 +54,12 @@ async function cargarHeader() {
     modulosEmpresa = await fetch('/modulos').then(r => r.ok ? r.json() : []).catch(() => [])
 
     if (moduloActivo('movimientos') && esFinanzas) mostrar('nav-movimientos')
-    if (moduloActivo('productos')) mostrar('nav-productos')
+    // El catalogo lo trabaja el deposito (operador) y lo arma el admin.
+    // El tesorero no entra: lo suyo es el dinero.
+    const esCatalogo = esAdmin || user.rol === 'operador'
+    if (moduloActivo('productos') && esCatalogo) mostrar('nav-productos')
+    // Armar el arbol del catalogo es del admin; el operador solo lo usa.
+    if (moduloActivo('productos') && esAdmin) mostrar('item-categorias-producto')
     if (moduloActivo('servicios') && esFinanzas) mostrar('nav-servicios')
     if (moduloActivo('reportes') && esFinanzas) mostrar('nav-reportes')
     if (moduloActivo('articulacion')) mostrar('nav-articulacion')

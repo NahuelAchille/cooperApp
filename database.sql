@@ -174,6 +174,69 @@ CREATE TABLE movimientos (
 
 
 -- =============================================
+-- PRODUCTOS (arbol de clasificacion del catalogo)
+-- =============================================
+--
+-- El catalogo se ordena en dos niveles, y cada empresa arma los suyos:
+--   1. Categoria     -> agrupa productos (ej: "Alimentos")
+--   2. Subcategoria  -> el detalle dentro de una categoria (ej: "Perecederos")
+--
+-- OJO: esto NO es la clasificacion del dinero. Un producto no es una categoria
+-- de movimiento: el dinero ya tiene la suya (categoria -> tipo). Productos es
+-- un modulo operativo que, mas adelante, GENERA movimientos. Si se mezclaran,
+-- la misma venta quedaria clasificada dos veces y los totales no cerrarian.
+
+-- Nivel 1: categorias de producto. Una por empresa, con nombre unico.
+CREATE TABLE categorias_producto (
+  id_categoria_producto INT AUTO_INCREMENT PRIMARY KEY,
+  nombre                VARCHAR(80) NOT NULL,
+  id_empresa            INT NOT NULL,
+  activo                TINYINT(1) DEFAULT 1,
+  FOREIGN KEY (id_empresa) REFERENCES empresas(id_empresa),
+  UNIQUE (id_empresa, nombre)
+);
+
+-- Nivel 2: subcategorias. Cuelgan de una categoria, que ya es de una empresa.
+CREATE TABLE subcategorias_producto (
+  id_subcategoria_producto INT AUTO_INCREMENT PRIMARY KEY,
+  nombre                   VARCHAR(80) NOT NULL,
+  id_categoria_producto    INT NOT NULL,
+  activo                   TINYINT(1) DEFAULT 1,
+  FOREIGN KEY (id_categoria_producto) REFERENCES categorias_producto(id_categoria_producto),
+  UNIQUE (id_categoria_producto, nombre)
+);
+
+-- El catalogo en si: que productos existen. Cuantos hay de cada uno es otra
+-- cosa (el stock) y se resuelve aparte, con sus propios movimientos.
+--
+-- La subcategoria es OPCIONAL a proposito: quien no quiere subdividir carga
+-- el producto con la categoria sola. Obligarla llevaria a inventar una
+-- subcategoria de relleno ("General") en cada categoria para poder empezar.
+-- La categoria, en cambio, va siempre: es lo que ordena el catalogo.
+--
+-- Los productos no se borran, se dan de baja: manana tienen stock e historial
+-- colgando y borrarlos dejaria movimientos sin referencia.
+-- El stock_minimo va en DECIMAL y no en entero porque se expresa en la unidad
+-- del producto: hay cosas que se miden por unidad (5) y otras por peso o
+-- volumen (2,5 kg). En 0 significa "no me avises", que es el caso de arranque.
+CREATE TABLE productos (
+  id_producto              INT AUTO_INCREMENT PRIMARY KEY,
+  nombre                   VARCHAR(120) NOT NULL,
+  descripcion              VARCHAR(255),
+  unidad_medida            VARCHAR(20) NOT NULL,
+  stock_minimo             DECIMAL(12,2) NOT NULL DEFAULT 0,
+  id_categoria_producto    INT NOT NULL,
+  id_subcategoria_producto INT NULL,
+  id_empresa               INT NOT NULL,
+  activo                   TINYINT(1) DEFAULT 1,
+  creado_en                DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (id_categoria_producto)    REFERENCES categorias_producto(id_categoria_producto),
+  FOREIGN KEY (id_subcategoria_producto) REFERENCES subcategorias_producto(id_subcategoria_producto),
+  FOREIGN KEY (id_empresa)               REFERENCES empresas(id_empresa),
+  UNIQUE (id_empresa, nombre)
+);
+
+-- =============================================
 -- MODULOS
 -- =============================================
 --
