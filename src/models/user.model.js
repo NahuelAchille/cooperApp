@@ -123,4 +123,19 @@ const findById = async (id) => {
   return rows[0] || null
 }
 
-module.exports = { findByEmail, findByDni, findByEmailExcluyendo, findByDniExcluyendo, findByEmailWithContext, create, createInterno, findByEmpresa, update, setActivo, updatePassword, resetPassword, findById }
+// Estado actual del usuario y de su empresa. Lo consulta el control de sesion
+// en cada pedido: la sesion guarda una foto del momento del login, y entre
+// medio al usuario lo pueden dar de baja o suspender su empresa.
+const estadoDeSesion = async (id) => {
+
+  const [rows] = await db.query(`
+    SELECT u.activo, u.debe_cambiar_password, e.estado AS empresa_estado
+    FROM usuarios u
+    LEFT JOIN empresas e ON e.id_empresa = u.id_empresa
+    WHERE u.id = ?
+  `, [id])
+
+  return rows[0] || null
+}
+
+module.exports = { estadoDeSesion, findByEmail, findByDni, findByEmailExcluyendo, findByDniExcluyendo, findByEmailWithContext, create, createInterno, findByEmpresa, update, setActivo, updatePassword, resetPassword, findById }

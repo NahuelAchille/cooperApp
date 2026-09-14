@@ -103,6 +103,33 @@
   </div>
 </div>
 
+<!-- Confirmacion para rechazar: bloquea el ingreso de toda una empresa -->
+<div class="modal fade" id="modalRechazar" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header" style="background-color:#a01c1c;">
+        <h5 class="modal-title fw-bold"><i class="fa-solid fa-xmark me-2"></i>Rechazar empresa</h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <p class="mb-2" id="rechazar-detalle"></p>
+        <div class="alert alert-warning mb-0 py-2 small">
+          <i class="fa-solid fa-circle-info me-1"></i>
+          Ninguno de sus usuarios va a poder entrar al sistema. No se borra nada:
+          la empresa queda en <strong>Todas las empresas</strong> y se puede volver
+          a habilitar desde ahí.
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
+        <button type="button" id="btn-confirmar-rechazar" class="btn fw-bold px-4" style="background-color:#a01c1c;color:white;">
+          <i class="fa-solid fa-xmark me-2"></i>Rechazar
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
 <div class="modal fade" id="modalDetalle" tabindex="-1" aria-hidden="true">
   <div class="modal-dialog modal-dialog-centered">
     <div class="modal-content">
@@ -138,6 +165,17 @@
   })
 
   
+  // Neutraliza el HTML que pueda venir en un dato cargado por el usuario.
+  // Los nombres de empresa los escribe cualquiera desde el registro publico,
+  // asi que llegan a esta pantalla sin pasar por ningun filtro previo.
+  function esc(texto) {
+    return String(texto).replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+  }
+
+  // Las empresas que se estan mostrando, para poder abrir el detalle por id en
+  // vez de meter el objeto entero dentro de un atributo onclick.
+  let empresasEnPantalla = []
+
   async function cargarPendientes() {
 
     const res = await fetch('/empresas/pendientes')
@@ -160,12 +198,12 @@
           <tbody>
             ${data.map(c => `
               <tr>
-                <td><strong>${c.nombre}</strong></td>
-                <td>${c.cuit}</td>
-                <td>${c.email}</td>
-                <td>${c.admin_nombre ? `${c.admin_nombre} ${c.admin_apellido}` : '-'}</td>
+                <td><strong>${esc(c.nombre)}</strong></td>
+                <td>${esc(c.cuit)}</td>
+                <td>${esc(c.email)}</td>
+                <td>${c.admin_nombre ? `${esc(c.admin_nombre)} ${esc(c.admin_apellido)}` : '-'}</td>
                 <td class="text-center">
-                  <button class="btn btn-sm btn-outline-secondary me-1" onclick="verDetalle(${JSON.stringify(c).replace(/"/g, '&quot;')})">
+                  <button class="btn btn-sm btn-outline-secondary me-1" onclick="verDetalle(${c.id_empresa})">
                     <i class="fa-solid fa-eye"></i>
                   </button>
                   <button class="btn btn-sm btn-aprobar me-1" onclick="aprobar(${c.id_empresa})">
@@ -186,6 +224,7 @@
   async function cargarTodas() {
     const res = await fetch('/empresas')
     const data = await res.json()
+    empresasEnPantalla = Array.isArray(data) ? data : []
     const container = document.getElementById('lista-todas')
 
     const estadoBadge = (e) => ({
@@ -197,13 +236,21 @@
     // Boton para resetear la contraseña del administrador de la empresa
     const botonReset = (c) => {
 
+      // Una empresa suspendida o rechazada tiene que poder volver desde aca:
+      // antes el unico camino de vuelta era por la base de datos.
+      if (c.estado === 'suspendida') {
+        return `<button class="btn-reset-admin" data-habilitar="${c.id_empresa}">
+                  <i class="fa-solid fa-rotate-left me-1"></i>Habilitar de nuevo
+                </button>`
+      }
+
       if (!c.admin_id) return '<span class="text-muted small">sin administrador</span>'
 
       return `<button class="btn-reset-admin"
                       data-id="${c.admin_id}"
-                      data-nombre="${c.admin_nombre} ${c.admin_apellido}"
-                      data-email="${c.admin_email}"
-                      data-empresa="${c.nombre}">
+                      data-nombre="${esc(c.admin_nombre)} ${esc(c.admin_apellido)}"
+                      data-email="${esc(c.admin_email)}"
+                      data-empresa="${esc(c.nombre)}">
                 <i class="fa-solid fa-key me-1"></i>Resetear contraseña
               </button>`
     }
@@ -218,10 +265,10 @@
           <tbody>
             ${data.map(c => `
               <tr>
-                <td><strong>${c.nombre}</strong></td>
-                <td>${c.cuit}</td>
-                <td>${c.email}</td>
-                <td>${c.admin_id ? `${c.admin_nombre} ${c.admin_apellido}<br><span class="text-muted small">${c.admin_email}</span>` : '<span class="text-muted small">—</span>'}</td>
+                <td><strong>${esc(c.nombre)}</strong></td>
+                <td>${esc(c.cuit)}</td>
+                <td>${esc(c.email)}</td>
+                <td>${c.admin_id ? `${esc(c.admin_nombre)} ${esc(c.admin_apellido)}<br><span class="text-muted small">${esc(c.admin_email)}</span>` : '<span class="text-muted small">—</span>'}</td>
                 <td class="text-center">${c.cantidad_usuarios}</td>
                 <td>${estadoBadge(c.estado)}</td>
                 <td class="text-end">${botonReset(c)}</td>
@@ -232,19 +279,22 @@
       </div>`
   }
 
-  function verDetalle(c) {
+  function verDetalle(id_empresa) {
+
+    const c = empresasEnPantalla.find(e => e.id_empresa === id_empresa)
+    if (!c) return
 
     document.getElementById('modal-titulo').textContent = c.nombre
 
     document.getElementById('modal-body').innerHTML = `
       <dl class="row mb-0">
-        <dt class="col-5">CUIT</dt><dd class="col-7">${c.cuit}</dd>
-        <dt class="col-5">Email</dt><dd class="col-7">${c.email}</dd>
-        <dt class="col-5">Matrícula</dt><dd class="col-7">${c.matricula}</dd>
-        <dt class="col-5">Domicilio</dt><dd class="col-7">${c.domicilio || '-'}</dd>
-        <dt class="col-5">Federación</dt><dd class="col-7">${c.federacion || '-'}</dd>
-        <dt class="col-5">Administrador</dt><dd class="col-7">${c.admin_nombre ? `${c.admin_nombre} ${c.admin_apellido}` : '-'}</dd>
-        <dt class="col-5">Email admin</dt><dd class="col-7">${c.admin_email || '-'}</dd>
+        <dt class="col-5">CUIT</dt><dd class="col-7">${esc(c.cuit)}</dd>
+        <dt class="col-5">Email</dt><dd class="col-7">${esc(c.email)}</dd>
+        <dt class="col-5">Matrícula</dt><dd class="col-7">${esc(c.matricula)}</dd>
+        <dt class="col-5">Domicilio</dt><dd class="col-7">${c.domicilio ? esc(c.domicilio) : '-'}</dd>
+        <dt class="col-5">Federación</dt><dd class="col-7">${c.federacion ? esc(c.federacion) : '-'}</dd>
+        <dt class="col-5">Administrador</dt><dd class="col-7">${c.admin_nombre ? `${esc(c.admin_nombre)} ${esc(c.admin_apellido)}` : '-'}</dd>
+        <dt class="col-5">Email admin</dt><dd class="col-7">${c.admin_email ? esc(c.admin_email) : '-'}</dd>
       </dl>`
 
     document.getElementById('modal-footer').innerHTML = `
@@ -264,8 +314,34 @@
     cargarTodas()
   }
 
-  async function rechazar(id) {
-    await fetch(`/empresas/${id}/rechazar`, { method: 'PUT' })
+  // Rechazar bloquea a TODOS los usuarios de la empresa: no puede ser un clic
+  // suelto sin aviso.
+  function rechazar(id) {
+    const empresa = empresasEnPantalla.find(e => e.id_empresa === id)
+    document.getElementById('rechazar-detalle').innerHTML =
+      `¿Confirmás rechazar a <strong>${esc(empresa ? empresa.nombre : 'esta empresa')}</strong>?`
+    document.getElementById('btn-confirmar-rechazar').dataset.id = id
+    new bootstrap.Modal(document.getElementById('modalRechazar')).show()
+  }
+
+  document.getElementById('btn-confirmar-rechazar').addEventListener('click', async (evento) => {
+    const boton = evento.currentTarget
+    boton.disabled = true
+
+    await fetch(`/empresas/${boton.dataset.id}/rechazar`, { method: 'PUT' })
+
+    boton.disabled = false
+    bootstrap.Modal.getInstance(document.getElementById('modalRechazar')).hide()
+    mostrarToast('Empresa rechazada. Podés volver a habilitarla desde "Todas las empresas".')
+    cargarPendientes()
+    cargarTodas()
+  })
+
+  // Volver a habilitar una empresa rechazada o suspendida, sin tener que tocar
+  // la base de datos.
+  async function habilitar(id) {
+    await fetch(`/empresas/${id}/aprobar`, { method: 'PUT' })
+    mostrarToast('Empresa habilitada')
     cargarPendientes()
     cargarTodas()
   }
@@ -276,7 +352,7 @@
 
     const toast = document.createElement('div')
     toast.style = 'position:fixed;top:24px;left:50%;transform:translateX(-50%);background:#2d7a4f;color:white;padding:14px 24px;border-radius:10px;z-index:9999;font-weight:500;box-shadow:0 4px 16px rgba(0,0,0,0.2)'
-    toast.innerHTML = `<i class="fa-solid fa-circle-check me-2"></i>${mensaje}`
+    toast.innerHTML = `<i class="fa-solid fa-circle-check me-2"></i>${esc(mensaje)}`
     document.body.appendChild(toast)
     setTimeout(() => toast.remove(), 6000)
   }
@@ -287,9 +363,15 @@
     const boton = evento.target.closest('.btn-reset-admin')
     if (!boton) return
 
+    // Empresa suspendida: el boton es para volver a habilitarla
+    if (boton.dataset.habilitar) {
+      habilitar(Number(boton.dataset.habilitar))
+      return
+    }
+
     document.getElementById('reset-nombre').textContent = boton.dataset.nombre
     document.getElementById('reset-email').textContent  = boton.dataset.email
-    document.getElementById('reset-empresa').textContent   = boton.dataset.coop
+    document.getElementById('reset-empresa').textContent   = boton.dataset.empresa
     document.getElementById('reset-error').classList.add('d-none')
     document.getElementById('btn-confirmar-reset').dataset.id = boton.dataset.id
 

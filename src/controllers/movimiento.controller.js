@@ -9,6 +9,10 @@ const FECHA_MINIMA = '2000-01-01'
 // Valida un monto: debe ser un numero positivo con hasta 2 decimales
 const parsearMonto = (valor) => {
 
+  // true se convierte en 1 y false en 0, asi que un booleano pasaria como
+  // monto valido. Solo se aceptan numeros o texto que represente un numero.
+  if (typeof valor !== 'number' && typeof valor !== 'string') return null
+
   const numero = Number(valor)
 
   // Rechaza si no es un numero finito (NaN, infinito).

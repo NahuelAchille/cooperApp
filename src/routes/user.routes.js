@@ -9,7 +9,9 @@ router.post('/login', userController.login)
 router.get('/logout', userController.logout)
 router.get('/me', requireLogin, userController.me)
 
-router.get('/',    requireLogin, userController.getUsuariosEmpresa)
+// El listado trae DNI y quien tiene contraseña temporal: son datos personales
+// y de seguridad, asi que lo ve solo el administrador de la empresa.
+router.get('/',    requireLogin, requireRol('admin_empresa'), userController.getUsuariosEmpresa)
 router.post('/',   requireLogin, requireRol('admin_empresa'), userController.crearUsuario)
 router.post('/cambiar-password', requireLogin, userController.cambiarPassword)
 router.post('/:id/resetear-password', requireLogin, requireRol('superadmin', 'admin_empresa'), userController.resetearPassword)

@@ -14,7 +14,11 @@ app.use(session({
   secret: 'cooperapp_secret',
   resave: false,
   saveUninitialized: false,
-  cookie: { maxAge: 1000 * 60 * 60 * 8 } // 8 horas
+  cookie: {
+    maxAge: 1000 * 60 * 60 * 8,  // 8 horas
+    httpOnly: true,              // el JavaScript de la pagina no puede leerla
+    sameSite: 'lax'              // no viaja en pedidos que vengan de otro sitio
+  }
 }))
 app.get('/', (req, res) => res.redirect('/pages/login.html'))
 

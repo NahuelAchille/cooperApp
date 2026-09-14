@@ -132,6 +132,16 @@ exports.crearUsuario = async (req, res) => {
       return res.status(400).json({ error: 'El rol seleccionado no es válido' })
     }
 
+    // El mismo control que hace la edicion: sin esto entraba cualquier texto
+    // como email y quedaba una cuenta con un dato de contacto inservible.
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(email).trim())) {
+      return res.status(400).json({ error: 'El email no tiene un formato válido' })
+    }
+
+    if (!/^\d{7,9}$/.test(String(dni).replace(/[.\s]/g, ''))) {
+      return res.status(400).json({ error: 'El DNI debe tener entre 7 y 9 dígitos' })
+    }
+
     if (await userModel.findByEmail(email)) {
       return res.status(400).json({ error: 'Ya existe un usuario con ese email' })
     }

@@ -26,6 +26,50 @@ const create = async ({ nombre, email, cuit, matricula, federacion, domicilio })
   return result.insertId
 }
 
+// Alta de la empresa y de su administrador EN UNA SOLA OPERACION.
+//
+// Antes se hacian por separado: si el alta del usuario fallaba (o se cortaba
+// la conexion en el medio), quedaba una empresa sin ningun administrador, y
+// como el email, el CUIT y la matricula son unicos, la persona ya no podia
+// volver a registrarse. Peor todavia si el superadmin la aprobaba: una empresa
+// activa a la que nadie podia entrar nunca.
+//
+// Con la transaccion, o entran las dos filas o no entra ninguna.
+const createConAdmin = async (empresa, admin) => {
+
+  const conexion = await db.getConnection()
+
+  try {
+    await conexion.beginTransaction()
+
+    const [resultadoEmpresa] = await conexion.query(
+      `INSERT INTO empresas (nombre, email, cuit, matricula, federacion, domicilio, estado)
+       VALUES (?, ?, ?, ?, ?, ?, 'pendiente')`,
+      [empresa.nombre, empresa.email, empresa.cuit, empresa.matricula,
+       empresa.federacion || null, empresa.domicilio || null]
+    )
+
+    const id_empresa = resultadoEmpresa.insertId
+
+    await conexion.query(
+      `INSERT INTO usuarios (nombre, apellido, email, password_hash, dni, id_rol, id_empresa)
+       VALUES (?, ?, ?, ?, ?, ?, ?)`,
+      [admin.nombre, admin.apellido, admin.email, admin.password_hash,
+       admin.dni, admin.id_rol, id_empresa]
+    )
+
+    await conexion.commit()
+    return id_empresa
+
+  } catch (error) {
+    await conexion.rollback()
+    throw error
+
+  } finally {
+    conexion.release()
+  }
+}
+
 const findPendientes = async () => {
 
   const [rows] = await db.query(`
@@ -95,4 +139,4 @@ const activarUsuarioAdmin = async (id_empresa) => {
   await db.query('UPDATE usuarios SET activo = 1 WHERE id_empresa = ? AND id_rol = 1', [id_empresa])
 }
 
-module.exports = { findByEmail, findByCuit, findByMatricula, create, findPendientes, findAll, findById, findByEmailExcluyendo, update, updateEstado, activarUsuarioAdmin }
+module.exports = { createConAdmin, findByEmail, findByCuit, findByMatricula, create, findPendientes, findAll, findById, findByEmailExcluyendo, update, updateEstado, activarUsuarioAdmin }

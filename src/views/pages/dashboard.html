@@ -76,7 +76,13 @@
                     : 'El módulo de Movimientos no está activo en tu empresa.'}</td></tr>`
         }
 
-        cargarUsuarios()
+        // El listado de usuarios trae datos personales, asi que solo lo ve el
+        // administrador: para los demas el indicador queda en blanco.
+        if (user.rol === 'admin_empresa') {
+            cargarUsuarios()
+        } else {
+            document.getElementById('kpi-usuarios').closest('.dashboard-kpi').classList.add('d-none')
+        }
     }
 
     // KPIs de ingresos / egresos / balance: mes actual, con comparacion contra

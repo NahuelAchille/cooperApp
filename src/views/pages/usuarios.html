@@ -219,7 +219,7 @@
 
       const toast = document.createElement('div')
       toast.style = 'position:fixed;top:24px;left:50%;transform:translateX(-50%);background:#2d7a4f;color:white;padding:14px 24px;border-radius:10px;z-index:9999;font-weight:500;box-shadow:0 4px 16px rgba(0,0,0,0.2)'
-      toast.innerHTML = `<i class="fa-solid fa-circle-check me-2"></i>${mensaje}`
+      toast.innerHTML = `<i class="fa-solid fa-circle-check me-2"></i>${esc(mensaje)}`
       document.body.appendChild(toast)
       setTimeout(() => toast.remove(), 6000)
     }
@@ -236,11 +236,16 @@
         && u.rol !== 'superadmin'
     }
 
+    // Neutraliza el HTML que pueda venir en un dato cargado por el usuario.
+    function esc(texto) {
+      return String(texto).replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+    }
+
     function botonesAccion(u) {
 
       if (!puedeGestionar(u)) return '<span class="text-muted small">—</span>'
 
-      const datos = `data-id="${u.id}" data-nombre="${u.nombre} ${u.apellido}"`
+      const datos = `data-id="${u.id}" data-nombre="${esc(u.nombre)} ${esc(u.apellido)}"`
 
       const baja = u.activo
         ? `<button class="btn-accion peligro" data-accion="baja" ${datos} title="Dar de baja">
@@ -279,10 +284,10 @@
 
       tbody.innerHTML = data.map(u => `
         <tr class="${u.activo ? '' : 'fila-inactiva'}">
-          <td><strong>${u.nombre} ${u.apellido}</strong></td>
-          <td>${u.email}</td>
-          <td>${u.dni}</td>
-          <td><span class="badge-rol">${u.rol}</span></td>
+          <td><strong>${esc(u.nombre)} ${esc(u.apellido)}</strong></td>
+          <td>${esc(u.email)}</td>
+          <td>${esc(u.dni)}</td>
+          <td><span class="badge-rol">${esc(u.rol)}</span></td>
           <td>
             ${!u.activo ? '<span class="badge-inactivo">Dado de baja</span>' : u.debe_cambiar_password ? '<span class="badge-temp">Contraseña temporal</span>' : '<span class="badge-activo">Activo</span>'}
           </td>
@@ -338,8 +343,8 @@
         : '<i class="fa-solid fa-user-check me-2"></i>Reactivar usuario'
 
       document.getElementById('estado-pregunta').innerHTML = dandoDeBaja
-        ? `¿Confirmás dar de baja a <strong>${nombre}</strong>?`
-        : `¿Confirmás reactivar a <strong>${nombre}</strong>?`
+        ? `¿Confirmás dar de baja a <strong>${esc(nombre)}</strong>?`
+        : `¿Confirmás reactivar a <strong>${esc(nombre)}</strong>?`
 
       document.getElementById('estado-aviso').innerHTML = dandoDeBaja
         ? '<i class="fa-solid fa-circle-info me-1"></i>No se borra nada: el usuario queda en el listado pero no va a poder iniciar sesión. Se puede reactivar cuando quieras.'
