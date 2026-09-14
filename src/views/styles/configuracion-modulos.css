@@ -1,0 +1,136 @@
+/* ===== VARIABLES ===== */
+:root {
+  --verde-primario: #2d7a4f;
+  --verde-oscuro: #235f3d;
+  --bg-page: #f0f7f3;
+  --card-bg: #ffffff;
+  --card-shadow: 0 2px 12px rgba(0,0,0,0.07);
+}
+
+/* ===== BASE ===== */
+body {
+  background-color: var(--bg-page);
+  color: #1a2e23;
+  margin: 0;
+  padding: 0;
+  font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
+}
+
+/* ===== ENCABEZADO DE LA PANTALLA ===== */
+.page-header {
+  background: linear-gradient(135deg, var(--verde-primario), #3a9e65);
+  color: #fff;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.page-header small { opacity: 0.85; }
+
+.btn-volver {
+  background: rgba(255,255,255,0.15);
+  color: #fff;
+  border: 1px solid rgba(255,255,255,0.45);
+  border-radius: 8px;
+  font-weight: 600;
+  align-self: flex-start;
+}
+.btn-volver:hover { background: rgba(255,255,255,0.3); color: #fff; }
+
+.content { padding: 16px; }
+
+/* ===== AVISO SIN PERMISO ===== */
+.aviso-permiso {
+  background: var(--card-bg);
+  border-radius: 12px;
+  box-shadow: var(--card-shadow);
+  padding: 32px 16px;
+  text-align: center;
+  color: #7a8a80;
+}
+
+/* ===== TARJETAS DE MODULO =====
+   Mobile primero: cada modulo ocupa todo el ancho y el interruptor queda
+   debajo del texto, comodo para el pulgar. En pantalla grande van en dos
+   columnas y el interruptor se acomoda a la derecha. */
+.modulos-lista {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 12px;
+}
+
+.modulo-card {
+  background: var(--card-bg);
+  border-radius: 12px;
+  box-shadow: var(--card-shadow);
+  padding: 16px;
+  border-left: 5px solid #c8e6d5;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.modulo-card.activo { border-left-color: var(--verde-primario); }
+
+.modulo-nombre {
+  font-weight: 700;
+  font-size: 1.05rem;
+  color: var(--verde-primario);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.modulo-desc {
+  font-size: 0.9rem;
+  color: #5a6b61;
+  margin: 0;
+}
+
+.modulo-pie {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+/* Interruptor grande: la pantalla la usa gente que opera desde el celular. */
+.form-switch .form-check-input {
+  width: 3rem;
+  height: 1.5rem;
+  cursor: pointer;
+}
+.form-switch .form-check-input:checked {
+  background-color: var(--verde-primario);
+  border-color: var(--verde-primario);
+}
+.form-switch .form-check-input:disabled { cursor: not-allowed; }
+
+.estado-texto { font-weight: 600; font-size: 0.9rem; }
+.estado-texto.encendido { color: var(--verde-primario); }
+.estado-texto.apagado { color: #93a29a; }
+
+.nota-fija {
+  font-size: 0.8rem;
+  color: #7a8a80;
+  background: #f2faf6;
+  border-radius: 8px;
+  padding: 6px 10px;
+}
+
+/* ===== TABLET / ESCRITORIO ===== */
+@media (min-width: 768px) {
+  .page-header {
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: center;
+    padding: 20px 32px;
+  }
+  .content { padding: 24px 32px; }
+  .modulos-lista { grid-template-columns: repeat(2, 1fr); gap: 16px; }
+  .modulo-card { padding: 20px; }
+}
+
+@media (min-width: 1200px) {
+  .modulos-lista { grid-template-columns: repeat(3, 1fr); }
+}

@@ -13,35 +13,7 @@
 
   <div id="header"></div>
 
-  <script>
-    fetch('/components/header.html')
-      .then(res => res.text())
-      .then(html => {
-        document.getElementById('header').innerHTML = html
-        fetch('/users/me')
-          .then(r => r.json())
-          .then(user => {
-            if (!user || user.error) return
-
-            const iniciales = (user.nombre[0] + user.apellido[0]).toUpperCase()
-            document.getElementById('user-avatar').textContent = iniciales
-            document.getElementById('user-nombre').textContent = `${user.nombre} ${user.apellido}`
-            document.getElementById('dropdown-empresa').textContent = user.empresa?.nombre || ''
-
-            // El menu de arriba solo ofrece lo que el rol puede usar: si no,
-            // el usuario entra y se come un cartel de "sin permiso".
-            if (user.rol === 'admin_empresa') document.getElementById('nav-usuarios').classList.remove('d-none')
-            if (user.rol === 'admin_empresa' || user.rol === 'tesorero') document.getElementById('nav-movimientos').classList.remove('d-none')
-
-            if (user.rol === 'admin_empresa') {
-              document.getElementById('item-usuarios').classList.remove('d-none')
-            }
-            if (user.rol === 'superadmin') {
-              document.getElementById('item-superadmin').classList.remove('d-none')
-            }
-          })
-      })
-  </script>
+  <script src="/components/header.js"></script>
 
   <div class="page-header">
     <div>
@@ -197,7 +169,7 @@
     }
 
     async function iniciar() {
-      usuarioActual = await fetch('/users/me').then(r => r.json())
+      usuarioActual = await cargarHeader()
 
       if (!usuarioActual || usuarioActual.error) {
         window.location.href = '/pages/login.html'

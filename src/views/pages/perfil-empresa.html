@@ -172,6 +172,7 @@
   </div>
 
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+  <script src="/components/header.js"></script>
 
   <script>
 
@@ -194,31 +195,12 @@
       errorDiv.classList.remove('d-none')
     }
 
-    // Carga el header y despues completa los datos del usuario logueado
-    async function cargarHeader() {
+    // La carga comun del encabezado vive en /components/header.js. Aca solo
+    // queda lo propio de esta pantalla: quien puede editar y quien no.
+    async function prepararPantalla() {
 
-      const html = await fetch('/components/header.html').then(r => r.text())
-      document.getElementById('header').innerHTML = html
-
-      const user = await fetch('/users/me').then(r => r.json())
-      if (!user || user.error) return null
-
-      document.getElementById('user-avatar').textContent = (user.nombre[0] + user.apellido[0]).toUpperCase()
-      document.getElementById('user-nombre').textContent = `${user.nombre} ${user.apellido}`
-      document.getElementById('dropdown-empresa').textContent = user.empresa?.nombre || ''
-
-      // El menu de arriba solo ofrece lo que el rol puede usar: si no,
-      // el usuario entra y se come un cartel de "sin permiso".
-      if (user.rol === 'admin_empresa') document.getElementById('nav-usuarios').classList.remove('d-none')
-      if (user.rol === 'admin_empresa' || user.rol === 'tesorero') document.getElementById('nav-movimientos').classList.remove('d-none')
-
-      if (user.rol === 'admin_empresa') {
-        document.getElementById('item-usuarios').classList.remove('d-none')
-      }
-
-      if (user.rol === 'superadmin') {
-        document.getElementById('item-superadmin').classList.remove('d-none')
-      }
+      const user = await cargarHeader()
+      if (!user) return null
 
       // El superadmin administra la plataforma, no una empresa
       if (user.rol === 'superadmin') {
@@ -308,7 +290,7 @@
       }
 
       mostrarToast(resultado.message)
-      cargarHeader()      // por si cambio el nombre de la empresa
+      prepararPantalla()  // por si cambio el nombre de la empresa
       cargarEmpresa()
     })
 
@@ -322,7 +304,7 @@
     // porque el superadmin no tiene empresa y no hay nada que traer.
     async function iniciar() {
 
-      const user = await cargarHeader()
+      const user = await prepararPantalla()
       if (!user || user.rol === 'superadmin') return
 
       cargarEmpresa()

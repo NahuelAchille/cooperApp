@@ -51,6 +51,11 @@ DELETE FROM categorias_movimiento WHERE id_empresa IN (
     'contacto@laesperanza.com.ar', 'contacto@elamanecer.com.ar',
     'contacto@metaloeste.com.ar',  'contacto@huertanorte.com.ar'));
 
+DELETE FROM empresa_modulos WHERE id_empresa IN (
+  SELECT id_empresa FROM empresas WHERE email IN (
+    'contacto@laesperanza.com.ar', 'contacto@elamanecer.com.ar',
+    'contacto@metaloeste.com.ar',  'contacto@huertanorte.com.ar'));
+
 DELETE FROM usuarios WHERE id_empresa IN (
   SELECT id_empresa FROM empresas WHERE email IN (
     'contacto@laesperanza.com.ar', 'contacto@elamanecer.com.ar',
@@ -151,6 +156,25 @@ VALUES
 
 -- =============================================================================
 -- FINANZAS DE PRUEBA
+-- =============================================================================
+-- MODULOS ACTIVOS POR EMPRESA
+-- =============================================================================
+-- Cada empresa prende lo que usa. Se cargan distintos a proposito, para que se
+-- vea que el menu cambia segun la empresa:
+--   · La Esperanza (alimentos)  -> productos
+--   · El Amanecer (textil)      -> productos
+--   · Metalurgica del Oeste     -> productos y servicios (hace trabajos a terceros)
+--   · Huerta Norte              -> nada: todavia esta pendiente de aprobacion
+--
+-- Lo que no figura aca queda con el valor por defecto del catalogo de modulos.
+
+INSERT INTO empresa_modulos (id_empresa, id_modulo, activo)
+SELECT e.id_empresa, m.id_modulo, 1
+FROM empresas e JOIN modulos m
+WHERE (e.email = 'contacto@laesperanza.com.ar' AND m.clave IN ('productos'))
+   OR (e.email = 'contacto@elamanecer.com.ar'  AND m.clave IN ('productos'))
+   OR (e.email = 'contacto@metaloeste.com.ar'  AND m.clave IN ('productos', 'servicios'));
+
 -- =============================================================================
 -- Categorias, tipos y movimientos para las 3 empresas ACTIVAS. La 4ta
 -- (Huerta Norte) esta pendiente, asi que no opera y no lleva finanzas.

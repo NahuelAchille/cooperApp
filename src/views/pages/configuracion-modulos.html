@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css">
+  <link rel="stylesheet" href="/styles/header.css">
+  <link rel="stylesheet" href="/styles/configuracion-modulos.css">
+  <title>Módulos del sistema - CooperApp</title>
+</head>
+<body>
+
+  <div id="header"></div>
+  <script src="/components/header.js"></script>
+
+  <div class="page-header">
+    <div>
+      <h4 class="mb-0 fw-bold"><i class="fa-solid fa-toggle-on me-2"></i>Módulos del sistema</h4>
+      <small>Elegí qué partes del sistema usa tu empresa</small>
+    </div>
+    <a class="btn btn-volver" href="/pages/dashboard.html">
+      <i class="fa-solid fa-arrow-left me-2"></i>Volver al panel
+    </a>
+  </div>
+
+  <div class="content">
+
+    <!-- Se muestra si el usuario no es administrador de la empresa -->
+    <div class="aviso-permiso d-none" id="aviso-permiso">
+      <i class="fa-solid fa-lock fa-2x mb-3"></i>
+      <p class="mb-0">Sólo el administrador de la empresa puede activar o desactivar módulos.</p>
+    </div>
+
+    <div id="panel-modulos" class="d-none">
+      <p class="text-muted small mb-3">
+        <i class="fa-solid fa-circle-info me-1"></i>
+        Apagar un módulo sólo lo esconde del menú: <strong>los datos que ya cargaste se conservan</strong>
+        y vuelven a aparecer si lo prendés de nuevo.
+      </p>
+
+      <div class="modulos-lista" id="modulos-lista">
+        <div class="text-muted">
+          <i class="fa-solid fa-spinner fa-spin me-2"></i>Cargando...
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+
+  <script>
+
+    // Evita que un nombre con comillas o signos rompa el HTML
+    function esc(texto) {
+      return String(texto).replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+    }
+
+    function mostrarToast(mensaje) {
+      const toast = document.createElement('div')
+      toast.style = 'position:fixed;top:24px;left:50%;transform:translateX(-50%);background:#2d7a4f;color:white;padding:14px 24px;border-radius:10px;z-index:9999;font-weight:500;box-shadow:0 4px 16px rgba(0,0,0,0.2);max-width:90vw;text-align:center'
+      toast.innerHTML = `<i class="fa-solid fa-circle-check me-2"></i>${esc(mensaje)}`
+      document.body.appendChild(toast)
+      setTimeout(() => toast.remove(), 5000)
+    }
+
+    async function iniciar() {
+      const user = await cargarHeader()
+
+      if (!user) {
+        window.location.href = '/pages/login.html'
+        return
+      }
+
+      // Configurar los módulos es cosa del administrador de la empresa.
+      if (user.rol !== 'admin_empresa') {
+        document.getElementById('aviso-permiso').classList.remove('d-none')
+        return
+      }
+
+      document.getElementById('panel-modulos').classList.remove('d-none')
+      cargarModulos()
+    }
+
+    async function cargarModulos() {
+      const modulos = await fetch('/modulos').then(r => r.ok ? r.json() : [])
+      const cont = document.getElementById('modulos-lista')
+
+      cont.innerHTML = modulos.map(m => {
+        const encendido = m.activo === 1
+        return `
+          <div class="modulo-card ${encendido ? 'activo' : ''}">
+            <div class="modulo-nombre">
+              <i class="fa-solid fa-cube"></i>${esc(m.nombre)}
+            </div>
+            <p class="modulo-desc">${esc(m.descripcion || '')}</p>
+            <div class="modulo-pie">
+              <span class="estado-texto ${encendido ? 'encendido' : 'apagado'}" data-estado="${esc(m.clave)}">
+                ${encendido ? 'Activado' : 'Desactivado'}
+              </span>
+              <div class="form-check form-switch mb-0">
+                <input class="form-check-input" type="checkbox" role="switch"
+                       data-clave="${esc(m.clave)}"
+                       ${encendido ? 'checked' : ''}
+                       ${m.opcional ? '' : 'disabled'}>
+              </div>
+            </div>
+            ${m.opcional ? '' : '<div class="nota-fija"><i class="fa-solid fa-lock me-1"></i>Este módulo es la base del sistema y no se puede desactivar.</div>'}
+          </div>`
+      }).join('')
+    }
+
+    // Un solo escuchador para todos los interruptores
+    document.getElementById('modulos-lista').addEventListener('change', async (evento) => {
+      const control = evento.target
+      if (!control.matches('[data-clave]')) return
+
+      const clave = control.dataset.clave
+      const activo = control.checked
+      control.disabled = true
+
+      const res = await fetch(`/modulos/${clave}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ activo: activo ? 1 : 0 })
+      })
+      const resultado = await res.json()
+      control.disabled = false
+
+      if (!res.ok) {
+        control.checked = !activo   // vuelve atrás si el servidor lo rechazó
+        mostrarToast(resultado.error)
+        return
+      }
+
+      // Refresca la tarjeta y el menú de arriba, que ahora tiene una opción más o menos
+      const etiqueta = document.querySelector(`[data-estado="${clave}"]`)
+      etiqueta.textContent = activo ? 'Activado' : 'Desactivado'
+      etiqueta.className = 'estado-texto ' + (activo ? 'encendido' : 'apagado')
+      control.closest('.modulo-card').classList.toggle('activo', activo)
+
+      mostrarToast(resultado.message)
+      cargarHeader()
+    })
+
+    iniciar()
+  </script>
+</body>
+</html>

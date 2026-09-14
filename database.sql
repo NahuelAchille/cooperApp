@@ -2,7 +2,9 @@
 -- en la linea de comandos. Importar simplemente con:  mysql -u root < database.sql
 SET NAMES utf8mb4;
 
-CREATE DATABASE IF NOT EXISTS cooperApp;
+-- El juego de caracteres va explicito: sin esto MariaDB usa el del servidor
+-- (latin1 en XAMPP), que no cubre simbolos como el euro ni emojis.
+CREATE DATABASE IF NOT EXISTS cooperApp CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 USE cooperApp;
 
 -- =============================================
@@ -170,6 +172,42 @@ CREATE TABLE movimientos (
   FOREIGN KEY (id_usuario)     REFERENCES usuarios(id)
 );
 
+
+-- =============================================
+-- MODULOS
+-- =============================================
+--
+-- El sistema se divide en modulos y cada empresa prende solo los que usa: una
+-- empresa de servicios no necesita stock, una distribuidora puede no usar
+-- articulacion. Son dos tablas:
+--
+--   modulos          -> el catalogo, igual para todos (lo define el sistema)
+--   empresa_modulos  -> que tiene prendido cada empresa
+--
+-- Si una empresa no tiene fila para un modulo, vale el "activo_por_defecto"
+-- del catalogo. Asi las empresas que ya existian siguen funcionando sin tener
+-- que cargarles nada.
+
+CREATE TABLE modulos (
+  id_modulo          INT AUTO_INCREMENT PRIMARY KEY,
+  clave              VARCHAR(30) NOT NULL UNIQUE,
+  nombre             VARCHAR(60) NOT NULL,
+  descripcion        VARCHAR(255),
+  -- Un modulo no opcional no se puede apagar: es el corazon del sistema.
+  opcional           TINYINT(1) DEFAULT 1,
+  activo_por_defecto TINYINT(1) DEFAULT 0,
+  orden              TINYINT(2) DEFAULT 0
+);
+
+CREATE TABLE empresa_modulos (
+  id_empresa INT NOT NULL,
+  id_modulo  INT NOT NULL,
+  activo     TINYINT(1) NOT NULL DEFAULT 0,
+  PRIMARY KEY (id_empresa, id_modulo),
+  FOREIGN KEY (id_empresa) REFERENCES empresas(id_empresa),
+  FOREIGN KEY (id_modulo)  REFERENCES modulos(id_modulo)
+);
+
 -- =============================================
 -- DATOS INICIALES
 -- =============================================
@@ -218,6 +256,14 @@ SELECT 3, id_permiso FROM permisos WHERE nombre IN (
 -- Nota: las categorias y tipos de movimiento son por empresa, asi que no se
 -- siembran aca. Se crean desde el ABM de cada empresa (o al aprobarla,
 -- con un set por defecto). Ver datos_de_prueba.sql para ejemplos cargados.
+
+-- Catalogo de modulos
+INSERT INTO modulos (clave, nombre, descripcion, opcional, activo_por_defecto, orden) VALUES
+('movimientos',  'Movimientos',  'Registro de ingresos y egresos de dinero. Es la base del sistema y no se puede desactivar.', 0, 1, 1),
+('productos',    'Productos',    'Catálogo de productos, categorías propias y control de stock.',                              1, 0, 2),
+('servicios',    'Servicios',    'Servicios que la empresa presta o contrata y que generan ingresos o egresos.',               1, 0, 3),
+('reportes',     'Reportes',     'Reportes por período, categoría, producto y servicio, con descarga.',                        1, 1, 4),
+('articulacion', 'Articulación', 'Publicar necesidades y ofertas, y encontrar coincidencias con otras empresas.',              1, 0, 5);
 
 -- Usuario superadmin (contraseña: password)
 -- El superadmin administra la plataforma, no una empresa: id_empresa queda en NULL.
