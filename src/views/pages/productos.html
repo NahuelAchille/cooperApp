@@ -24,6 +24,12 @@
       <a class="btn btn-secundario d-none" id="link-categorias" href="/pages/configuracion-categorias-producto.html">
         <i class="fa-solid fa-sitemap me-2"></i>Categorías
       </a>
+      <a class="btn btn-secundario d-none" id="link-motivos" href="/pages/configuracion-motivos-stock.html">
+        <i class="fa-solid fa-right-left me-2"></i>Motivos
+      </a>
+      <a class="btn btn-secundario" href="/pages/stock.html">
+        <i class="fa-solid fa-warehouse me-2"></i>Stock
+      </a>
       <button class="btn btn-nuevo" id="btn-nuevo">
         <i class="fa-solid fa-plus me-2"></i>Nuevo producto
       </button>
@@ -250,9 +256,11 @@
       document.getElementById('card-filtros').classList.remove('d-none')
       document.getElementById('card-tabla').classList.remove('d-none')
 
-      // Armar el árbol de categorías es del admin; el operador sólo lo usa.
+      // Armar el árbol de categorías y los motivos es del admin; el operador
+      // sólo los usa.
       if (usuarioActual.rol === 'admin_empresa') {
         document.getElementById('link-categorias').classList.remove('d-none')
+        document.getElementById('link-motivos').classList.remove('d-none')
       }
 
       unidades = await fetch('/productos/unidades').then(r => r.ok ? r.json() : [])

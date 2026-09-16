@@ -1,7 +1,8 @@
 const empresaModel = require('../models/empresa.model')
 const moduloModel = require('../models/modulo.model')
 const categoriaModel = require('../models/categoria.model')
-const { CATEGORIAS_INICIALES } = require('../config/datos-iniciales')
+const motivoStockModel = require('../models/motivo-stock.model')
+const { CATEGORIAS_INICIALES, MOTIVOS_STOCK_INICIALES } = require('../config/datos-iniciales')
 
 // Convierte un campo de cantidad del formulario a numero.
 // Devuelve null si vino vacio, o undefined si el valor no sirve.
@@ -137,6 +138,14 @@ const prepararEmpresaNueva = async (id_empresa) => {
     const cuantas = await categoriaModel.contarCategorias(id_empresa)
     if (cuantas === 0) {
       await categoriaModel.crearCategoriasIniciales(id_empresa, CATEGORIAS_INICIALES)
+    }
+
+    // Lo mismo con los motivos de movimiento de stock. Se cargan aunque el
+    // modulo de Productos venga apagado: el dia que la empresa lo prenda, ya
+    // los tiene listos y no arranca con una pantalla vacia.
+    const cuantosMotivos = await motivoStockModel.contarMotivos(id_empresa)
+    if (cuantosMotivos === 0) {
+      await motivoStockModel.crearMotivosIniciales(id_empresa, MOTIVOS_STOCK_INICIALES)
     }
 
   } catch (error) {

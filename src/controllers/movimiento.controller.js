@@ -1,10 +1,8 @@
 const movimientoModel = require('../models/movimiento.model')
 const categoriaModel = require('../models/categoria.model')
+const { parsearFecha, validarFechaDeCarga } = require('../services/fecha.service')
 
 const NATURALEZAS = ['ingreso', 'egreso']
-
-// Un movimiento no puede quedar fechado antes de esto ni despues de hoy.
-const FECHA_MINIMA = '2000-01-01'
 
 // Valida un monto: debe ser un numero positivo con hasta 2 decimales
 const parsearMonto = (valor) => {
@@ -28,31 +26,6 @@ const parsearMonto = (valor) => {
   if (redondeado > 999999999999.99) return null
 
   return redondeado
-}
-
-// Fecha de hoy en hora local, como AAAA-MM-DD. Se arma a mano y no con
-// toISOString(), que trabaja en UTC: en Argentina (UTC-3) devolveria el dia
-// siguiente a partir de las 21:00.
-const fechaDeHoy = () => {
-  const hoy = new Date()
-  return `${hoy.getFullYear()}-${String(hoy.getMonth() + 1).padStart(2, '0')}-${String(hoy.getDate()).padStart(2, '0')}`
-}
-
-// Valida una fecha en formato AAAA-MM-DD y que sea un dia real del calendario.
-// No usa Date para comparar, asi no depende de la zona horaria.
-const parsearFecha = (valor) => {
-
-  if (typeof valor !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(valor)) return null
-
-  const [anio, mes, dia] = valor.split('-').map(Number)
-  if (mes < 1 || mes > 12) return null
-
-  // El dia 0 del mes siguiente es el ultimo del mes buscado: sirve para saber
-  // cuantos dias tiene, contemplando los años bisiestos.
-  const diasDelMes = new Date(anio, mes, 0).getDate()
-  if (dia < 1 || dia > diasDelMes) return null
-
-  return valor
 }
 
 // Toma los filtros que vienen en la URL (?naturaleza=ingreso&desde=...) y arma
@@ -135,20 +108,13 @@ exports.crearMovimiento = async (req, res) => {
       return res.status(400).json({ error: 'El monto debe ser un número mayor a cero' })
     }
 
-    const fecha = parsearFecha(req.body.fecha)
-    if (!fecha) {
-      return res.status(400).json({ error: 'La fecha no es válida (formato AAAA-MM-DD)' })
-    }
-
     // Un movimiento no se puede fechar en el futuro (todavia no paso) ni en un
     // año absurdo: casi siempre es un error de tipeo en el año.
-    const hoy = fechaDeHoy()
-    if (fecha > hoy) {
-      return res.status(400).json({ error: 'La fecha no puede ser posterior a hoy' })
+    const revision = validarFechaDeCarga(req.body.fecha)
+    if (revision.error) {
+      return res.status(400).json({ error: revision.error })
     }
-    if (fecha < FECHA_MINIMA) {
-      return res.status(400).json({ error: `La fecha no puede ser anterior al ${FECHA_MINIMA.split('-').reverse().join('/')}` })
-    }
+    const fecha = revision.fecha
 
     const descripcion = typeof req.body.descripcion === 'string' ? req.body.descripcion.trim().slice(0, 255) : null
 

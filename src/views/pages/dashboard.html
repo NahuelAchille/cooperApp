@@ -83,6 +83,90 @@
         } else {
             document.getElementById('kpi-usuarios').closest('.dashboard-kpi').classList.add('d-none')
         }
+
+        // El stock es del deposito: lo miran el admin y el operador. El
+        // tesorero no, igual que en el resto del modulo de Productos.
+        const rolDeDeposito = user.rol === 'admin_empresa' || user.rol === 'operador'
+        const hayProductos = moduloActivo('productos')
+
+        if (rolDeDeposito && hayProductos) {
+            document.getElementById('btn-stock').classList.remove('d-none')
+            document.getElementById('link-ver-stock').classList.remove('d-none')
+            cargarFaltantes()
+        } else {
+            // Se distingue el modulo apagado de la falta de permiso: son dos
+            // problemas distintos y se resuelven de maneras distintas.
+            document.getElementById('tabla-faltantes').innerHTML =
+                `<tr><td class="text-muted">${hayProductos
+                    ? 'Tu usuario no tiene acceso al stock.'
+                    : 'El módulo de Productos no está activo en tu empresa.'}</td></tr>`
+
+            document.getElementById('kpi-faltantes-detalle').textContent =
+                hayProductos ? 'Sin acceso' : 'Módulo no activo'
+        }
+    }
+
+    // Productos que hay que reponer: los que se quedaron sin stock y los que
+    // llegaron a su minimo.
+    //
+    // Un producto al que todavia nadie le cargo un movimiento NO cuenta: esta
+    // en cero porque el sistema no sabe nada de el, no porque falte. Sin esa
+    // distincion, una empresa que recien carga su catalogo veria todo su
+    // listado como alerta y el aviso dejaria de significar algo.
+    async function cargarFaltantes() {
+        const existencias = await fetch('/productos/stock').then(r => r.ok ? r.json() : [])
+
+        const faltantes = existencias
+            .filter(p => Number(p.cantidad_movimientos) > 0)
+            .map(p => ({
+                ...p,
+                sinStock: Number(p.existencia) <= 0,
+                bajoMinimo: Number(p.stock_minimo) > 0 && Number(p.existencia) <= Number(p.stock_minimo)
+            }))
+            .filter(p => p.sinStock || p.bajoMinimo)
+            // Primero los que estan en cero: son los urgentes.
+            .sort((a, b) => (b.sinStock - a.sinStock) || a.nombre.localeCompare(b.nombre))
+
+        // --- KPI ---
+        document.getElementById('kpi-faltantes').textContent = faltantes.length
+        const sinStock = faltantes.filter(p => p.sinStock).length
+        document.getElementById('kpi-faltantes-detalle').textContent = faltantes.length === 0
+            ? 'Todo en orden'
+            : sinStock > 0
+                ? `${sinStock} sin stock`
+                : 'Por debajo del mínimo'
+
+        // --- Listado ---
+        const tbody = document.getElementById('tabla-faltantes')
+
+        if (!faltantes.length) {
+            tbody.innerHTML = existencias.length
+                ? '<tr><td class="text-muted">Ningún producto está por debajo del mínimo.</td></tr>'
+                : '<tr><td class="text-muted">Todavía no hay productos cargados.</td></tr>'
+            return
+        }
+
+        // Solo los 5 primeros: el dashboard es un vistazo, no el listado
+        // completo. El resto se ve en la pantalla de Stock.
+        tbody.innerHTML = faltantes.slice(0, 5).map(p => `
+            <tr>
+                <td>${esc(p.nombre)}</td>
+                <td class="text-end">${formatCantidad(p.existencia)} ${esc(p.unidad_medida)}</td>
+                <td class="text-end">
+                    <span class="badge-stock ${p.sinStock ? 'sin' : 'bajo'}">
+                        ${p.sinStock ? 'Sin stock' : 'Reponer'}
+                    </span>
+                </td>
+            </tr>`).join('') +
+            (faltantes.length > 5
+                ? `<tr><td colspan="3" class="text-muted">y ${faltantes.length - 5} más…</td></tr>`
+                : '')
+    }
+
+    // Muestra 5 en vez de 5,00 pero respeta los decimales cuando los hay.
+    function formatCantidad(valor) {
+        const numero = Number(valor)
+        return Number.isInteger(numero) ? String(numero) : numero.toFixed(2).replace('.', ',')
     }
 
     // KPIs de ingresos / egresos / balance: mes actual, con comparacion contra
@@ -160,7 +244,7 @@
             <ul>
                 <li id="btn-ingreso" class="d-none"><a href="/pages/movimientos.html?nuevo=ingreso">+ Registrar ingreso</a></li>
                 <li id="btn-egreso" class="d-none"><a href="/pages/movimientos.html?nuevo=egreso">- Registrar egreso</a></li>
-                <li id="btn-stock"><a href="#">Ajustar stock</a></li>
+                <li id="btn-stock" class="d-none"><a href="/pages/stock.html">Ajustar stock</a></li>
                 <li id="btn-reporte" class="d-none"><a href="/pages/movimientos.html">Ver reporte</a></li>
             </ul>
     </nav>
@@ -187,9 +271,9 @@
                 <h5>En tu empresa</h5>
             </section>
             <section class="dashboard-kpi" id="dashboard-kpis-5">
-                <h3>Productos en stock</h3>
-                <h4>—</h4>
-                <h5>Módulo en desarrollo</h5>
+                <h3>Productos a reponer</h3>
+                <h4 id="kpi-faltantes">—</h4>
+                <h5 id="kpi-faltantes-detalle">Módulo no activo</h5>
             </section>
         </section>
         <section id="dashboard-charts">
@@ -209,10 +293,15 @@
             <section class="dashboard-block" id="dashboard-stock">
                 <div class="dashboard-block-header">
                     <h3>Alertas de stock</h3>
+                    <a href="/pages/stock.html" id="link-ver-stock" class="d-none">Ver todo →</a>
                 </div>
-                <p class="text-muted" style="padding:12px 4px;margin:0;">
-                    <i class="fa-solid fa-screwdriver-wrench me-1"></i>Módulo en desarrollo.
-                </p>
+                <div class="table-responsive">
+                    <table class="dashboard-table">
+                        <tbody id="tabla-faltantes">
+                            <tr><td class="text-muted">Cargando...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
             </section>
             <section class="dashboard-block" id="dashboard-matches">
                 <div class="dashboard-block-header">

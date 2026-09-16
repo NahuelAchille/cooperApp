@@ -401,3 +401,13 @@
   /* Ajustes visuales */
   .dashboard-block, .dashboard-kpi { box-shadow: var(--card-shadow); border: 1px solid rgba(0,0,0,0.04); }
 }
+/* Estado de un producto en el bloque de alertas de stock */
+.badge-stock {
+    font-size: 0.72rem;
+    font-weight: 600;
+    padding: 3px 9px;
+    border-radius: 20px;
+    white-space: nowrap;
+}
+.badge-stock.sin  { background-color: #fde8e8; color: #a01c1c; }
+.badge-stock.bajo { background-color: #fdf0dc; color: #b5650a; }

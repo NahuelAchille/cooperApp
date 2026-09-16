@@ -1,0 +1,317 @@
+/* ===== VARIABLES ===== */
+:root {
+  --verde-primario: #2d7a4f;
+  --verde-secundario: #3a9e65;
+  --verde-oscuro: #1a6b3a;
+  --bg-page: #f0f7f3;
+  --card-bg: #ffffff;
+  --card-shadow: 0 2px 12px rgba(0,0,0,0.07);
+  --danger: #a01c1c;
+  --warning: #b5650a;
+}
+
+body {
+  background-color: var(--bg-page);
+  margin: 0;
+  padding: 0;
+  font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
+  color: #1a2e23;
+}
+
+/* ===== HEADER DE PAGINA ===== */
+.page-header {
+  background: linear-gradient(135deg, var(--verde-primario), var(--verde-secundario));
+  color: white;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  align-items: flex-start;
+}
+.page-header h4 { margin: 0; font-weight: 700; }
+.page-header small { opacity: 0.8; }
+
+.acciones-header { display: flex; gap: 8px; flex-wrap: wrap; }
+
+.btn-nuevo {
+  background-color: white;
+  color: var(--verde-primario);
+  border: none;
+  border-radius: 8px;
+  font-weight: 700;
+  padding: 8px 16px;
+}
+.btn-nuevo:hover { background-color: #e4f2eb; color: var(--verde-oscuro); }
+
+.btn-secundario {
+  background: transparent;
+  color: white;
+  border: 1.5px solid rgba(255,255,255,0.6);
+  border-radius: 8px;
+  font-weight: 600;
+  padding: 8px 16px;
+}
+.btn-secundario:hover { background-color: rgba(255,255,255,0.15); color: white; }
+
+/* ===== CONTENIDO ===== */
+.content { padding: 16px; }
+
+/* ===== FILTROS ===== */
+.card-filtros {
+  background: var(--card-bg);
+  border-radius: 12px;
+  box-shadow: var(--card-shadow);
+  padding: 16px;
+  margin-bottom: 16px;
+}
+.card-filtros .form-label {
+  color: var(--verde-primario);
+  font-size: 0.8rem;
+  font-weight: 600;
+  margin-bottom: 2px;
+}
+.filtros-grid { display: grid; grid-template-columns: 1fr; gap: 12px; }
+
+.input-buscar { position: relative; }
+.input-buscar i {
+  position: absolute;
+  left: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #a8c4b5;
+  font-size: 0.85rem;
+  pointer-events: none;
+}
+.input-buscar .form-control { padding-left: 34px; }
+
+.filtros-pie {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  margin-top: 12px;
+  flex-wrap: wrap;
+}
+.contador { color: #6c8a7a; font-size: 0.85rem; font-weight: 600; }
+
+.btn-limpiar {
+  background: none;
+  border: 1.5px solid #c8e6d5;
+  color: var(--verde-primario);
+  border-radius: 8px;
+  font-size: 0.82rem;
+  font-weight: 600;
+  padding: 6px 14px;
+}
+.btn-limpiar:hover { background-color: #e4f2eb; }
+
+/* ===== TABLA ===== */
+.card-tabla {
+  background: var(--card-bg);
+  border-radius: 12px;
+  box-shadow: var(--card-shadow);
+  overflow: hidden;
+}
+
+.table thead th {
+  background-color: #e4f2eb;
+  color: var(--verde-primario);
+  border-bottom: 2px solid #a8d5bc;
+  font-size: 0.82rem;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+  white-space: nowrap;
+}
+.table tbody td { vertical-align: middle; }
+
+.prod-nombre { font-weight: 600; }
+.prod-clasificacion { color: #6c8a7a; font-size: 0.82rem; }
+
+/* La existencia es el dato principal de la pantalla: va grande y a la derecha,
+   que es donde el ojo busca un número. */
+.existencia {
+  font-size: 1.05rem;
+  font-weight: 700;
+  white-space: nowrap;
+}
+.existencia .unidad { font-size: 0.78rem; font-weight: 500; color: #6c8a7a; margin-left: 4px; }
+
+/* Tres estados posibles, que se leen por color sin tener que comparar
+   mentalmente contra el mínimo */
+.existencia.ok    { color: var(--verde-oscuro); }
+.existencia.bajo  { color: var(--warning); }
+.existencia.sin   { color: var(--danger); }
+/* Todavia nadie le cargo nada: es un cero neutro, no una alarma */
+.existencia.nuevo { color: #b3c7bc; }
+
+.aviso-minimo {
+  display: inline-block;
+  font-size: 0.72rem;
+  font-weight: 600;
+  padding: 3px 9px;
+  border-radius: 20px;
+  white-space: nowrap;
+}
+.aviso-minimo.bajo  { background-color: #fdf0dc; color: var(--warning); }
+.aviso-minimo.sin   { background-color: #fde8e8; color: var(--danger); }
+.aviso-minimo.nuevo { background-color: #eef1f0; color: #7a8a82; }
+
+.minimo-texto { color: #8aa596; font-size: 0.82rem; white-space: nowrap; }
+
+.btn-mini {
+  background: none;
+  border: 1.5px solid #c8e6d5;
+  color: var(--verde-primario);
+  border-radius: 7px;
+  padding: 4px 9px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
+.btn-mini:hover { background-color: #e4f2eb; }
+.btn-mini:disabled { opacity: 0.5; }
+
+.tabla-vacia { padding: 32px 20px; text-align: center; color: #8aa596; font-size: 0.9rem; }
+
+/* ===== MODAL ===== */
+.modal-content { border-radius: 12px; overflow: hidden; border: none; }
+.modal-header { background-color: var(--verde-primario); color: white; border: none; }
+.modal-footer { background-color: var(--bg-page); border-top: 1px solid #c8e6d5; }
+.form-label { color: var(--verde-primario); font-size: 0.85rem; font-weight: 600; }
+.form-text { font-size: 0.78rem; }
+.form-control:focus, .form-select:focus {
+  border-color: var(--verde-primario);
+  box-shadow: 0 0 0 3px rgba(45,122,79,0.15);
+}
+
+/* Muestra cuánto hay del producto elegido y cómo va a quedar después del
+   movimiento. Es lo que evita el error de cargar una salida a ciegas. */
+.resumen-movimiento {
+  background: #e4f2eb;
+  border-radius: 8px;
+  padding: 12px 14px;
+  font-size: 0.88rem;
+  color: #2a4a38;
+}
+.resumen-movimiento .queda { font-weight: 700; }
+.resumen-movimiento.alerta { background: #fde8e8; color: #7a2020; }
+
+/* Avisos de "sin permiso" y "modulo apagado" */
+.aviso-permiso {
+  background: var(--card-bg);
+  border-radius: 12px;
+  box-shadow: var(--card-shadow);
+  padding: 40px 20px;
+  text-align: center;
+  color: #6c8a7a;
+}
+
+/* ===== RESPONSIVE ===== */
+@media (min-width: 768px) {
+  .page-header {
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: center;
+    padding: 20px 32px;
+  }
+  .content { padding: 24px; }
+  .filtros-grid { grid-template-columns: 2fr 1fr 1fr; }
+}
+
+@media (min-width: 1024px) {
+  .content { padding: 32px; }
+}
+
+/* ===== PESTAÑAS (existencias / movimientos) ===== */
+.pestanas {
+  display: flex;
+  gap: 4px;
+  margin-bottom: 16px;
+  border-bottom: 2px solid #d8e8e0;
+  overflow-x: auto;
+}
+.pestana {
+  background: none;
+  border: none;
+  border-bottom: 3px solid transparent;
+  color: #6c8a7a;
+  font-weight: 600;
+  font-size: 0.9rem;
+  padding: 10px 18px;
+  margin-bottom: -2px;
+  white-space: nowrap;
+}
+.pestana:hover { color: var(--verde-primario); }
+.pestana.activa {
+  color: var(--verde-primario);
+  border-bottom-color: var(--verde-primario);
+}
+
+/* Los filtros del historial son cuatro y dos son fechas: en el celular van
+   apilados, en escritorio entran en una fila. */
+.filtros-grid-mov { display: grid; grid-template-columns: 1fr; gap: 12px; }
+
+.fecha-mov { white-space: nowrap; color: #4a6b5a; font-size: 0.88rem; }
+.detalle-mov { color: #6c8a7a; font-size: 0.85rem; }
+
+/* El motivo y la cantidad se leen por color: verde entra, rojo sale. Es lo
+   que permite recorrer el historial sin leer cada renglón. */
+.badge-motivo {
+  font-size: 0.78rem;
+  font-weight: 600;
+  padding: 3px 10px;
+  border-radius: 6px;
+  white-space: nowrap;
+}
+.badge-motivo.entrada { background-color: #d1f5e0; color: var(--verde-oscuro); }
+.badge-motivo.salida  { background-color: #fde8e8; color: var(--danger); }
+
+.cantidad-mov { font-weight: 700; white-space: nowrap; }
+.cantidad-mov.entrada { color: var(--verde-oscuro); }
+.cantidad-mov.salida  { color: var(--danger); }
+.cantidad-mov .unidad { font-size: 0.75rem; font-weight: 500; color: #6c8a7a; margin-left: 4px; }
+
+.sin-dato { color: #b3c7bc; }
+
+@media (min-width: 768px) {
+  .filtros-grid-mov { grid-template-columns: 1fr 1fr; }
+}
+
+@media (min-width: 1024px) {
+  .filtros-grid-mov { grid-template-columns: 2fr 2fr 1fr 1fr; }
+}
+
+/* ===== HISTORIAL: anulados y vinculo con el dinero ===== */
+
+/* Un movimiento anulado sigue en el historial (es informacion contable), pero
+   se apaga para que no compita con los que si cuentan. */
+.fila-anulada { opacity: 0.55; }
+.fila-anulada .cantidad-mov { text-decoration: line-through; }
+
+.badge-anulado {
+  background-color: #fde8e8;
+  color: var(--danger);
+  font-size: 0.7rem;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: 20px;
+  margin-left: 6px;
+  white-space: nowrap;
+}
+
+/* Marca si el movimiento de dinero ya se cargo o todavia falta. Es lo que se
+   olvida y despues descuadra: conviene que se vea de un vistazo. */
+.marca-dinero {
+  display: inline-block;
+  font-size: 0.7rem;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: 20px;
+  margin-left: 6px;
+  white-space: nowrap;
+}
+.marca-dinero.hecho { background-color: #e8f0ec; color: #5a7a68; }
+.marca-dinero.falta { background-color: #fdf0dc; color: var(--warning); }
+
+.btn-mini.peligro { border-color: #f0c2c2; color: var(--danger); }
+.btn-mini.peligro:hover { background-color: #fde8e8; }

@@ -236,6 +236,69 @@ CREATE TABLE productos (
   UNIQUE (id_empresa, nombre)
 );
 
+-- Por que se mueve el stock. Cada empresa arma los suyos, y cada motivo lleva
+-- su impacto CONFIGURADO, no cableado en el codigo: asi el administrador puede
+-- crear los que necesite (venta, consumo, perdida, robo, ajuste, devolucion)
+-- sin que nadie toque el sistema.
+--
+-- Son dos impactos distintos y hay que pensarlos por separado:
+--   efecto_stock  -> entrada / salida        (siempre pasa algo)
+--   efecto_dinero -> ingreso / egreso / ninguno
+--
+-- El caso que obliga a separarlos: una PERDIDA o un ROBO sacan mercaderia
+-- (efecto_stock = salida) pero NO generan movimiento de dinero
+-- (efecto_dinero = ninguno). Igual tienen que poder verse valorizados en un
+-- reporte, que es otra cosa: ahi se multiplica la cantidad por el precio.
+CREATE TABLE motivos_stock (
+  id_motivo_stock INT AUTO_INCREMENT PRIMARY KEY,
+  nombre          VARCHAR(80) NOT NULL,
+  efecto_stock    ENUM('entrada', 'salida') NOT NULL,
+  efecto_dinero   ENUM('ingreso', 'egreso', 'ninguno') NOT NULL DEFAULT 'ninguno',
+  id_empresa      INT NOT NULL,
+  activo          TINYINT(1) DEFAULT 1,
+  FOREIGN KEY (id_empresa) REFERENCES empresas(id_empresa),
+  UNIQUE (id_empresa, nombre)
+);
+
+-- Cada entrada o salida de mercaderia. La existencia de un producto NO se
+-- guarda en ninguna columna: se calcula sumando estos movimientos.
+--
+-- Se hace asi a proposito. Un campo "stock_actual" hay que mantener
+-- sincronizado a mano en cada alta, en cada anulacion y en cada correccion, y
+-- el dia que una de esas se olvida, el numero queda mal para siempre sin que
+-- nadie se entere. Calculandolo, la anulacion de un movimiento arregla el
+-- stock sola y el historial siempre explica el numero que se ve en pantalla.
+--
+-- La cantidad es SIEMPRE positiva: si suma o resta lo dice el motivo. Es el
+-- mismo criterio que el monto de los movimientos de dinero.
+--
+-- Los movimientos de stock no se borran, se anulan.
+-- Sobre id_movimiento: cuando el motivo mueve plata (una venta, una compra),
+-- el sistema OFRECE registrar tambien el movimiento de dinero, y si la persona
+-- acepta, los dos quedan atados por esta columna. Queda en NULL cuando el
+-- motivo no mueve plata (una perdida) o cuando todavia no se cargo.
+--
+-- El vinculo es lo que evita cargar la misma venta dos veces: con la columna
+-- ocupada, el sistema no vuelve a ofrecerlo.
+CREATE TABLE movimientos_stock (
+  id_movimiento_stock INT AUTO_INCREMENT PRIMARY KEY,
+  id_producto         INT NOT NULL,
+  id_motivo_stock     INT NOT NULL,
+  cantidad            DECIMAL(12,2) NOT NULL,
+  descripcion         VARCHAR(255),
+  fecha               DATE NOT NULL,
+  id_empresa          INT NOT NULL,
+  id_usuario          INT NOT NULL,
+  id_movimiento       INT NULL,
+  anulado             TINYINT(1) DEFAULT 0,
+  creado_en           DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (id_producto)     REFERENCES productos(id_producto),
+  FOREIGN KEY (id_motivo_stock) REFERENCES motivos_stock(id_motivo_stock),
+  FOREIGN KEY (id_empresa)      REFERENCES empresas(id_empresa),
+  FOREIGN KEY (id_usuario)      REFERENCES usuarios(id),
+  FOREIGN KEY (id_movimiento)   REFERENCES movimientos(id_movimiento)
+);
+
 -- =============================================
 -- MODULOS
 -- =============================================

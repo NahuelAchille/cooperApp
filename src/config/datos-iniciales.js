@@ -17,4 +17,30 @@ const CATEGORIAS_INICIALES = [
   { nombre: 'Impuestos',      naturaleza: 'egreso',  tipos: ['Impuestos nacionales', 'Ingresos brutos', 'Tasas municipales'] },
 ]
 
-module.exports = { CATEGORIAS_INICIALES }
+// Motivos de movimiento de stock con los que arranca una empresa.
+//
+// Son los seis casos que aparecen en cualquier deposito. Cada uno trae su
+// impacto ya resuelto, que es la parte dificil de pensar: la empresa los usa
+// tal cual, los renombra o arma los suyos.
+//
+// Lo que conviene mirar con atencion es la columna del dinero:
+//   - Compra y Venta mueven plata, y son los unicos.
+//   - Consumo interno saca mercaderia para usarla en la propia empresa: no se
+//     vende ni se compra nada, asi que no hay movimiento de dinero.
+//   - Perdida y Robo sacan mercaderia sin que entre ni salga plata. La perdida
+//     economica existe, pero no es un egreso: se ve valorizada en un reporte.
+//   - El ajuste es para cuando el conteo real no coincide con el sistema. Va
+//     partido en dos (positivo y negativo) porque un mismo motivo no puede a
+//     veces sumar y a veces restar: el efecto es fijo, si no el historial
+//     queda imposible de interpretar.
+const MOTIVOS_STOCK_INICIALES = [
+  { nombre: 'Compra',           efecto_stock: 'entrada', efecto_dinero: 'egreso'  },
+  { nombre: 'Venta',            efecto_stock: 'salida',  efecto_dinero: 'ingreso' },
+  { nombre: 'Consumo interno',  efecto_stock: 'salida',  efecto_dinero: 'ninguno' },
+  { nombre: 'Pérdida',          efecto_stock: 'salida',  efecto_dinero: 'ninguno' },
+  { nombre: 'Robo',             efecto_stock: 'salida',  efecto_dinero: 'ninguno' },
+  { nombre: 'Ajuste positivo',  efecto_stock: 'entrada', efecto_dinero: 'ninguno' },
+  { nombre: 'Ajuste negativo',  efecto_stock: 'salida',  efecto_dinero: 'ninguno' },
+]
+
+module.exports = { CATEGORIAS_INICIALES, MOTIVOS_STOCK_INICIALES }

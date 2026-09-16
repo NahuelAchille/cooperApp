@@ -35,6 +35,15 @@ USE cooperApp;
 -- ---------------------------------------------------------------- limpieza --
 -- El orden respeta las claves foraneas: primero los movimientos, despues su
 -- clasificacion (tipos -> categorias), y recien ahi usuarios y empresas.
+--
+-- Los movimientos de STOCK van primero de todo: desde el Sprint 08 pueden
+-- apuntar a un movimiento de dinero (la venta que genero el ingreso), asi que
+-- borrar el dinero antes deja la referencia colgada y MySQL lo rechaza.
+DELETE FROM movimientos_stock WHERE id_empresa IN (
+  SELECT id_empresa FROM empresas WHERE email IN (
+    'contacto@laesperanza.com.ar', 'contacto@elamanecer.com.ar',
+    'contacto@metaloeste.com.ar',  'contacto@huertanorte.com.ar'));
+
 DELETE FROM movimientos WHERE id_empresa IN (
   SELECT id_empresa FROM empresas WHERE email IN (
     'contacto@laesperanza.com.ar', 'contacto@elamanecer.com.ar',
@@ -47,6 +56,11 @@ DELETE FROM tipos_movimiento WHERE id_categoria IN (
       'contacto@metaloeste.com.ar',  'contacto@huertanorte.com.ar')));
 
 DELETE FROM categorias_movimiento WHERE id_empresa IN (
+  SELECT id_empresa FROM empresas WHERE email IN (
+    'contacto@laesperanza.com.ar', 'contacto@elamanecer.com.ar',
+    'contacto@metaloeste.com.ar',  'contacto@huertanorte.com.ar'));
+
+DELETE FROM motivos_stock WHERE id_empresa IN (
   SELECT id_empresa FROM empresas WHERE email IN (
     'contacto@laesperanza.com.ar', 'contacto@elamanecer.com.ar',
     'contacto@metaloeste.com.ar',  'contacto@huertanorte.com.ar'));
@@ -443,6 +457,112 @@ INSERT INTO productos (nombre, descripcion, unidad_medida, stock_minimo, id_cate
   ('Amoladora angular',      NULL,                   'unidad', 0,   @cat_herramientas, @sub_electricas, @empresa, 1),
   ('Pintura antióxido',      'Balde de 4 litros',    'litro',  8,   @cat_materia,      NULL,            @empresa, 1);
 
+-- =============================================================================
+-- MOTIVOS DE MOVIMIENTO DE STOCK
+--
+-- Los seis motivos con los que arranca cualquier empresa (los mismos que
+-- siembra el sistema al aprobarla, en src/config/datos-iniciales.js), más uno
+-- propio por empresa para que se vea que son configurables.
+--
+-- Lo que hay que mirar es la columna del dinero: Compra y Venta son los únicos
+-- que mueven plata. Pérdida y Robo sacan mercadería sin mover un peso.
+-- =============================================================================
+
+INSERT INTO motivos_stock (nombre, efecto_stock, efecto_dinero, id_empresa, activo)
+SELECT m.nombre, m.efecto_stock, m.efecto_dinero, e.id_empresa, 1
+FROM empresas e
+JOIN (
+  SELECT 'Compra'          AS nombre, 'entrada' AS efecto_stock, 'egreso'  AS efecto_dinero UNION ALL
+  SELECT 'Venta',                     'salida',                  'ingreso'                  UNION ALL
+  SELECT 'Consumo interno',           'salida',                  'ninguno'                  UNION ALL
+  SELECT 'Pérdida',                   'salida',                  'ninguno'                  UNION ALL
+  SELECT 'Robo',                      'salida',                  'ninguno'                  UNION ALL
+  SELECT 'Ajuste positivo',           'entrada',                 'ninguno'                  UNION ALL
+  SELECT 'Ajuste negativo',           'salida',                  'ninguno'
+) m
+WHERE e.email IN ('contacto@laesperanza.com.ar', 'contacto@elamanecer.com.ar',
+                  'contacto@metaloeste.com.ar');
+
+-- Un motivo propio de cada empresa, para mostrar que se pueden agregar.
+-- El de La Esperanza está desactivado, para ver cómo se muestra una baja.
+INSERT INTO motivos_stock (nombre, efecto_stock, efecto_dinero, id_empresa, activo) VALUES
+  ('Vencimiento',        'salida',  'ninguno', (SELECT id_empresa FROM empresas WHERE email = 'contacto@laesperanza.com.ar'), 1),
+  ('Promoción sin cargo','salida',  'ninguno', (SELECT id_empresa FROM empresas WHERE email = 'contacto@laesperanza.com.ar'), 0),
+  ('Devolución a cliente','entrada','ninguno', (SELECT id_empresa FROM empresas WHERE email = 'contacto@elamanecer.com.ar'),  1),
+  ('Recorte de producción','salida','ninguno', (SELECT id_empresa FROM empresas WHERE email = 'contacto@metaloeste.com.ar'),  1);
+
+-- =============================================================================
+-- MOVIMIENTOS DE STOCK
+--
+-- La existencia de cada producto NO está guardada en ninguna columna: sale de
+-- sumar estos movimientos. Por eso acá se carga la historia y el sistema
+-- calcula el número.
+--
+-- Está armado para que al abrir la pantalla se vean los tres estados:
+--   · productos con stock holgado
+--   · productos POR DEBAJO del mínimo (avisan "Reponer")
+--   · un producto en CERO (avisa "Sin stock")
+--
+-- Las fechas son relativas a hoy, para que el historial se vea reciente.
+-- =============================================================================
+
+-- ------------------------------------------------------ 1 · La Esperanza --
+SET @empresa  := (SELECT id_empresa FROM empresas WHERE email = 'contacto@laesperanza.com.ar');
+SET @operador := (SELECT id FROM usuarios WHERE email = 'silvia@laesperanza.com.ar');
+
+SET @m_compra  := (SELECT id_motivo_stock FROM motivos_stock WHERE id_empresa = @empresa AND nombre = 'Compra');
+SET @m_venta   := (SELECT id_motivo_stock FROM motivos_stock WHERE id_empresa = @empresa AND nombre = 'Venta');
+SET @m_perdida := (SELECT id_motivo_stock FROM motivos_stock WHERE id_empresa = @empresa AND nombre = 'Pérdida');
+
+SET @p_queso    := (SELECT id_producto FROM productos WHERE id_empresa = @empresa AND nombre = 'Queso cremoso');
+SET @p_jamon    := (SELECT id_producto FROM productos WHERE id_empresa = @empresa AND nombre = 'Jamón cocido');
+SET @p_fideos   := (SELECT id_producto FROM productos WHERE id_empresa = @empresa AND nombre = 'Fideos secos 500g');
+SET @p_arroz    := (SELECT id_producto FROM productos WHERE id_empresa = @empresa AND nombre = 'Arroz largo fino');
+SET @p_milanesa := (SELECT id_producto FROM productos WHERE id_empresa = @empresa AND nombre = 'Milanesas de soja');
+SET @p_agua     := (SELECT id_producto FROM productos WHERE id_empresa = @empresa AND nombre = 'Agua mineral 2L');
+
+INSERT INTO movimientos_stock (id_producto, id_motivo_stock, cantidad, descripcion, fecha, id_empresa, id_usuario) VALUES
+  -- Queso cremoso (mínimo 5,5): 20 - 12,5 - 2 = 5,5, justo en el mínimo
+  (@p_queso,    @m_compra,  20,   'Compra semanal',              CURDATE() - INTERVAL 12 DAY, @empresa, @operador),
+  (@p_queso,    @m_venta,   12.5, 'Venta mostrador',             CURDATE() - INTERVAL 6  DAY, @empresa, @operador),
+  (@p_queso,    @m_perdida, 2,    'Se cortó la cadena de frío',  CURDATE() - INTERVAL 4  DAY, @empresa, @operador),
+  -- Jamón cocido (mínimo 3): 15 - 6 = 9, holgado
+  (@p_jamon,    @m_compra,  15,   'Compra semanal',              CURDATE() - INTERVAL 12 DAY, @empresa, @operador),
+  (@p_jamon,    @m_venta,    6,   'Venta mostrador',             CURDATE() - INTERVAL 3  DAY, @empresa, @operador),
+  -- Fideos secos (mínimo 24): 48 - 30 = 18, POR DEBAJO del mínimo
+  (@p_fideos,   @m_compra,  48,   'Compra mensual',              CURDATE() - INTERVAL 20 DAY, @empresa, @operador),
+  (@p_fideos,   @m_venta,   30,   'Ventas de la quincena',       CURDATE() - INTERVAL 2  DAY, @empresa, @operador),
+  -- Arroz (mínimo 15): 40, holgado
+  (@p_arroz,    @m_compra,  40,   'Compra mensual',              CURDATE() - INTERVAL 18 DAY, @empresa, @operador),
+  -- Milanesas de soja (mínimo 4): 10 - 10 = 0, SIN STOCK
+  (@p_milanesa, @m_compra,  10,   'Compra',                      CURDATE() - INTERVAL 15 DAY, @empresa, @operador),
+  (@p_milanesa, @m_venta,   10,   'Se vendió todo',              CURDATE() - INTERVAL 1  DAY, @empresa, @operador),
+  -- Agua mineral (mínimo 36): 72 - 12 = 60, holgado
+  (@p_agua,     @m_compra,  72,   'Compra a distribuidora',      CURDATE() - INTERVAL 10 DAY, @empresa, @operador),
+  (@p_agua,     @m_venta,   12,   'Ventas de la semana',         CURDATE() - INTERVAL 2  DAY, @empresa, @operador);
+
+-- ------------------------------------------------------- 3 · Metal Oeste --
+SET @empresa  := (SELECT id_empresa FROM empresas WHERE email = 'contacto@metaloeste.com.ar');
+SET @operador := (SELECT id FROM usuarios WHERE id_empresa = @empresa AND id_rol = 3 AND activo = 1 LIMIT 1);
+
+SET @m_compra  := (SELECT id_motivo_stock FROM motivos_stock WHERE id_empresa = @empresa AND nombre = 'Compra');
+SET @m_consumo := (SELECT id_motivo_stock FROM motivos_stock WHERE id_empresa = @empresa AND nombre = 'Consumo interno');
+
+SET @p_chapa      := (SELECT id_producto FROM productos WHERE id_empresa = @empresa AND nombre = 'Chapa galvanizada N°20');
+SET @p_cano       := (SELECT id_producto FROM productos WHERE id_empresa = @empresa AND nombre = 'Caño estructural 40x40');
+SET @p_electrodos := (SELECT id_producto FROM productos WHERE id_empresa = @empresa AND nombre = 'Electrodo 2,5 mm');
+
+INSERT INTO movimientos_stock (id_producto, id_motivo_stock, cantidad, descripcion, fecha, id_empresa, id_usuario) VALUES
+  -- Chapa (mínimo 10): 30 - 8 = 22
+  (@p_chapa,      @m_compra,   30, 'Compra a proveedor',      CURDATE() - INTERVAL 14 DAY, @empresa, @operador),
+  (@p_chapa,      @m_consumo,   8, 'Usada en pedido de obra', CURDATE() - INTERVAL 5  DAY, @empresa, @operador),
+  -- Caño (mínimo 120): 150 - 60 = 90, POR DEBAJO del mínimo
+  (@p_cano,       @m_compra,  150, 'Compra de barras',        CURDATE() - INTERVAL 16 DAY, @empresa, @operador),
+  (@p_cano,       @m_consumo,  60, 'Estructura del galpón',   CURDATE() - INTERVAL 3  DAY, @empresa, @operador),
+  -- Electrodos (mínimo 2): 6 - 1 = 5
+  (@p_electrodos, @m_compra,    6, 'Compra',                  CURDATE() - INTERVAL 9  DAY, @empresa, @operador),
+  (@p_electrodos, @m_consumo,   1, 'Consumo del taller',      CURDATE() - INTERVAL 2  DAY, @empresa, @operador);
+
 -- ------------------------------------------------------------ comprobación --
 SELECT c.nombre AS empresa, c.estado, COUNT(u.id) AS empleados
 FROM empresas c
@@ -482,3 +602,28 @@ FROM empresas e
 JOIN productos p ON p.id_empresa = e.id_empresa
 GROUP BY e.id_empresa
 ORDER BY e.id_empresa;
+
+-- Motivos de stock por empresa
+SELECT e.nombre AS empresa,
+       COUNT(*)                                                      AS motivos,
+       SUM(CASE WHEN ms.efecto_dinero <> 'ninguno' THEN 1 ELSE 0 END) AS mueven_dinero,
+       SUM(CASE WHEN ms.activo = 0 THEN 1 ELSE 0 END)                 AS inactivos
+FROM empresas e
+JOIN motivos_stock ms ON ms.id_empresa = e.id_empresa
+GROUP BY e.id_empresa
+ORDER BY e.id_empresa;
+
+-- Existencias calculadas (así las ve la pantalla de Stock)
+SELECT e.nombre AS empresa, p.nombre AS producto, p.unidad_medida,
+       COALESCE(SUM(CASE WHEN ms.anulado = 1 THEN 0
+                         WHEN mo.efecto_stock = 'entrada' THEN ms.cantidad
+                         ELSE -ms.cantidad END), 0) AS existencia,
+       p.stock_minimo AS minimo
+FROM productos p
+JOIN empresas e                ON e.id_empresa = p.id_empresa
+LEFT JOIN movimientos_stock ms ON ms.id_producto = p.id_producto
+LEFT JOIN motivos_stock mo     ON mo.id_motivo_stock = ms.id_motivo_stock
+WHERE p.id_empresa IN (SELECT id_empresa FROM empresas
+                       WHERE email IN ('contacto@laesperanza.com.ar', 'contacto@metaloeste.com.ar'))
+GROUP BY p.id_producto
+ORDER BY e.id_empresa, p.nombre;

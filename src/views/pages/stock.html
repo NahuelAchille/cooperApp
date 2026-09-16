@@ -1,0 +1,933 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css">
+  <link rel="stylesheet" href="/styles/header.css">
+  <link rel="stylesheet" href="/styles/stock.css">
+  <title>Stock - CooperApp</title>
+</head>
+<body>
+
+  <div id="header"></div>
+
+  <script src="/components/header.js"></script>
+
+  <div class="page-header">
+    <div>
+      <h4 class="mb-0 fw-bold"><i class="fa-solid fa-warehouse me-2"></i>Stock</h4>
+      <small>Cuánto hay de cada producto, y el registro de todo lo que entra y sale</small>
+    </div>
+    <div class="acciones-header d-none" id="acciones-header">
+      <a class="btn btn-secundario" href="/pages/productos.html">
+        <i class="fa-solid fa-box me-2"></i>Productos
+      </a>
+      <button class="btn btn-nuevo" id="btn-nuevo">
+        <i class="fa-solid fa-right-left me-2"></i>Registrar movimiento
+      </button>
+    </div>
+  </div>
+
+  <div class="content">
+
+    <!-- Se muestra si el rol no llega al stock -->
+    <div class="aviso-permiso d-none" id="aviso-permiso">
+      <i class="fa-solid fa-lock fa-2x mb-3"></i>
+      <p class="mb-0">Tu usuario no tiene acceso al stock.</p>
+    </div>
+
+    <!-- Se muestra si la empresa tiene el módulo apagado -->
+    <div class="aviso-permiso d-none" id="aviso-modulo">
+      <i class="fa-solid fa-plug-circle-xmark fa-2x mb-3"></i>
+      <p class="mb-1">El módulo de <strong>Productos</strong> no está activo en tu empresa.</p>
+      <p class="mb-0 small">El administrador puede activarlo desde <em>Módulos del sistema</em>.</p>
+    </div>
+
+    <div class="d-none" id="zona-stock">
+
+      <!-- Dos vistas de lo mismo: cuánto hay ahora, y cómo se llegó a eso -->
+      <div class="pestanas">
+        <button class="pestana activa" data-vista="existencias">
+          <i class="fa-solid fa-boxes-stacked me-2"></i>Existencias
+        </button>
+        <button class="pestana" data-vista="movimientos">
+          <i class="fa-solid fa-clock-rotate-left me-2"></i>Movimientos
+        </button>
+      </div>
+
+      <!-- ============ VISTA: EXISTENCIAS ============ -->
+      <div id="vista-existencias">
+
+      <div class="card-filtros">
+        <div class="filtros-grid">
+          <div>
+            <label class="form-label">Buscar</label>
+            <div class="input-buscar">
+              <i class="fa-solid fa-magnifying-glass"></i>
+              <input type="text" class="form-control" id="filtro-busqueda" placeholder="Nombre del producto">
+            </div>
+          </div>
+          <div>
+            <label class="form-label">Categoría</label>
+            <select class="form-select" id="filtro-categoria">
+              <option value="">Todas</option>
+            </select>
+          </div>
+          <div>
+            <label class="form-label">Mostrar</label>
+            <select class="form-select" id="filtro-vista">
+              <option value="">Todos los productos</option>
+              <option value="faltantes">Solo los que faltan</option>
+            </select>
+          </div>
+        </div>
+        <div class="filtros-pie">
+          <span class="contador" id="contador-resultados"></span>
+          <button class="btn btn-limpiar" id="btn-limpiar">
+            <i class="fa-solid fa-eraser me-1"></i>Limpiar filtros
+          </button>
+        </div>
+      </div>
+
+      <div class="card-tabla">
+        <div class="table-responsive">
+          <table class="table table-hover mb-0">
+            <thead>
+              <tr>
+                <th>Producto</th>
+                <th>Categoría</th>
+                <th class="text-end">Existencia</th>
+                <th class="text-end">Mínimo</th>
+                <th>Estado</th>
+                <th class="text-end">Acciones</th>
+              </tr>
+            </thead>
+            <tbody id="tabla-stock">
+              <tr><td colspan="6" class="text-center py-4 text-muted">
+                <i class="fa-solid fa-spinner fa-spin me-2"></i>Cargando...
+              </td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      </div><!-- fin vista existencias -->
+
+      <!-- ============ VISTA: MOVIMIENTOS ============ -->
+      <div id="vista-movimientos" class="d-none">
+
+        <div class="card-filtros">
+          <div class="filtros-grid-mov">
+            <div>
+              <label class="form-label">Producto</label>
+              <select class="form-select" id="mov-producto">
+                <option value="">Todos</option>
+              </select>
+            </div>
+            <div>
+              <label class="form-label">Motivo</label>
+              <select class="form-select" id="mov-motivo">
+                <option value="">Todos</option>
+              </select>
+            </div>
+            <div>
+              <label class="form-label">Desde</label>
+              <input type="date" class="form-control" id="mov-desde">
+            </div>
+            <div>
+              <label class="form-label">Hasta</label>
+              <input type="date" class="form-control" id="mov-hasta">
+            </div>
+          </div>
+          <div class="filtros-pie">
+            <span class="contador" id="contador-movimientos"></span>
+            <button class="btn btn-limpiar" id="btn-limpiar-mov">
+              <i class="fa-solid fa-eraser me-1"></i>Limpiar filtros
+            </button>
+          </div>
+        </div>
+
+        <div class="card-tabla">
+          <div class="table-responsive">
+            <table class="table table-hover mb-0">
+              <thead>
+                <tr>
+                  <th>Fecha</th>
+                  <th>Producto</th>
+                  <th>Motivo</th>
+                  <th class="text-end">Cantidad</th>
+                  <th>Detalle</th>
+                  <th>Registró</th>
+                  <th class="text-end">Acciones</th>
+                </tr>
+              </thead>
+              <tbody id="tabla-movimientos">
+                <tr><td colspan="7" class="text-center py-4 text-muted">
+                  <i class="fa-solid fa-spinner fa-spin me-2"></i>Cargando...
+                </td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+      </div><!-- fin vista movimientos -->
+
+    </div>
+  </div>
+
+  <!-- Modal registrar movimiento -->
+  <div class="modal fade" id="modalMovimiento" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title fw-bold"><i class="fa-solid fa-right-left me-2"></i>Registrar movimiento de stock</h5>
+          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          <form id="form-movimiento" novalidate>
+
+            <div class="mb-3">
+              <label class="form-label">Producto *</label>
+              <select class="form-select" name="id_producto" id="select-producto" required></select>
+            </div>
+
+            <div class="mb-3">
+              <label class="form-label">Motivo *</label>
+              <select class="form-select" name="id_motivo_stock" id="select-motivo" required></select>
+              <div class="form-text" id="ayuda-motivo">El motivo define si la cantidad suma o resta.</div>
+            </div>
+
+            <div class="row g-2 mb-3">
+              <div class="col-12 col-sm-6">
+                <label class="form-label">Cantidad *</label>
+                <input type="number" class="form-control" name="cantidad" min="0.01" step="0.01" placeholder="0" required>
+              </div>
+              <div class="col-12 col-sm-6">
+                <label class="form-label">Fecha *</label>
+                <input type="date" class="form-control" name="fecha" required>
+              </div>
+            </div>
+
+            <div class="mb-3">
+              <label class="form-label">Detalle</label>
+              <input type="text" class="form-control" name="descripcion" maxlength="255" placeholder="Opcional: remito, cliente, quién lo retiró...">
+            </div>
+
+            <div class="resumen-movimiento" id="resumen-movimiento"></div>
+
+            <div id="mov-error" class="text-danger small mt-2 d-none"></div>
+          </form>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
+          <button type="button" id="btn-guardar-mov" class="btn fw-bold px-4" style="background-color:#2d7a4f;color:white;">
+            <i class="fa-solid fa-floppy-disk me-2"></i>Registrar
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+
+  <!-- Modal: registrar el movimiento de DINERO de un movimiento de stock (HU-45) -->
+  <div class="modal fade" id="modalDinero" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title fw-bold"><i class="fa-solid fa-dollar-sign me-2"></i>Registrar el dinero</h5>
+          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+
+          <!-- Lo que ya se guardó, para que se entienda de dónde sale esto -->
+          <div class="resumen-movimiento mb-3" id="dinero-contexto"></div>
+
+          <form id="form-dinero" novalidate>
+            <input type="hidden" name="id_movimiento_stock">
+
+            <div class="mb-3">
+              <label class="form-label">Categoría y tipo *</label>
+              <select class="form-select" name="id_tipo" id="select-tipo" required></select>
+              <div class="form-text" id="ayuda-tipo"></div>
+            </div>
+
+            <div class="mb-3">
+              <label class="form-label">Monto *</label>
+              <input type="number" class="form-control" name="monto" min="0.01" step="0.01" placeholder="0,00" required>
+              <div class="form-text">El total de la operación, no el precio por unidad.</div>
+            </div>
+
+            <div class="mb-1">
+              <label class="form-label">Detalle</label>
+              <input type="text" class="form-control" name="descripcion" maxlength="255">
+            </div>
+
+            <div id="dinero-error" class="text-danger small mt-2 d-none"></div>
+          </form>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Ahora no</button>
+          <button type="button" id="btn-guardar-dinero" class="btn fw-bold px-4" style="background-color:#2d7a4f;color:white;">
+            <i class="fa-solid fa-floppy-disk me-2"></i>Registrar
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal: anular un movimiento de stock (HU-46) -->
+  <div class="modal fade" id="modalAnular" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title fw-bold"><i class="fa-solid fa-ban me-2"></i>Anular movimiento</h5>
+          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          <p class="mb-2" id="anular-pregunta"></p>
+          <div class="alert alert-warning mb-0 py-2 small" id="anular-aviso"></div>
+          <div id="anular-error" class="text-danger small mt-2 d-none"></div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
+          <button type="button" id="btn-confirmar-anular" class="btn fw-bold px-4" style="background-color:#a01c1c;color:white;">
+            <i class="fa-solid fa-ban me-2"></i>Anular
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+
+  <script>
+
+    let usuarioActual = null
+    // ¿Esta persona puede cargar movimientos de dinero? El operador no: lo
+    // suyo es el depósito. De eso depende que se le ofrezca el paso del dinero.
+    let puedeDinero = false
+    let productos = []     // sólo los activos, para el formulario
+    let motivos = []       // sólo los activos
+    let existencias = []   // lo último que devolvió el servidor
+
+    function mostrarToast(mensaje) {
+      const toast = document.createElement('div')
+      toast.style = 'position:fixed;top:24px;left:50%;transform:translateX(-50%);background:#2d7a4f;color:white;padding:14px 24px;border-radius:10px;z-index:9999;font-weight:500;box-shadow:0 4px 16px rgba(0,0,0,0.2);max-width:90vw;text-align:center'
+      toast.innerHTML = `<i class="fa-solid fa-circle-check me-2"></i>${esc(mensaje)}`
+      document.body.appendChild(toast)
+      setTimeout(() => toast.remove(), 6000)
+    }
+
+    // Evita romper el HTML (y que se ejecute código) si un nombre trae comillas o etiquetas
+    function esc(texto) {
+      return String(texto).replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+    }
+
+    // Fecha de hoy en hora local, como AAAA-MM-DD. No se usa toISOString(),
+    // que trabaja en UTC: en Argentina propondría el día siguiente de noche.
+    function fechaDeHoy() {
+      const hoy = new Date()
+      return `${hoy.getFullYear()}-${String(hoy.getMonth() + 1).padStart(2, '0')}-${String(hoy.getDate()).padStart(2, '0')}`
+    }
+
+    // Muestra 5 en vez de 5,00 pero respeta los decimales cuando los hay.
+    function formatearCantidad(valor) {
+      const numero = Number(valor)
+      return Number.isInteger(numero) ? String(numero) : numero.toFixed(2).replace('.', ',')
+    }
+
+    async function iniciar() {
+      usuarioActual = await cargarHeader()
+
+      if (!usuarioActual || usuarioActual.error) {
+        window.location.href = '/pages/login.html'
+        return
+      }
+
+      puedeDinero = ['admin_empresa', 'tesorero'].includes(usuarioActual.rol) && moduloActivo('movimientos')
+
+      const puedeVer = usuarioActual.rol === 'admin_empresa' || usuarioActual.rol === 'operador'
+      if (!puedeVer) {
+        document.getElementById('aviso-permiso').classList.remove('d-none')
+        return
+      }
+
+      if (!moduloActivo('productos')) {
+        document.getElementById('aviso-modulo').classList.remove('d-none')
+        return
+      }
+
+      document.getElementById('acciones-header').classList.remove('d-none')
+      document.getElementById('zona-stock').classList.remove('d-none')
+
+      // El filtro muestra todas las categorías, también las inactivas: sus
+      // productos siguen existiendo y hay que poder encontrarlos.
+      const categorias = await fetch('/productos/categorias').then(r => r.ok ? r.json() : [])
+      document.getElementById('filtro-categoria').innerHTML =
+        '<option value="">Todas</option>' +
+        categorias.map(c => `<option value="${c.id_categoria_producto}">${esc(c.nombre)}${c.activo ? '' : ' (inactiva)'}</option>`).join('')
+
+      cargarExistencias()
+    }
+
+    function armarConsulta() {
+      const params = new URLSearchParams()
+      const busqueda = document.getElementById('filtro-busqueda').value.trim()
+      const categoria = document.getElementById('filtro-categoria').value
+
+      if (busqueda) params.set('busqueda', busqueda)
+      if (categoria) params.set('id_categoria_producto', categoria)
+
+      const consulta = params.toString()
+      return consulta ? `?${consulta}` : ''
+    }
+
+    // ¿Cómo está este producto respecto de su mínimo?
+    //
+    // Son cuatro estados y no dos, porque "cantidad cero" puede significar dos
+    // cosas muy distintas:
+    //   · nuevo  → nunca se le cargó un movimiento. El sistema no sabe nada de
+    //              él todavía, así que no es un problema. Sin esto, una empresa
+    //              que recién carga su catálogo vería TODO en rojo.
+    //   · sin    → tuvo movimientos y se quedó en cero. Eso sí es un problema.
+    //   · bajo   → todavía queda, pero llegó al mínimo: hay que reponer.
+    //   · ok     → no hay nada que mirar.
+    function estadoDe(item) {
+      const existencia = Number(item.existencia)
+      const minimo = Number(item.stock_minimo)
+
+      if (Number(item.cantidad_movimientos) === 0) return 'nuevo'
+      if (existencia <= 0) return 'sin'
+      if (minimo > 0 && existencia <= minimo) return 'bajo'
+      return 'ok'
+    }
+
+    async function cargarExistencias() {
+      existencias = await fetch(`/productos/stock${armarConsulta()}`).then(r => r.ok ? r.json() : [])
+
+      const soloFaltantes = document.getElementById('filtro-vista').value === 'faltantes'
+      // "Solo los que faltan" son los que hay que ir a comprar: los que se
+      // quedaron sin stock y los que llegaron al minimo. Los que nunca se
+      // cargaron no entran: no se sabe si falta algo o si nadie los cargo aun.
+      const lista = soloFaltantes
+        ? existencias.filter(i => ['sin', 'bajo'].includes(estadoDe(i)))
+        : existencias
+
+      const tbody = document.getElementById('tabla-stock')
+      document.getElementById('contador-resultados').textContent =
+        lista.length === 1 ? '1 producto' : `${lista.length} productos`
+
+      if (!lista.length) {
+        tbody.innerHTML = `<tr><td colspan="6"><div class="tabla-vacia">${
+          soloFaltantes
+            ? '¡Bien! No hay productos por debajo del mínimo.'
+            : 'No hay productos que coincidan. Si todavía no cargaste ninguno, hacelo desde <strong>Productos</strong>.'
+        }</div></td></tr>`
+        return
+      }
+
+      tbody.innerHTML = lista.map(item => {
+        const estado = estadoDe(item)
+        const clasificacion = item.subcategoria_nombre
+          ? `${esc(item.categoria_nombre)} › ${esc(item.subcategoria_nombre)}`
+          : esc(item.categoria_nombre)
+
+        const aviso = estado === 'sin'
+          ? '<span class="aviso-minimo sin"><i class="fa-solid fa-circle-exclamation me-1"></i>Sin stock</span>'
+          : estado === 'bajo'
+            ? '<span class="aviso-minimo bajo"><i class="fa-solid fa-triangle-exclamation me-1"></i>Reponer</span>'
+            : estado === 'nuevo'
+              ? '<span class="aviso-minimo nuevo"><i class="fa-solid fa-circle-info me-1"></i>Sin cargar</span>'
+              : ''
+
+        return `
+          <tr>
+            <td><div class="prod-nombre">${esc(item.nombre)}</div></td>
+            <td><span class="prod-clasificacion">${clasificacion}</span></td>
+            <td class="text-end">
+              <span class="existencia ${estado}">${formatearCantidad(item.existencia)}<span class="unidad">${esc(item.unidad_medida)}</span></span>
+            </td>
+            <td class="text-end"><span class="minimo-texto">${Number(item.stock_minimo) > 0 ? formatearCantidad(item.stock_minimo) : '—'}</span></td>
+            <td>${aviso}</td>
+            <td class="text-end">
+              <button class="btn-mini" data-accion="historial" data-id="${item.id_producto}" title="Ver el historial de este producto">
+                <i class="fa-solid fa-clock-rotate-left"></i>
+              </button>
+              <button class="btn-mini" data-accion="mover" data-id="${item.id_producto}" title="Registrar movimiento">
+                <i class="fa-solid fa-right-left"></i>
+              </button>
+            </td>
+          </tr>`
+      }).join('')
+    }
+
+    // ================= FILTROS =================
+    let esperandoTipeo = null
+    document.getElementById('filtro-busqueda').addEventListener('input', () => {
+      clearTimeout(esperandoTipeo)
+      esperandoTipeo = setTimeout(cargarExistencias, 350)
+    })
+    document.getElementById('filtro-categoria').addEventListener('change', cargarExistencias)
+    document.getElementById('filtro-vista').addEventListener('change', cargarExistencias)
+
+    document.getElementById('btn-limpiar').addEventListener('click', () => {
+      document.getElementById('filtro-busqueda').value = ''
+      document.getElementById('filtro-categoria').value = ''
+      document.getElementById('filtro-vista').value = ''
+      cargarExistencias()
+    })
+
+    // ================= PESTAÑAS =================
+    // Son dos miradas sobre lo mismo: cuánto hay ahora, y cómo se llegó a eso.
+    document.querySelectorAll('.pestana').forEach(boton => {
+      boton.addEventListener('click', () => mostrarVista(boton.dataset.vista))
+    })
+
+    function mostrarVista(vista) {
+      document.querySelectorAll('.pestana').forEach(b => b.classList.toggle('activa', b.dataset.vista === vista))
+      document.getElementById('vista-existencias').classList.toggle('d-none', vista !== 'existencias')
+      document.getElementById('vista-movimientos').classList.toggle('d-none', vista !== 'movimientos')
+
+      if (vista === 'movimientos') cargarMovimientos()
+    }
+
+    // Llena los desplegables del historial. Se hace una sola vez, la primera
+    // vez que se entra a la pestaña.
+    let filtrosDelHistorialListos = false
+    async function prepararFiltrosDelHistorial() {
+      if (filtrosDelHistorialListos) return
+
+      // Acá van TODOS los productos y motivos, también los dados de baja: el
+      // historial es del pasado y hay que poder buscar lo que ya se cargó.
+      const [todosProductos, todosMotivos] = await Promise.all([
+        fetch('/productos').then(r => r.ok ? r.json() : []),
+        fetch('/productos/motivos').then(r => r.ok ? r.json() : [])
+      ])
+
+      document.getElementById('mov-producto').innerHTML =
+        '<option value="">Todos</option>' +
+        todosProductos.map(p => `<option value="${p.id_producto}">${esc(p.nombre)}</option>`).join('')
+
+      document.getElementById('mov-motivo').innerHTML =
+        '<option value="">Todos</option>' +
+        todosMotivos.map(m => `<option value="${m.id_motivo_stock}">${esc(m.nombre)}</option>`).join('')
+
+      filtrosDelHistorialListos = true
+    }
+
+    async function cargarMovimientos() {
+      await prepararFiltrosDelHistorial()
+
+      const params = new URLSearchParams()
+      const producto = document.getElementById('mov-producto').value
+      const motivo = document.getElementById('mov-motivo').value
+      const desde = document.getElementById('mov-desde').value
+      const hasta = document.getElementById('mov-hasta').value
+
+      if (producto) params.set('id_producto', producto)
+      if (motivo) params.set('id_motivo_stock', motivo)
+      if (desde) params.set('desde', desde)
+      if (hasta) params.set('hasta', hasta)
+
+      const consulta = params.toString()
+      const movimientos = await fetch(`/productos/stock/movimientos${consulta ? '?' + consulta : ''}`)
+        .then(r => r.ok ? r.json() : [])
+
+      const tbody = document.getElementById('tabla-movimientos')
+      document.getElementById('contador-movimientos').textContent =
+        movimientos.length === 1 ? '1 movimiento' : `${movimientos.length} movimientos`
+
+      if (!movimientos.length) {
+        tbody.innerHTML = `<tr><td colspan="7"><div class="tabla-vacia">${
+          consulta
+            ? 'No hay movimientos que coincidan con los filtros.'
+            : 'Todavía no se registró ningún movimiento de stock.'
+        }</div></td></tr>`
+        return
+      }
+
+      tbody.innerHTML = movimientos.map(m => {
+        const entra = m.efecto_stock === 'entrada'
+        const mueveDinero = m.efecto_dinero !== 'ninguno'
+
+        // Un movimiento con impacto económico al que todavía nadie le cargó el
+        // dinero queda marcado: es lo que después se olvida y descuadra.
+        const marcaDinero = !mueveDinero ? ''
+          : m.id_movimiento
+            ? '<span class="marca-dinero hecho" title="Ya tiene su movimiento de dinero"><i class="fa-solid fa-circle-check me-1"></i>$ cargado</span>'
+            : '<span class="marca-dinero falta" title="Este movimiento genera dinero y todavía no se registró"><i class="fa-solid fa-circle-exclamation me-1"></i>Falta el $</span>'
+
+        return `
+          <tr class="${m.anulado ? 'fila-anulada' : ''}">
+            <td class="fecha-mov">${formatearFecha(m.fecha)}</td>
+            <td>
+              <span class="prod-nombre">${esc(m.producto_nombre)}</span>
+              ${m.anulado ? '<span class="badge-anulado">Anulado</span>' : ''}
+            </td>
+            <td>
+              <span class="badge-motivo ${entra ? 'entrada' : 'salida'}">
+                <i class="fa-solid ${entra ? 'fa-arrow-down' : 'fa-arrow-up'} me-1"></i>${esc(m.motivo_nombre)}
+              </span>
+              ${m.anulado ? '' : marcaDinero}
+            </td>
+            <td class="text-end">
+              <span class="cantidad-mov ${entra ? 'entrada' : 'salida'}">
+                ${entra ? '+' : '−'}${formatearCantidad(m.cantidad)}<span class="unidad">${esc(m.unidad_medida)}</span>
+              </span>
+            </td>
+            <td><span class="detalle-mov">${m.descripcion ? esc(m.descripcion) : '<span class="sin-dato">—</span>'}</span></td>
+            <td><span class="detalle-mov">${esc(m.usuario_nombre)} ${esc(m.usuario_apellido)}</span></td>
+            <td class="text-end">
+              ${m.anulado ? '' : `
+                ${(mueveDinero && !m.id_movimiento && puedeDinero) ? `
+                  <button class="btn-mini" data-accion="cargar-dinero" data-id="${m.id_movimiento_stock}" title="Registrar el movimiento de dinero">
+                    <i class="fa-solid fa-dollar-sign"></i>
+                  </button>` : ''}
+                <button class="btn-mini peligro" data-accion="anular" data-id="${m.id_movimiento_stock}" title="Anular este movimiento">
+                  <i class="fa-solid fa-ban"></i>
+                </button>`}
+            </td>
+          </tr>`
+      }).join('')
+
+      // Se guardan para poder abrir los modales sin volver a pedirlos.
+      window.movimientosCargados = movimientos
+    }
+
+    // La API devuelve la fecha como 2026-09-14T03:00:00.000Z. Se corta el día
+    // del texto en vez de usar Date, que la correría por la zona horaria.
+    function formatearFecha(valor) {
+      const [anio, mes, dia] = String(valor).slice(0, 10).split('-')
+      return `${dia}/${mes}/${anio}`
+    }
+
+    document.getElementById('mov-producto').addEventListener('change', cargarMovimientos)
+    document.getElementById('mov-motivo').addEventListener('change', cargarMovimientos)
+
+    // Las fechas se limitan entre sí: "desde" no puede ser posterior a "hasta".
+    document.getElementById('mov-desde').addEventListener('change', (evento) => {
+      document.getElementById('mov-hasta').min = evento.target.value
+      cargarMovimientos()
+    })
+    document.getElementById('mov-hasta').addEventListener('change', (evento) => {
+      document.getElementById('mov-desde').max = evento.target.value
+      cargarMovimientos()
+    })
+
+    document.getElementById('btn-limpiar-mov').addEventListener('click', () => {
+      for (const id of ['mov-producto', 'mov-motivo', 'mov-desde', 'mov-hasta']) {
+        document.getElementById(id).value = ''
+      }
+      document.getElementById('mov-desde').max = ''
+      document.getElementById('mov-hasta').min = ''
+      cargarMovimientos()
+    })
+
+    // ================= MOVIMIENTO =================
+    document.getElementById('btn-nuevo').addEventListener('click', () => abrirModal(null))
+
+    document.getElementById('tabla-stock').addEventListener('click', async (evento) => {
+      const boton = evento.target.closest('button')
+      if (!boton) return
+
+      if (boton.dataset.accion === 'mover') {
+        abrirModal(boton.dataset.id)
+      } else if (boton.dataset.accion === 'historial') {
+        // Lleva a la pestaña de movimientos ya filtrada por ese producto, que
+        // es lo que la persona quiere ver cuando pregunta "¿qué pasó con esto?"
+        await prepararFiltrosDelHistorial()
+        document.getElementById('mov-producto').value = boton.dataset.id
+        mostrarVista('movimientos')
+      }
+    })
+
+    async function abrirModal(idProducto) {
+      const form = document.getElementById('form-movimiento')
+      form.reset()
+      document.getElementById('mov-error').classList.add('d-none')
+
+      // Sólo productos y motivos activos: no se le cargan movimientos a algo
+      // que la empresa dio de baja.
+      productos = await fetch('/productos?estado=activos').then(r => r.ok ? r.json() : [])
+      motivos = await fetch('/productos/motivos?soloActivos=true').then(r => r.ok ? r.json() : [])
+
+      document.getElementById('select-producto').innerHTML =
+        '<option value="">Elegí un producto</option>' +
+        productos.map(p => `<option value="${p.id_producto}">${esc(p.nombre)}</option>`).join('')
+
+      document.getElementById('select-motivo').innerHTML =
+        '<option value="">Elegí un motivo</option>' +
+        motivos.map(m => `<option value="${m.id_motivo_stock}">${esc(m.nombre)} (${m.efecto_stock === 'entrada' ? 'entrada' : 'salida'})</option>`).join('')
+
+      // Fecha por defecto = hoy, y no se puede elegir más adelante.
+      form.fecha.value = fechaDeHoy()
+      form.fecha.max = fechaDeHoy()
+
+      if (idProducto) form.id_producto.value = idProducto
+
+      actualizarResumen()
+      new bootstrap.Modal(document.getElementById('modalMovimiento')).show()
+    }
+
+    // Muestra cuánto hay del producto elegido y cómo queda después. Es lo que
+    // evita cargar una salida a ciegas y llevarse el rechazo del servidor.
+    function actualizarResumen() {
+      const form = document.getElementById('form-movimiento')
+      const div = document.getElementById('resumen-movimiento')
+      div.classList.remove('alerta')
+
+      const producto = existencias.find(p => String(p.id_producto) === form.id_producto.value)
+      const motivo = motivos.find(m => String(m.id_motivo_stock) === form.id_motivo_stock.value)
+
+      document.getElementById('ayuda-motivo').textContent = motivo
+        ? (motivo.efecto_dinero === 'ninguno'
+            ? 'Este motivo no mueve dinero.'
+            : `Este motivo genera un ${motivo.efecto_dinero} de dinero.`)
+        : 'El motivo define si la cantidad suma o resta.'
+
+      if (!producto) {
+        div.innerHTML = '<i class="fa-solid fa-circle-info me-1"></i>Elegí un producto para ver cuánto hay.'
+        return
+      }
+
+      const hay = Number(producto.existencia)
+      const unidad = esc(producto.unidad_medida)
+      const cantidad = Number(form.cantidad.value)
+
+      if (!motivo || !Number.isFinite(cantidad) || cantidad <= 0) {
+        div.innerHTML = `<i class="fa-solid fa-box me-1"></i>Ahora hay <strong>${formatearCantidad(hay)} ${unidad}</strong> de ${esc(producto.nombre)}.`
+        return
+      }
+
+      const queda = motivo.efecto_stock === 'entrada' ? hay + cantidad : hay - cantidad
+
+      if (queda < 0) {
+        div.classList.add('alerta')
+        div.innerHTML = `<i class="fa-solid fa-triangle-exclamation me-1"></i>Hay <strong>${formatearCantidad(hay)} ${unidad}</strong> y estás sacando ${formatearCantidad(cantidad)}. No alcanza.`
+        return
+      }
+
+      div.innerHTML = `<i class="fa-solid fa-box me-1"></i>Hay ${formatearCantidad(hay)} ${unidad} · después del movimiento queda <span class="queda">${formatearCantidad(queda)} ${unidad}</span>.`
+    }
+
+    document.getElementById('select-producto').addEventListener('change', actualizarResumen)
+    document.getElementById('select-motivo').addEventListener('change', actualizarResumen)
+    document.querySelector('#form-movimiento [name="cantidad"]').addEventListener('input', actualizarResumen)
+
+    document.getElementById('btn-guardar-mov').addEventListener('click', async (evento) => {
+      const boton = evento.currentTarget
+      const form = document.getElementById('form-movimiento')
+      const errorDiv = document.getElementById('mov-error')
+      errorDiv.classList.add('d-none')
+
+      const datos = Object.fromEntries(new FormData(form))
+
+      if (!datos.id_producto) return mostrarError(errorDiv, 'Elegí un producto.')
+      if (!datos.id_motivo_stock) return mostrarError(errorDiv, 'Elegí un motivo.')
+      if (!datos.cantidad || Number(datos.cantidad) <= 0) return mostrarError(errorDiv, 'La cantidad tiene que ser mayor que cero.')
+      if (!datos.fecha) return mostrarError(errorDiv, 'Elegí una fecha.')
+
+      boton.disabled = true
+
+      const res = await fetch('/productos/stock/movimientos', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(datos)
+      })
+      const resultado = await res.json()
+      boton.disabled = false
+
+      if (!res.ok) return mostrarError(errorDiv, resultado.error)
+
+      bootstrap.Modal.getInstance(document.getElementById('modalMovimiento')).hide()
+      mostrarToast(resultado.message)
+
+      // Se recargan las dos vistas: la existencia cambió y el historial tiene
+      // un renglón nuevo, sin importar en cuál de las dos esté parada la persona.
+      cargarExistencias()
+      if (!document.getElementById('vista-movimientos').classList.contains('d-none')) cargarMovimientos()
+
+      // Si el motivo mueve plata, el servidor devuelve la propuesta y acá se
+      // ofrece el segundo paso. El movimiento de stock YA quedó guardado: si
+      // la persona cierra el modal, no se pierde nada, sólo queda marcado en
+      // el historial que falta cargar el dinero.
+      if (resultado.propuesta) {
+        const movimiento = {
+          id_movimiento_stock: resultado.id_movimiento_stock,
+          motivo_nombre: motivos.find(m => String(m.id_motivo_stock) === datos.id_motivo_stock)?.nombre || ''
+        }
+        abrirModalDinero(movimiento, resultado.propuesta)
+      }
+    })
+
+    function mostrarError(div, mensaje) {
+      div.textContent = mensaje
+      div.classList.remove('d-none')
+    }
+
+    // ================= HU-45 · EL DINERO DEL MOVIMIENTO =================
+    //
+    // Cuando el motivo mueve plata (una venta, una compra), el sistema OFRECE
+    // registrar también el movimiento de dinero, con la fecha y el detalle ya
+    // armados. No lo crea solo: el monto no lo sabe (no hay precios cargados)
+    // y la persona tiene que poder decir que no.
+
+    let tiposDeMovimiento = []  // los tipos activos, para el desplegable
+
+    // Trae el árbol de clasificación del dinero, aplanado a "Categoría › Tipo",
+    // que es como se elige en la pantalla de movimientos.
+    async function cargarTiposDeMovimiento() {
+      if (tiposDeMovimiento.length) return tiposDeMovimiento
+
+      const categorias = await fetch('/categorias?soloActivas=true').then(r => r.ok ? r.json() : [])
+
+      const porCategoria = await Promise.all(categorias.map(async (c) => {
+        const tipos = await fetch(`/categorias/${c.id_categoria}/tipos`).then(r => r.ok ? r.json() : [])
+        return tipos.filter(t => t.activo).map(t => ({
+          id_tipo: t.id_tipo,
+          nombre: t.nombre,
+          categoria_nombre: c.nombre,
+          naturaleza: c.naturaleza
+        }))
+      }))
+
+      tiposDeMovimiento = porCategoria.flat()
+      return tiposDeMovimiento
+    }
+
+    // Abre el paso del dinero. `propuesta` viene del servidor al registrar el
+    // movimiento; cuando se entra desde el botón del historial se arma acá.
+    async function abrirModalDinero(movimiento, propuesta) {
+      const form = document.getElementById('form-dinero')
+      form.reset()
+      document.getElementById('dinero-error').classList.add('d-none')
+
+      form.id_movimiento_stock.value = movimiento.id_movimiento_stock
+      form.descripcion.value = propuesta.descripcion || ''
+
+      const esIngreso = propuesta.naturaleza === 'ingreso'
+
+      document.getElementById('dinero-contexto').innerHTML =
+        `<i class="fa-solid fa-circle-check me-1"></i>Se registró el movimiento de stock. ` +
+        `Como el motivo <strong>${esc(movimiento.motivo_nombre)}</strong> genera ` +
+        `<strong>un ${esc(propuesta.naturaleza)}</strong>, podés cargar el dinero acá y queda todo junto.`
+
+      // Sólo los tipos de la naturaleza que corresponde: si el motivo genera
+      // un ingreso, ofrecer egresos sería ofrecer un error.
+      await cargarTiposDeMovimiento()
+      const opciones = tiposDeMovimiento.filter(t => t.naturaleza === propuesta.naturaleza)
+
+      document.getElementById('select-tipo').innerHTML = opciones.length
+        ? '<option value="">Elegí una opción</option>' +
+          opciones.map(t => `<option value="${t.id_tipo}">${esc(t.categoria_nombre)} › ${esc(t.nombre)}</option>`).join('')
+        : '<option value="">No hay categorías de ' + esc(propuesta.naturaleza) + 's</option>'
+
+      document.getElementById('ayuda-tipo').textContent = opciones.length
+        ? `Se muestran sólo las categorías de ${propuesta.naturaleza}s.`
+        : `Tu empresa no tiene ninguna categoría de ${propuesta.naturaleza}s activa. Hay que crearla en Clasificación de movimientos.`
+
+      new bootstrap.Modal(document.getElementById('modalDinero')).show()
+    }
+
+    document.getElementById('btn-guardar-dinero').addEventListener('click', async (evento) => {
+      const boton = evento.currentTarget
+      const form = document.getElementById('form-dinero')
+      const errorDiv = document.getElementById('dinero-error')
+      errorDiv.classList.add('d-none')
+
+      const datos = Object.fromEntries(new FormData(form))
+
+      if (!datos.id_tipo) return mostrarError(errorDiv, 'Elegí una categoría y tipo.')
+      if (!datos.monto || Number(datos.monto) <= 0) return mostrarError(errorDiv, 'El monto tiene que ser mayor que cero.')
+
+      boton.disabled = true
+
+      const res = await fetch(`/productos/stock/movimientos/${datos.id_movimiento_stock}/dinero`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          id_tipo: datos.id_tipo,
+          monto: datos.monto,
+          descripcion: datos.descripcion
+        })
+      })
+      const resultado = await res.json()
+      boton.disabled = false
+
+      if (!res.ok) return mostrarError(errorDiv, resultado.error)
+
+      bootstrap.Modal.getInstance(document.getElementById('modalDinero')).hide()
+      mostrarToast(resultado.message)
+      if (!document.getElementById('vista-movimientos').classList.contains('d-none')) cargarMovimientos()
+    })
+
+    // ================= HU-46 · ANULAR =================
+    function abrirModalAnular(movimiento) {
+      const entra = movimiento.efecto_stock === 'entrada'
+
+      document.getElementById('anular-pregunta').innerHTML =
+        `¿Anular la ${entra ? 'entrada' : 'salida'} de <strong>${formatearCantidad(movimiento.cantidad)} ${esc(movimiento.unidad_medida)}</strong> ` +
+        `de <strong>${esc(movimiento.producto_nombre)}</strong> del ${formatearFecha(movimiento.fecha)}?`
+
+      // Se dice qué va a pasar con el número, que es lo que la persona quiere
+      // saber antes de confirmar.
+      let aviso = '<i class="fa-solid fa-circle-info me-1"></i>No se borra: queda en el historial marcado como anulado, y la existencia se recalcula sola.'
+
+      if (movimiento.id_movimiento) {
+        aviso += '<br><i class="fa-solid fa-triangle-exclamation me-1"></i>Este movimiento tiene un <strong>movimiento de dinero asociado</strong>, que NO se anula solo. Si también hay que darlo de baja, se hace desde Movimientos.'
+      }
+
+      document.getElementById('anular-aviso').innerHTML = aviso
+      document.getElementById('anular-error').classList.add('d-none')
+
+      const btn = document.getElementById('btn-confirmar-anular')
+      btn.dataset.id = movimiento.id_movimiento_stock
+
+      new bootstrap.Modal(document.getElementById('modalAnular')).show()
+    }
+
+    document.getElementById('btn-confirmar-anular').addEventListener('click', async (evento) => {
+      const boton = evento.currentTarget
+      const errorDiv = document.getElementById('anular-error')
+      errorDiv.classList.add('d-none')
+
+      boton.disabled = true
+
+      const res = await fetch(`/productos/stock/movimientos/${boton.dataset.id}/anular`, { method: 'PUT' })
+      const resultado = await res.json()
+      boton.disabled = false
+
+      if (!res.ok) return mostrarError(errorDiv, resultado.error)
+
+      bootstrap.Modal.getInstance(document.getElementById('modalAnular')).hide()
+      mostrarToast(resultado.message)
+      cargarExistencias()
+      cargarMovimientos()
+    })
+
+    // Acciones del historial
+    document.getElementById('tabla-movimientos').addEventListener('click', (evento) => {
+      const boton = evento.target.closest('button')
+      if (!boton) return
+
+      const movimiento = window.movimientosCargados.find(
+        m => String(m.id_movimiento_stock) === boton.dataset.id
+      )
+      if (!movimiento) return
+
+      if (boton.dataset.accion === 'anular') {
+        abrirModalAnular(movimiento)
+      } else if (boton.dataset.accion === 'cargar-dinero') {
+        abrirModalDinero(movimiento, {
+          naturaleza: movimiento.efecto_dinero,
+          descripcion: `${movimiento.motivo_nombre}: ${formatearCantidad(movimiento.cantidad)} ${movimiento.unidad_medida} de ${movimiento.producto_nombre}`
+        })
+      }
+    })
+
+    iniciar()
+  </script>
+</body>
+</html>
