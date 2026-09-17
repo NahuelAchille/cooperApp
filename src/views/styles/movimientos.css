@@ -136,6 +136,66 @@ body {
 .badge-egreso  { background-color: #fde8e8; color: var(--danger);      font-size: 0.75rem; padding: 4px 10px; border-radius: 20px; font-weight: 600; }
 .badge-cat     { background-color: #e4f2eb; color: var(--verde-primario); font-size: 0.76rem; padding: 3px 9px; border-radius: 20px; font-weight: 600; }
 
+/* --- Cuánto deja cada servicio (HU-49) ---
+   Arranca cerrado: es una pregunta que uno se hace de vez en cuando, no cada
+   vez que entra a cargar un gasto, y abierto empujaría la lista media
+   pantalla hacia abajo. */
+.btn-por-servicio {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  width: 100%;
+  background: white;
+  border: 1px solid #d8e6de;
+  border-radius: 10px;
+  padding: 11px 16px;
+  margin-bottom: 14px;
+  font-weight: 600;
+  color: var(--verde-primario);
+  text-align: left;
+}
+.btn-por-servicio:hover { background: #f4faf7; }
+.btn-por-servicio i { font-size: 0.85rem; }
+
+.panel-por-servicio {
+  background: white;
+  border: 1px solid #d8e6de;
+  border-radius: 10px;
+  padding: 14px 16px 6px;
+  margin: -6px 0 14px;
+}
+.panel-periodo {
+  font-size: 0.8rem;
+  color: #6c7a72;
+  margin-bottom: 10px;
+}
+.tabla-servicios th {
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  color: #6c7a72;
+  border-bottom: 2px solid #e6efea;
+}
+.tabla-servicios td { font-size: 0.9rem; vertical-align: middle; }
+.tabla-servicios .fila-inactiva { opacity: 0.6; }
+.tabla-servicios .positivo { color: var(--verde-oscuro); }
+.tabla-servicios .negativo { color: var(--danger); }
+.chico-gris { font-size: 0.76rem; color: #9aa8a1; font-weight: 400; }
+
+/* En el celular quedan dos columnas: el servicio y lo que deja.
+   Con las cuatro, la tabla medía 480 px en 375 y "DEJA" -- que es la única
+   que se vino a mirar -- quedaba cortada contra el borde, con la barra para
+   arrastrar abajo de todo. Es exactamente el problema que HU-85 arregló en
+   las otras tablas.
+   Entró y Salió no se pierden: son el detalle de una cuenta cuyo resultado
+   está a la vista, y en la pantalla grande siguen estando. */
+@media (max-width: 767px) {
+  .tabla-servicios th:nth-child(2), .tabla-servicios td:nth-child(2),
+  .tabla-servicios th:nth-child(3), .tabla-servicios td:nth-child(3) { display: none; }
+  .tabla-servicios th, .tabla-servicios td { padding: 9px 4px; font-size: 0.85rem; }
+  .panel-por-servicio { padding: 12px 12px 4px; }
+}
+
 /* De dónde salió la plata: va debajo de la descripción, no en una columna
    propia. La tabla ya tiene ocho columnas y acaba de pasar por el trabajo de
    que entre en el celular. Se muestra sólo cuando el movimiento tiene un

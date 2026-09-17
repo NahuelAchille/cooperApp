@@ -126,6 +126,35 @@ exports.getResumen = async (req, res) => {
   }
 }
 
+// Cuanto deja cada servicio en el periodo elegido (HU-49).
+//
+// Toma SOLO las fechas de los filtros, no los demas. Con el filtro de
+// naturaleza puesto en "ingreso", todos los servicios mostrarian egresos en
+// cero y el resultado seria pura ganancia inventada. La pantalla dice de que
+// periodo esta hablando para que no haya duda.
+exports.getResumenPorServicio = async (req, res) => {
+
+  try {
+    const id_empresa = req.session.user.empresa.id
+
+    // Si la empresa no tiene el modulo, no hay servicios de que hablar. Se
+    // devuelve vacio en vez de un error: la pantalla simplemente no muestra
+    // el panel, y esto no es un pedido invalido, es una empresa que no usa
+    // esa parte del sistema.
+    if (!await moduloModel.estaActivo(id_empresa, 'servicios')) {
+      return res.json([])
+    }
+
+    const { desde, hasta } = filtrosDeQuery(req.query)
+    const filas = await movimientoModel.resumenPorServicio(id_empresa, { desde, hasta })
+    res.json(filas)
+
+  } catch (error) {
+    console.error(error)
+    res.status(500).json({ error: 'Error al obtener el resumen por servicio' })
+  }
+}
+
 exports.crearMovimiento = async (req, res) => {
 
   try {

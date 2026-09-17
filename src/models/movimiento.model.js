@@ -131,4 +131,69 @@ const resumen = async (id_empresa, filtros = {}) => {
   }
 }
 
-module.exports = { findByEmpresa, findById, create, anular, resumen }
+// Cuanto deja cada servicio en un periodo (HU-49).
+//
+// El resumen de arriba contesta "cuanto entro y cuanto salio en total"; este
+// contesta "de esto, que parte trajo cada servicio". Puestos uno al lado del
+// otro se puede comparar, que es lo que hace falta para decidir cual sostener
+// y cual no. Filtrando de a un servicio por vez eso no se ve.
+//
+// Arranca de PRODUCTOS y no de movimientos, con LEFT JOIN, a proposito: un
+// servicio que en el periodo no movio un peso tiene que aparecer igual, en
+// cero. Es justamente el que hay que mirar. Con un JOIN comun desapareceria
+// del listado, que es como decir que anduvo bien.
+//
+// Las fechas van en el ON y no en el WHERE por lo mismo: en el WHERE
+// descartarian las filas sin movimientos, que es lo que el LEFT JOIN trajo.
+//
+// Sobre los filtros: toma SOLO el periodo. Aplicarle el de naturaleza daria
+// un resultado mentiroso -- con "Solo lo que entro" mostraria egresos en cero
+// y cada servicio pareceria pura ganancia. Un resultado necesita los dos
+// lados o no es un resultado.
+const resumenPorServicio = async (id_empresa, { desde, hasta } = {}) => {
+
+  const condicionesMov = ['m.id_servicio = p.id_producto', 'm.id_empresa = ?', 'm.anulado = 0']
+  const params = [id_empresa]
+
+  if (desde) { condicionesMov.push('m.fecha >= ?'); params.push(desde) }
+  if (hasta) { condicionesMov.push('m.fecha <= ?'); params.push(hasta) }
+
+  params.push(id_empresa)   // el de la clausula WHERE, sobre productos
+
+  const [rows] = await db.query(`
+    SELECT p.id_producto AS id_servicio, p.nombre, p.activo,
+           COALESCE(SUM(CASE WHEN c.naturaleza = 'ingreso' THEN m.monto ELSE 0 END), 0) AS total_ingresos,
+           COALESCE(SUM(CASE WHEN c.naturaleza = 'egreso'  THEN m.monto ELSE 0 END), 0) AS total_egresos,
+           COUNT(m.id_movimiento) AS cantidad
+    FROM productos p
+    LEFT JOIN movimientos m           ON ${condicionesMov.join(' AND ')}
+    LEFT JOIN tipos_movimiento t      ON t.id_tipo = m.id_tipo
+    LEFT JOIN categorias_movimiento c ON c.id_categoria = t.id_categoria
+    WHERE p.id_empresa = ? AND p.es_servicio = 1
+    GROUP BY p.id_producto
+    -- Un servicio dado de baja solo aparece si en el periodo movio algo: su
+    -- plata es real y tiene que estar en la comparacion. Si no movio nada, es
+    -- ruido -- ya no se presta.
+    HAVING p.activo = 1 OR cantidad > 0
+    -- Lo que mas deja, primero: la pregunta es cual conviene sostener.
+    ORDER BY (COALESCE(SUM(CASE WHEN c.naturaleza = 'ingreso' THEN m.monto ELSE 0 END), 0)
+            - COALESCE(SUM(CASE WHEN c.naturaleza = 'egreso'  THEN m.monto ELSE 0 END), 0)) DESC,
+             p.nombre
+  `, params)
+
+  return rows.map(fila => {
+    const ingresos = Number(fila.total_ingresos)
+    const egresos = Number(fila.total_egresos)
+    return {
+      id_servicio: fila.id_servicio,
+      nombre: fila.nombre,
+      activo: fila.activo,
+      cantidad: Number(fila.cantidad),
+      total_ingresos: ingresos,
+      total_egresos: egresos,
+      resultado: ingresos - egresos
+    }
+  })
+}
+
+module.exports = { findByEmpresa, findById, create, anular, resumen, resumenPorServicio }

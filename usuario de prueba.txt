@@ -1,7 +1,7 @@
 ===========================================================
  CooperApp - USUARIOS DE PRUEBA
- Actualizado: 17/09/2026  (servicios: catalogo y vinculo con el dinero,
-                           HU-47 y HU-48)
+ Actualizado: 17/09/2026  (modulo de Servicios completo:
+                           HU-47, HU-48 y HU-49)
 ===========================================================
 
 La app corre en http://localhost:3000
@@ -37,8 +37,12 @@ CAMBIOS DEL 17/09 - SERVICIOS (HU-47):
     sueldo). No reemplaza a la categoria ni al tipo: esos siguen
     siendo obligatorios. Uno dice el rubro, el otro el origen.
   - El listado tiene un filtro "Servicio", y el RESUMEN de arriba
-    (ingresos, egresos, balance) se recalcula con ese filtro: asi ya
-    se puede ver cuanto deja cada servicio.
+    (ingresos, egresos, balance) se recalcula con ese filtro.
+  - Y hay un panel plegable, "Cuanto deja cada servicio", que los
+    muestra a TODOS juntos: lo que entro, lo que salio y lo que deja
+    cada uno, ordenados de mayor a menor. Arranca cerrado. Tambien
+    se llega con el boton "Cuanto deja cada uno" de la pantalla de
+    Servicios.
 
 CAMBIOS DEL 16/09 QUE CONVIENE SABER AL PROBAR:
   - El registro de empresa ya NO pide matricula (un negocio chico
@@ -321,6 +325,27 @@ CAMBIOS DEL 16/09 POR LA AUDITORIA DE QA:
        encontrarlos.
      - Como Marta (modulo de servicios apagado): no le aparece ni
        el campo ni el filtro, y sus movimientos andan igual.
+
+ --- CUANTO DEJA CADA SERVICIO ---
+
+   En "Movimientos", el boton "Cuanto deja cada servicio", abajo de
+   los tres casilleros. O desde Servicios, "Cuanto deja cada uno".
+
+   Que conviene probar:
+     - Los 6 servicios aparecen juntos, ordenados de lo que mas
+       deja a lo que menos. "Flete de materiales" da NEGATIVO (es
+       contratado, cuesta plata) y queda ultimo, en rojo.
+     - Los que no movieron nada aparecen igual, en cero, con la
+       aclaracion "Sin movimientos en el periodo". A proposito: el
+       que no movio nada es justamente el que hay que mirar.
+     - Poner "Desde" hace cinco dias: Soldadura baja de $ 152.000 a
+       $ 85.000, porque uno de sus dos movimientos es de hace 11.
+     - Poner el filtro "Mostrar: Solo lo que entro": los casilleros
+       de arriba cambian pero el panel NO, y avisa por que. Un
+       resultado necesita lo que entro Y lo que salio; si tomara
+       ese filtro, cada servicio pareceria pura ganancia.
+     - En el celular el panel deja dos columnas, el servicio y lo
+       que deja. Entro y Salio siguen en la pantalla grande.
 
  --- MODULOS ---
 

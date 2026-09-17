@@ -64,6 +64,37 @@
         </div>
       </div>
 
+      <!-- Cuánto deja cada servicio.
+           Los tres casilleros de arriba dicen cuánto entró y cuánto salió en
+           total; esto dice qué parte trajo cada servicio. Van uno al lado del
+           otro porque la pregunta es cuál conviene sostener, y eso se contesta
+           comparando: filtrando de a uno por vez no se ve.
+           Arranca cerrado para no empujar la lista hacia abajo. -->
+      <div class="d-none" id="zona-por-servicio">
+        <button class="btn-por-servicio" id="btn-por-servicio" aria-expanded="false">
+          <i class="fa-solid fa-chevron-right" id="flecha-por-servicio"></i>
+          <i class="fa-solid fa-screwdriver-wrench"></i>
+          Cuánto deja cada servicio
+        </button>
+
+        <div class="panel-por-servicio d-none" id="panel-por-servicio">
+          <p class="panel-periodo" id="panel-periodo"></p>
+          <div class="table-responsive">
+            <table class="table mb-0 tabla-servicios">
+              <thead>
+                <tr>
+                  <th>Servicio</th>
+                  <th class="text-end">Entró</th>
+                  <th class="text-end">Salió</th>
+                  <th class="text-end">Deja</th>
+                </tr>
+              </thead>
+              <tbody id="tabla-por-servicio"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
       <!-- Filtros -->
       <div class="filtros">
         <div class="row g-2 align-items-end">
@@ -344,6 +375,18 @@
       await cargarServicios()
       await cargarMovimientos()
 
+      // Se llega desde el botón de la pantalla de Servicios
+      // (?ver=servicios) con el panel ya abierto: ahí es donde la persona se
+      // hizo la pregunta, y la respuesta vive acá porque acá está el período.
+      //
+      // Sólo si la zona existe. La dirección se puede escribir a mano, y sin
+      // este control una empresa sin el módulo terminaba con el panel abierto
+      // adentro de un contenedor escondido, pidiendo datos que no va a mostrar.
+      const zona = document.getElementById('zona-por-servicio')
+      if (new URLSearchParams(location.search).get('ver') === 'servicios' && !zona.classList.contains('d-none')) {
+        document.getElementById('btn-por-servicio').click()
+      }
+
       // Si se llega desde los accesos rapidos del dashboard (?nuevo=ingreso o
       // ?nuevo=egreso), abre el modal de alta con la naturaleza ya elegida.
       const nuevo = new URLSearchParams(location.search).get('nuevo')
@@ -390,7 +433,75 @@
       document.getElementById('filtro-servicio').innerHTML =
         '<option value="">Todos</option>' +
         servicios.map(s => `<option value="${s.id_producto}">${esc(s.nombre)}${s.activo ? '' : ' (de baja)'}</option>`).join('')
+
+      document.getElementById('zona-por-servicio').classList.remove('d-none')
     }
+
+    // Cuánto deja cada servicio en el período elegido (HU-49).
+    //
+    // Toma SÓLO las fechas, no los demás filtros. Con "Sólo lo que entró"
+    // puesto, todos los servicios mostrarían "Salió $0" y parecerían pura
+    // ganancia: un resultado necesita los dos lados o no es un resultado.
+    // Por eso el panel dice arriba de qué período está hablando.
+    async function cargarPorServicio() {
+      if (document.getElementById('panel-por-servicio').classList.contains('d-none')) return
+
+      const desde = document.getElementById('filtro-desde').value
+      const hasta = document.getElementById('filtro-hasta').value
+
+      const params = new URLSearchParams()
+      if (desde) params.set('desde', desde)
+      if (hasta) params.set('hasta', hasta)
+
+      const fecha = (f) => new Date(f + 'T00:00:00').toLocaleDateString('es-AR')
+      const periodo =
+          desde && hasta ? `Del ${fecha(desde)} al ${fecha(hasta)}`
+        : desde          ? `Desde el ${fecha(desde)}`
+        : hasta          ? `Hasta el ${fecha(hasta)}`
+        : 'Todo lo cargado hasta hoy'
+
+      // Si hay otros filtros puestos, los casilleros de arriba muestran una
+      // cosa y este panel otra, y sin explicación eso se lee como un error del
+      // sistema. Se avisa por qué, en vez de dejar que no cierre.
+      const otrosFiltros =
+        document.getElementById('filtro-naturaleza').value ||
+        document.getElementById('filtro-categoria').value ||
+        document.getElementById('filtro-servicio').value
+
+      document.getElementById('panel-periodo').innerHTML = esc(periodo) + (otrosFiltros
+        ? ' · <strong>Acá no valen los otros filtros</strong>: para saber qué deja un servicio hacen falta las dos partes, lo que entró y lo que salió.'
+        : '')
+
+      const filas = await fetch('/movimientos/resumen-por-servicio?' + params.toString())
+        .then(r => r.ok ? r.json() : []).catch(() => [])
+
+      const tbody = document.getElementById('tabla-por-servicio')
+
+      if (!filas.length) {
+        tbody.innerHTML = '<tr><td colspan="4" class="text-center py-3 text-muted">Todavía no hay servicios cargados.</td></tr>'
+        return
+      }
+
+      tbody.innerHTML = filas.map(s => `
+        <tr class="${s.activo ? '' : 'fila-inactiva'}">
+          <td>${esc(s.nombre)}${s.activo ? '' : ' <span class="chico-gris">(de baja)</span>'}
+            ${s.cantidad === 0 ? '<div class="chico-gris">Sin movimientos en el período</div>' : ''}</td>
+          <td class="text-end">${s.total_ingresos ? formatMoneda(s.total_ingresos) : '<span class="chico-gris">—</span>'}</td>
+          <td class="text-end">${s.total_egresos ? formatMoneda(s.total_egresos) : '<span class="chico-gris">—</span>'}</td>
+          <td class="text-end fw-bold ${s.resultado > 0 ? 'positivo' : s.resultado < 0 ? 'negativo' : 'text-muted'}">${formatMoneda(s.resultado)}</td>
+        </tr>`).join('')
+    }
+
+    document.getElementById('btn-por-servicio').addEventListener('click', () => {
+      const panel = document.getElementById('panel-por-servicio')
+      const abierto = panel.classList.toggle('d-none') === false
+
+      document.getElementById('btn-por-servicio').setAttribute('aria-expanded', String(abierto))
+      document.getElementById('flecha-por-servicio').className =
+        abierto ? 'fa-solid fa-chevron-down' : 'fa-solid fa-chevron-right'
+
+      if (abierto) cargarPorServicio()
+    })
 
     // Llena el filtro por categoria respetando la naturaleza elegida: si el
     // filtro de naturaleza esta en "ingreso" solo muestra categorias de ingreso
@@ -461,6 +572,11 @@
             }</td>
           </tr>`
       }).join('')
+
+      // Si el panel de servicios está abierto, se recalcula con los mismos
+      // filtros de fecha. Va acá y no en cada listener para que no haya forma
+      // de cambiar un filtro y que el panel quede mostrando lo de antes.
+      cargarPorServicio()
     }
 
     // --- Alta: los dos botones escriben el campo oculto ---
