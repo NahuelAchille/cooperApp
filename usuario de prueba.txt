@@ -1,6 +1,6 @@
 ===========================================================
  CooperApp - USUARIOS DE PRUEBA
- Actualizado: 23/08/2026
+ Actualizado: 16/09/2026  (correcciones de las auditorias de UX y QA)
 ===========================================================
 
 La app corre en http://localhost:3000
@@ -9,15 +9,62 @@ Los datos de prueba salen del archivo cooperApp\datos_de_prueba.sql
 Cualquiera del grupo puede tener exactamente estos mismos usuarios
 corriendo ese archivo (ver el final de este documento).
 
+OJO: el esquema de la base cambio varias veces en el Sprint 07 y 08
+(productos, stock y motivos), y el 16/09 se saco la columna
+"matricula" de la tabla empresas y se agrego "baja_en_cascada" en
+tipos_movimiento y en subcategorias_producto. Si venis de una version
+anterior hay que BORRAR la base y volver a crearla, no alcanza con
+reimportar. Los comandos estan al final.
+
+CAMBIOS DEL 16/09 QUE CONVIENE SABER AL PROBAR:
+  - El registro de empresa ya NO pide matricula (un negocio chico
+    o una S.R.L. no tienen: el dato registral es el CUIT).
+  - El superadmin entra directo a su panel de empresas.
+  - Servicios, Reportes y Articulacion ya no son botones muertos:
+    llevan a una pantalla que avisa que el modulo esta en construccion.
+  - Reportes ya no viene prendido de fabrica en las empresas nuevas.
+  - La contrasena del registro ahora pide 6 caracteres como minimo.
+
+CAMBIOS DEL 16/09 POR LA AUDITORIA DE QA:
+  - Dos personas ya pueden vender el mismo producto al mismo tiempo
+    sin que el stock quede en negativo: una entra y la otra recibe
+    el aviso de que no alcanza.
+  - Si se anula el movimiento de dinero de una venta, la venta vuelve
+    a figurar como "Falta el $" y se puede cargar de nuevo.
+  - Anular el unico movimiento de un producto lo deja como estaba
+    ("Sin cargar"), ya no queda en rojo para siempre.
+  - Reactivar una categoria ya NO revive las subcategorias (ni los
+    tipos) que diste de baja a proposito.
+  - Los textos demasiado largos se rechazan con un mensaje, en vez de
+    guardarse cortados sin avisar.
+
 
 ===========================================================
  CONTRASENAS
 ===========================================================
 
  superadmin@cooperapp.com  ->  password
- marta@laesperanza.coop    ->  esperanza123
+ marta@laesperanza.com.ar  ->  esperanza123
  Test1@gmail.com           ->  Test123
  todos los demas           ->  prueba123
+
+
+===========================================================
+ LOS 4 ROLES Y QUE VE CADA UNO
+===========================================================
+
+ superadmin      La plataforma. Aprueba y rechaza empresas.
+                 No pertenece a ninguna empresa.
+
+ admin_empresa   Todo lo de su empresa: usuarios, modulos,
+                 finanzas, catalogo y stock. Es el unico que
+                 configura (categorias, motivos, modulos).
+
+ tesorero        Solo la plata: movimientos y su clasificacion.
+                 NO entra al catalogo ni al stock.
+
+ operador        El deposito: catalogo y stock. Carga productos
+                 y registra entradas y salidas. NO ve la plata.
 
 
 ===========================================================
@@ -26,59 +73,70 @@ corriendo ese archivo (ver el final de este documento).
 
  superadmin@cooperapp.com / password        (DNI 00000001)
 
- No pertenece a ninguna cooperativa.
  Que puede hacer:
-   - Aprobar y rechazar cooperativas
-   - Resetear la contrasena de los admin de cooperativa
+   - Aprobar y rechazar empresas
+   - Resetear la contrasena de los admin de empresa
 
  Su propia contrasena NO se puede resetear desde la app.
  Si se pierde, hay que cambiarla desde la base de datos.
 
 
 ===========================================================
- 2) LAS 4 COOPERATIVAS
+ 2) LAS 4 EMPRESAS
 ===========================================================
 
- --- Cooperativa de Trabajo La Esperanza Ltda. (ACTIVA) ---
- 7 miembros - Ituzaingo - textil
-   marta@laesperanza.coop     Marta Gomez        ADMIN
-   roberto@laesperanza.coop   Roberto Quiroga    tesorero
-   Test1@gmail.com            NombreTest         operador
-   silvia@laesperanza.coop    Silvia Ferreyra    operador
-   jorge@laesperanza.coop     Jorge Maidana      operador
-   claudia@laesperanza.coop   Claudia Rios       operador  (contrasena temporal)
-   hector@laesperanza.coop    Hector Sosa        operador  (DADO DE BAJA)
+ --- Alimentos La Esperanza S.R.L. (ACTIVA) ---
+ 7 miembros - Ituzaingo - rubro alimentos
+ Modulos: movimientos, productos, reportes
+   marta@laesperanza.com.ar     Marta Gomez        ADMIN
+   roberto@laesperanza.com.ar   Roberto Quiroga    tesorero
+   Test1@gmail.com              NombreTest         operador
+   silvia@laesperanza.com.ar    Silvia Ferreyra    operador
+   jorge@laesperanza.com.ar     Jorge Maidana      operador
+   claudia@laesperanza.com.ar   Claudia Rios       operador  (contrasena temporal)
+   hector@laesperanza.com.ar    Hector Sosa        operador  (DADO DE BAJA)
 
- --- Cooperativa Textil El Amanecer Ltda. (ACTIVA) ---
- 6 miembros - Moron
-   norma@elamanecer.coop      Norma Benitez      ADMIN
-   lucia@elamanecer.coop      Lucia Paredes      tesorero
-   miriam@elamanecer.coop     Miriam Acuna       operador
-   veronica@elamanecer.coop   Veronica Ledesma   operador
-   ramon@elamanecer.coop      Ramon Ojeda        operador
-   estela@elamanecer.coop     Estela Cabrera     operador  (contrasena temporal)
+ Es la empresa mas completa para probar: tiene finanzas,
+ catalogo de 8 productos y movimientos de stock cargados.
 
- --- Fabrica Recuperada Metalurgica del Oeste (ACTIVA) ---
- 9 miembros - Merlo
-   osvaldo@metaloeste.coop    Osvaldo Peralta    ADMIN
-   daniel@metaloeste.coop     Daniel Ibarra      tesorero
-   fabian@metaloeste.coop     Fabian Correa      operador
-   sergio@metaloeste.coop     Sergio Villalba    operador
-   walter@metaloeste.coop     Walter Ocampo      operador
-   andres@metaloeste.coop     Andres Zarate      operador
-   patricia@metaloeste.coop   Patricia Nunez     operador
-   mariela@metaloeste.coop    Mariela Godoy      operador  (contrasena temporal)
-   ruben@metaloeste.coop      Ruben Aguirre      operador  (DADO DE BAJA)
+ --- Textil El Amanecer S.A. (ACTIVA) ---
+ 6 miembros - Moron - rubro textil
+ Modulos: movimientos, productos, reportes
+   norma@elamanecer.com.ar      Norma Benitez      ADMIN
+   lucia@elamanecer.com.ar      Lucia Paredes      tesorero
+   miriam@elamanecer.com.ar     Miriam Acuna       operador
+   veronica@elamanecer.com.ar   Veronica Ledesma   operador
+   ramon@elamanecer.com.ar      Ramon Ojeda        operador
+   estela@elamanecer.com.ar     Estela Cabrera     operador  (contrasena temporal)
 
- --- Grupo Asociativo Huerta Norte (PENDIENTE) ---
+ Tiene catalogo pero NINGUN movimiento de stock: sirve para
+ ver como se comporta el sistema con el stock sin cargar.
+
+ --- Metalurgica del Oeste S.A. (ACTIVA) ---
+ 9 miembros - Merlo - rubro metalurgico
+ Modulos: movimientos, productos, servicios, reportes
+   osvaldo@metaloeste.com.ar    Osvaldo Peralta    ADMIN
+   daniel@metaloeste.com.ar     Daniel Ibarra      tesorero
+   fabian@metaloeste.com.ar     Fabian Correa      operador
+   sergio@metaloeste.com.ar     Sergio Villalba    operador
+   walter@metaloeste.com.ar     Walter Ocampo      operador
+   andres@metaloeste.com.ar     Andres Zarate      operador
+   patricia@metaloeste.com.ar   Patricia Nunez     operador
+   mariela@metaloeste.com.ar    Mariela Godoy      operador  (contrasena temporal)
+   ruben@metaloeste.com.ar      Ruben Aguirre      operador  (DADO DE BAJA)
+
+ Es la unica con el modulo de Servicios prendido: sirve para
+ ver que el menu cambia segun lo que contrato cada empresa.
+
+ --- Distribuidora Huerta Norte S.R.L. (PENDIENTE) ---
  5 miembros - San Miguel
-   elena@huertanorte.coop     Elena Maldonado    ADMIN
-   carlos@huertanorte.coop    Carlos Zapata      tesorero
-   yamila@huertanorte.coop    Yamila Ferreira    operador
-   diego@huertanorte.coop     Diego Caceres      operador
-   rocio@huertanorte.coop     Rocio Benegas      operador
+   elena@huertanorte.com.ar     Elena Maldonado    ADMIN
+   carlos@huertanorte.com.ar    Carlos Zapata      tesorero
+   yamila@huertanorte.com.ar    Yamila Ferreira    operador
+   diego@huertanorte.com.ar     Diego Caceres      operador
+   rocio@huertanorte.com.ar     Rocio Benegas      operador
 
- OJO: esta cooperativa esta PENDIENTE a proposito. Ninguno de
+ OJO: esta empresa esta PENDIENTE a proposito. Ninguno de
  sus 5 usuarios puede entrar todavia. Sirve para probar la
  aprobacion desde el panel del superadmin.
 
@@ -87,29 +145,113 @@ corriendo ese archivo (ver el final de este documento).
  QUE SE PUEDE PROBAR CON ESTO
 ===========================================================
 
- Aprobacion de cooperativas
+ --- ACCESO Y USUARIOS ---
+
+ Aprobacion de empresas
    Entrar como superadmin y aprobar Huerta Norte.
-   Despues elena@huertanorte.coop / prueba123 ya puede entrar.
+   Despues elena@huertanorte.com.ar / prueba123 ya puede entrar.
+   Al aprobarla el sistema le carga sola su configuracion
+   inicial: 6 categorias de movimientos con 15 tipos, los 7
+   motivos de stock y los modulos por defecto.
 
  Usuario dado de baja
-   hector@laesperanza.coop / prueba123 -> "Tu cuenta esta desactivada"
+   hector@laesperanza.com.ar / prueba123 -> "Tu cuenta esta desactivada"
    Entrando como Marta se lo puede reactivar.
 
  Contrasena temporal
-   claudia@laesperanza.coop / prueba123 -> lo manda a elegir
+   claudia@laesperanza.com.ar / prueba123 -> lo manda a elegir
    una contrasena nueva antes de dejarlo operar.
 
  Reseteo de contrasena
-   Como superadmin: resetea a los 4 admin de cooperativa.
+   Como superadmin: resetea a los 4 admin de empresa.
    Como Marta: resetea a los usuarios de La Esperanza.
    La contrasena pasa a ser el DNI del usuario.
 
  Editar y dar de baja usuarios
    Como Marta, en la pantalla de Usuarios. No puede tocarse
-   a si misma ni a admins de otras cooperativas.
+   a si misma ni a admins de otras empresas.
 
- Cooperativas distintas no se ven entre si
+ Empresas distintas no se ven entre si
    Marta no puede tocar a los usuarios de El Amanecer.
+
+ --- LOS ROLES VEN COSAS DISTINTAS ---
+
+   Entrar con estos tres, de la MISMA empresa, y comparar
+   el menu de arriba:
+
+   marta@laesperanza.com.ar     -> ve todo
+   roberto@laesperanza.com.ar   -> Movimientos, sin Productos ni Stock
+   silvia@laesperanza.com.ar    -> Productos y Stock, sin Movimientos
+
+ --- FINANZAS (movimientos) ---
+
+   Como Marta o Roberto: cargar un ingreso o un egreso,
+   filtrar por fecha y categoria, anular uno cargado.
+   Las 3 empresas activas ya traen movimientos de ejemplo.
+
+ --- CATALOGO DE PRODUCTOS ---
+
+   Como Marta (admin) o Silvia (operador), en "Productos":
+   alta y edicion, buscador y filtros por categoria,
+   subcategoria y estado.
+
+   La subcategoria es OPCIONAL: "Bolsa de pan" esta cargado
+   sin subcategoria a proposito, para que se vea.
+
+   Solo Marta ve los botones "Categorias" y "Motivos": armar
+   la estructura es del admin, no del operador.
+
+ --- STOCK ---
+
+   Como Silvia (operador) o Marta, en "Stock".
+   La Esperanza arranca asi, con los cuatro estados a la vista:
+
+     Queso cremoso       5,50 kg   justo en el minimo -> Reponer
+     Fideos secos        18 paq    por debajo         -> Reponer
+     Milanesas de soja   0 cajas   se vendio todo     -> Sin stock
+     Bolsa de pan        0 bolsas  nunca se cargo     -> Sin cargar
+
+   Cosas para probar:
+     - Registrar una compra: el numero sube en el momento.
+     - Intentar vender 999 de algo: lo frena y dice cuanto hay.
+     - Pestana "Movimientos": el historial completo, filtrable
+       por producto, motivo y fechas, con quien lo cargo.
+     - El boton del relojito de cada fila lleva al historial de
+       ESE producto: ahi se ve como se llego al numero
+       (queso: +20 compra, -12,5 venta, -2 perdida = 5,5).
+
+   La existencia NO esta guardada en ninguna columna: sale de
+   sumar los movimientos. Por eso el historial siempre explica
+   el numero que se ve.
+
+ --- MOTIVOS DE STOCK (solo admin) ---
+
+   Como Marta, en el menu del usuario -> "Motivos de stock".
+   Cada motivo dice que le hace al stock y que le hace al dinero.
+   Perdida y Robo sacan mercaderia pero NO mueven plata.
+
+   Para probar:
+     - Crear uno con Entrada + Ingreso: lo rechaza (si entra
+       mercaderia el dinero no puede ser un ingreso).
+     - Cambiarle el efecto a "Venta": lo rechaza, porque ya
+       tiene movimientos cargados y daria vuelta el historial.
+       Renombrarlo si deja.
+
+ --- MODULOS ---
+
+   Como Marta, en el menu del usuario -> "Modulos del sistema".
+   Apagar Productos: desaparecen Productos y Stock del menu.
+   Volver a prenderlo: vuelven.
+
+   El control tambien corre del lado del servidor: con el modulo
+   apagado, escribir la direccion a mano tampoco funciona.
+
+ --- DASHBOARD ---
+
+   Entrando como Silvia (operador) se ve el bloque de stock:
+   "Productos a reponer: 3 - 1 sin stock", con el detalle abajo.
+   Como Roberto (tesorero) ese bloque dice que no tiene acceso,
+   y en cambio si ve los KPIs de plata.
 
 
 ===========================================================
@@ -131,19 +273,29 @@ corriendo ese archivo (ver el final de este documento).
  COMO ARMAR / RESETEAR LA BASE
 ===========================================================
 
- Desde la carpeta cooperApp, con MySQL prendido:
+ Desde la carpeta cooperApp, con MySQL prendido.
 
+ PRIMERA VEZ, o cuando cambio el esquema (hay que borrarla
+ antes, porque database.sql no trae DROP):
+
+   "C:\xampp\mysql\bin\mysql.exe" -u root -e "DROP DATABASE cooperApp;"
    "C:\xampp\mysql\bin\mysql.exe" -u root < database.sql
    "C:\xampp\mysql\bin\mysql.exe" -u root < datos_de_prueba.sql
 
- database.sql       = el sistema (tablas + superadmin)
- datos_de_prueba.sql = las 4 cooperativas y sus 27 usuarios
+ SOLO PARA RESETEAR LOS DATOS (dejando el esquema como esta):
+
+   "C:\xampp\mysql\bin\mysql.exe" -u root < datos_de_prueba.sql
+
+ database.sql        = el sistema (tablas + superadmin)
+ datos_de_prueba.sql = las 4 empresas y sus 27 usuarios, mas
+                       categorias, movimientos, catalogo de 18
+                       productos, motivos de stock y su historial
 
  No hace falta ninguna opcion de codificacion: los archivos
  traen el SET NAMES adentro.
 
  datos_de_prueba.sql se puede volver a correr cuando quieras:
- borra las 4 cooperativas de prueba y las carga de nuevo, sin
+ borra las 4 empresas de prueba y las carga de nuevo, sin
  tocar el superadmin ni nada que hayas creado por fuera. Sirve
  para dejar todo limpio despues de andar probando.
 
@@ -157,3 +309,12 @@ corriendo ese archivo (ver el final de este documento).
 
  - Si reseteas alguna contrasena para probar, o corres el
    datos_de_prueba.sql de nuevo, todo vuelve a como figura aca.
+
+ - Al correr datos_de_prueba.sql cambian los ids internos de
+   las empresas. Si tenias una sesion abierta queda apuntando a
+   una empresa que ya no existe y todo se ve vacio: hay que
+   salir y volver a entrar.
+
+ - Las fechas de los movimientos (de plata y de stock) son
+   relativas al dia en que corras el archivo, asi que el
+   dashboard y los listados siempre muestran datos recientes.
