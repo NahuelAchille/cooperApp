@@ -45,7 +45,13 @@ const findExistencias = async (id_empresa, filtros = {}) => {
            -- Sirve para distinguir un producto que se quedo sin stock de otro
            -- al que todavia nadie le cargo nada. Los dos estan en cero, pero
            -- solo el primero es un problema.
-           COUNT(ms.id_movimiento_stock) AS cantidad_movimientos
+           --
+           -- Cuenta solo los NO anulados, igual que la suma de arriba: si no,
+           -- un movimiento cargado por error y anulado dejaba al producto
+           -- marcado "Sin stock" (rojo, y contando como "a reponer" en el
+           -- tablero) para siempre, aunque nunca hubiera tenido nada.
+           SUM(CASE WHEN ms.id_movimiento_stock IS NOT NULL AND ms.anulado = 0
+                    THEN 1 ELSE 0 END) AS cantidad_movimientos
     FROM productos p
     JOIN categorias_producto c         ON c.id_categoria_producto = p.id_categoria_producto
     LEFT JOIN subcategorias_producto s ON s.id_subcategoria_producto = p.id_subcategoria_producto
@@ -59,11 +65,14 @@ const findExistencias = async (id_empresa, filtros = {}) => {
   return rows
 }
 
-// Existencia de un solo producto. Se usa antes de registrar una salida, para
-// no dejar el stock en negativo.
-const existenciaDeProducto = async (id_producto, id_empresa) => {
+// Existencia de un solo producto.
+//
+// Recibe el "ejecutor": normalmente el pool, pero adentro de una transaccion
+// hay que pasarle la conexion, o la cuenta se haria fuera del candado y no
+// serviria de nada.
+const existenciaCon = async (ejecutor, id_producto, id_empresa) => {
 
-  const [rows] = await db.query(`
+  const [rows] = await ejecutor.query(`
     SELECT ${SUMA_STOCK} AS existencia
     FROM productos p
     LEFT JOIN movimientos_stock ms ON ms.id_producto = p.id_producto
@@ -74,6 +83,8 @@ const existenciaDeProducto = async (id_producto, id_empresa) => {
 
   return rows.length ? Number(rows[0].existencia) : 0
 }
+
+const existenciaDeProducto = (id_producto, id_empresa) => existenciaCon(db, id_producto, id_empresa)
 
 // Movimientos de stock de la empresa, con todo lo que la pantalla necesita ya
 // resuelto: producto, motivo, su efecto y quien lo registro.
@@ -108,6 +119,10 @@ const findMovimientos = async (id_empresa, filtros = {}) => {
   const [rows] = await db.query(`
     SELECT ms.id_movimiento_stock, ms.cantidad, ms.descripcion, ms.fecha,
            ms.anulado, ms.creado_en, ms.id_movimiento,
+           -- No alcanza con saber que HAY un movimiento de dinero: hay que
+           -- saber si sigue vivo. Si se anulo, la venta volvio a quedar sin
+           -- cobro y la marca tiene que decirlo.
+           m.anulado AS dinero_anulado,
            p.id_producto, p.nombre AS producto_nombre, p.unidad_medida,
            mo.id_motivo_stock, mo.nombre AS motivo_nombre,
            mo.efecto_stock, mo.efecto_dinero,
@@ -116,6 +131,7 @@ const findMovimientos = async (id_empresa, filtros = {}) => {
     JOIN productos p      ON p.id_producto = ms.id_producto
     JOIN motivos_stock mo ON mo.id_motivo_stock = ms.id_motivo_stock
     JOIN usuarios u       ON u.id = ms.id_usuario
+    LEFT JOIN movimientos m ON m.id_movimiento = ms.id_movimiento
     WHERE ${condiciones.join(' AND ')}
     ORDER BY ms.fecha DESC, ms.id_movimiento_stock DESC
     ${limite}
@@ -124,10 +140,70 @@ const findMovimientos = async (id_empresa, filtros = {}) => {
   return rows
 }
 
-const createMovimiento = async ({ id_producto, id_motivo_stock, cantidad,
-                                  descripcion, fecha, id_empresa, id_usuario }) => {
+// ---------------------------------------------------------------------
+// EL CANDADO DEL PRODUCTO
+//
+// Todo lo que puede cambiar la existencia de un producto pasa por aca.
+//
+// Antes se consultaba la existencia, se decidia en JavaScript y recien
+// despues se escribia. Con dos pedidos al mismo tiempo —dos operadores en el
+// deposito, o dos pestañas— los dos leian el mismo numero, los dos pasaban el
+// control y los dos guardaban: el stock quedaba en negativo y nadie veia un
+// error. Con 9 kg y dos ventas de 6 kg simultaneas quedaba en -3.
+//
+// La solucion es trabar la fila del producto ANTES de contar. El segundo
+// pedido espera a que el primero termine, y entonces cuenta sobre el numero
+// verdadero. Todas las operaciones de stock de un producto quedan en fila.
+//
+// Recibe una funcion "decidir" que mira la existencia real y dice si sigue o
+// no: asi la regla de negocio la escribe el controlador y el modelo se queda
+// con el SQL, como en el resto del proyecto.
+const conProductoTrabado = async (id_producto, id_empresa, decidir) => {
 
-  const [result] = await db.query(`
+  const conexion = await db.getConnection()
+
+  try {
+    await conexion.beginTransaction()
+
+    // FOR UPDATE: mientras dure la transaccion, nadie mas pasa por aca para
+    // este producto. La fila del producto hace de candado del stock.
+    const [productos] = await conexion.query(
+      'SELECT id_producto FROM productos WHERE id_producto = ? AND id_empresa = ? FOR UPDATE',
+      [id_producto, id_empresa]
+    )
+
+    if (!productos.length) {
+      await conexion.rollback()
+      return { error: 'No se encontró el producto' }
+    }
+
+    const existencia = await existenciaCon(conexion, id_producto, id_empresa)
+
+    const decision = await decidir(existencia, conexion)
+
+    if (decision && decision.error) {
+      await conexion.rollback()
+      return decision
+    }
+
+    const existenciaFinal = await existenciaCon(conexion, id_producto, id_empresa)
+    await conexion.commit()
+
+    return { ...decision, existencia: existenciaFinal }
+
+  } catch (error) {
+    await conexion.rollback()
+    throw error
+
+  } finally {
+    conexion.release()
+  }
+}
+
+const createMovimiento = async ({ id_producto, id_motivo_stock, cantidad,
+                                  descripcion, fecha, id_empresa, id_usuario }, ejecutor = db) => {
+
+  const [result] = await ejecutor.query(`
     INSERT INTO movimientos_stock
       (id_producto, id_motivo_stock, cantidad, descripcion, fecha, id_empresa, id_usuario)
     VALUES (?, ?, ?, ?, ?, ?, ?)
@@ -143,11 +219,13 @@ const findMovimientoById = async (id_movimiento_stock, id_empresa) => {
   const [rows] = await db.query(`
     SELECT ms.id_movimiento_stock, ms.cantidad, ms.descripcion, ms.fecha,
            ms.anulado, ms.id_producto, ms.id_movimiento,
+           m.anulado AS dinero_anulado,
            p.nombre AS producto_nombre, p.unidad_medida,
            mo.nombre AS motivo_nombre, mo.efecto_stock, mo.efecto_dinero
     FROM movimientos_stock ms
     JOIN productos p      ON p.id_producto = ms.id_producto
     JOIN motivos_stock mo ON mo.id_motivo_stock = ms.id_motivo_stock
+    LEFT JOIN movimientos m ON m.id_movimiento = ms.id_movimiento
     WHERE ms.id_movimiento_stock = ? AND ms.id_empresa = ?
   `, [id_movimiento_stock, id_empresa])
 
@@ -156,17 +234,76 @@ const findMovimientoById = async (id_movimiento_stock, id_empresa) => {
 
 // Ata el movimiento de stock con el movimiento de dinero que se genero a
 // partir de el. Es lo que despues evita cargar la misma venta dos veces.
-const vincularMovimientoDinero = async (id_movimiento_stock, id_empresa, id_movimiento) => {
-  await db.query(
+const vincularMovimientoDinero = async (id_movimiento_stock, id_empresa, id_movimiento, ejecutor = db) => {
+  await ejecutor.query(
     'UPDATE movimientos_stock SET id_movimiento = ? WHERE id_movimiento_stock = ? AND id_empresa = ?',
     [id_movimiento, id_movimiento_stock, id_empresa]
   )
 }
 
+// Crea el movimiento de dinero de una venta y lo ata al movimiento de stock,
+// TODO JUNTO Y CON LA FILA TRABADA.
+//
+// Es el mismo problema que el del stock negativo, escrito en otro lado: antes
+// se miraba si el movimiento ya tenia dinero cargado, se decidia, y recien
+// despues se creaba. Con seis pedidos al mismo tiempo los seis veian el campo
+// vacio y los seis creaban su movimiento: seis ingresos por la misma venta,
+// cinco de ellos huerfanos y sumando al balance sin que nadie pudiera
+// encontrarlos desde el historial de stock.
+//
+// Ahora el segundo pedido espera al primero y se encuentra el campo ya
+// completo, asi que rebota como corresponde.
+//
+// "crearDinero" recibe la conexion y devuelve el id del movimiento creado. La
+// arma el controlador, que es el que sabe que monto, que tipo y que fecha van.
+const registrarDineroDeMovimiento = async (id_movimiento_stock, id_empresa, crearDinero) => {
+
+  const conexion = await db.getConnection()
+
+  try {
+    await conexion.beginTransaction()
+
+    const [filas] = await conexion.query(`
+      SELECT ms.id_movimiento, m.anulado AS dinero_anulado
+      FROM movimientos_stock ms
+      LEFT JOIN movimientos m ON m.id_movimiento = ms.id_movimiento
+      WHERE ms.id_movimiento_stock = ? AND ms.id_empresa = ?
+      FOR UPDATE
+    `, [id_movimiento_stock, id_empresa])
+
+    if (!filas.length) {
+      await conexion.rollback()
+      return { error: 'No se encontró el movimiento de stock' }
+    }
+
+    // Ya tiene dinero cargado Y ese movimiento sigue vivo: no va otro.
+    // Si esta anulado, en cambio, la venta volvio a quedar sin cobro y hay
+    // que poder registrarlo de nuevo (si no, el error queda sin arreglo).
+    if (filas[0].id_movimiento && !filas[0].dinero_anulado) {
+      await conexion.rollback()
+      return { error: 'Ese movimiento de stock ya tiene su movimiento de dinero registrado' }
+    }
+
+    const id_movimiento = await crearDinero(conexion)
+
+    await vincularMovimientoDinero(id_movimiento_stock, id_empresa, id_movimiento, conexion)
+
+    await conexion.commit()
+    return { id_movimiento }
+
+  } catch (error) {
+    await conexion.rollback()
+    throw error
+
+  } finally {
+    conexion.release()
+  }
+}
+
 // Los movimientos de stock no se borran: se anulan. La existencia se recalcula
 // sola porque sale de sumar los movimientos, y la suma ignora los anulados.
-const anularMovimiento = async (id_movimiento_stock, id_empresa) => {
-  await db.query(
+const anularMovimiento = async (id_movimiento_stock, id_empresa, ejecutor = db) => {
+  await ejecutor.query(
     'UPDATE movimientos_stock SET anulado = 1 WHERE id_movimiento_stock = ? AND id_empresa = ?',
     [id_movimiento_stock, id_empresa]
   )
@@ -188,5 +325,5 @@ const contarMovimientosDeMotivo = async (id_motivo_stock) => {
 module.exports = {
   findExistencias, existenciaDeProducto, findMovimientos, findMovimientoById,
   createMovimiento, vincularMovimientoDinero, anularMovimiento,
-  contarMovimientosDeMotivo
+  contarMovimientosDeMotivo, conProductoTrabado, registrarDineroDeMovimiento
 }

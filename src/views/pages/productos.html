@@ -153,6 +153,9 @@
             <div class="mb-3">
               <label class="form-label">Categoría *</label>
               <select class="form-select" name="id_categoria_producto" id="select-categoria" required></select>
+              <!-- El operador no puede crear categorias: si la que necesita no
+                   esta, queda trabado sin saber a quien pedirle que. -->
+              <div class="form-text d-none" id="ayuda-categoria"></div>
             </div>
 
             <div class="mb-1">
@@ -363,6 +366,30 @@
       document.getElementById('select-categoria').innerHTML =
         '<option value="">Elegí una categoría</option>' +
         categorias.map(c => `<option value="${c.id_categoria_producto}">${esc(c.nombre)}</option>`).join('')
+
+      mostrarAyudaCategoria()
+    }
+
+    // La categoria es obligatoria y el operador no puede crearla. Sin esto se
+    // queda frente a un desplegable que no tiene lo que necesita y una pantalla
+    // que no le dice ni que pasa ni a quien recurrir. Al admin, en cambio, le
+    // alcanza con el enlace para ir a armarla.
+    function mostrarAyudaCategoria() {
+
+      const ayuda = document.getElementById('ayuda-categoria')
+      const esAdmin = usuarioActual?.rol === 'admin_empresa'
+
+      if (esAdmin) {
+        ayuda.innerHTML = categorias.length === 0
+          ? '<strong>Todavía no cargaste ninguna categoría.</strong> <a href="/pages/configuracion-categorias-producto.html">Armá las categorías de tus productos</a> antes de dar de alta el primero.'
+          : '¿Falta la categoría que necesitás? <a href="/pages/configuracion-categorias-producto.html">Agregala acá</a>.'
+      } else {
+        ayuda.innerHTML = categorias.length === 0
+          ? '<strong>Todavía no hay categorías cargadas.</strong> Pedile al administrador de tu empresa que las cree para poder dar de alta productos.'
+          : '¿No está la categoría que necesitás? Pedísela al administrador de tu empresa.'
+      }
+
+      ayuda.classList.remove('d-none')
     }
 
     // Subcategorías del filtro. Acá sí van todas, activas e inactivas, por lo

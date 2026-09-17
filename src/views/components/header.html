@@ -6,14 +6,18 @@
 
   <nav id="main-nav">
     <ul>
-      <li><a href="/pages/dashboard.html">Panel general</a></li>
+      <li id="nav-panel-general"><a href="/pages/dashboard.html">Panel general</a></li>
+      <li id="nav-empresas" class="d-none"><a href="/pages/superadmin.html">Empresas</a></li>
       <li id="nav-usuarios" class="d-none"><a href="/pages/usuarios.html">Usuarios</a></li>
       <li id="nav-movimientos" class="d-none"><a href="/pages/movimientos.html">Movimientos</a></li>
       <li id="nav-productos" class="d-none"><a href="/pages/productos.html">Productos</a></li>
       <li id="nav-stock" class="d-none"><a href="/pages/stock.html">Stock</a></li>
-      <li id="nav-servicios" class="d-none"><a href="#">Servicios</a></li>
-      <li id="nav-reportes" class="d-none"><a href="#">Reportes</a></li>
-      <li id="nav-articulacion" class="d-none"><a href="#">Articulación</a></li>
+      <!-- Los tres modulos que todavia no existen llevan a una pantalla que lo
+           dice. Antes eran href="#": se apretaban y no pasaba nada, que para
+           alguien con poca experiencia digital se lee como "esta fallando". -->
+      <li id="nav-servicios" class="d-none"><a href="/pages/en-construccion.html?modulo=servicios">Servicios</a></li>
+      <li id="nav-reportes" class="d-none"><a href="/pages/en-construccion.html?modulo=reportes">Reportes</a></li>
+      <li id="nav-articulacion" class="d-none"><a href="/pages/en-construccion.html?modulo=articulacion">Articulación</a></li>
     </ul>
   </nav>
 
@@ -48,11 +52,6 @@
       <li id="item-modulos" class="d-none">
         <a class="dropdown-item" href="/pages/configuracion-modulos.html">
           <i class="fa-solid fa-toggle-on me-2"></i>Módulos del sistema
-        </a>
-      </li>
-      <li id="item-superadmin" class="d-none">
-        <a class="dropdown-item" href="/pages/superadmin.html">
-          <i class="fa-solid fa-shield-halved me-2"></i>Panel administración
         </a>
       </li>
       <li><hr class="dropdown-divider"></li>

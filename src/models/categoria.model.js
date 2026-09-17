@@ -59,7 +59,23 @@ const setActivoCategoria = async (id_categoria, id_empresa, activo) => {
     [activo, id_categoria, id_empresa]
   )
 
-  await db.query('UPDATE tipos_movimiento SET activo = ? WHERE id_categoria = ?', [activo, id_categoria])
+  if (activo) {
+    // Vuelven SOLO los que se fueron arrastrados por esta misma cascada.
+    // Un tipo que el administrador habia dado de baja por su cuenta se queda
+    // de baja: antes volvia solo, y una configuracion que se deshace sola es
+    // peor que una que no vuelve.
+    await db.query(
+      'UPDATE tipos_movimiento SET activo = 1, baja_en_cascada = 0 WHERE id_categoria = ? AND baja_en_cascada = 1',
+      [id_categoria]
+    )
+  } else {
+    // Se marcan solo los que estaban activos: los que ya estaban de baja
+    // quedan como estaban, con su marca en 0, para no revivirlos despues.
+    await db.query(
+      'UPDATE tipos_movimiento SET activo = 0, baja_en_cascada = 1 WHERE id_categoria = ? AND activo = 1',
+      [id_categoria]
+    )
+  }
 }
 
 // =====================================================================
@@ -107,8 +123,10 @@ const updateTipo = async (id_tipo, { nombre }) => {
   await db.query('UPDATE tipos_movimiento SET nombre = ? WHERE id_tipo = ?', [nombre, id_tipo])
 }
 
+// Baja o alta de UN tipo, decidida por el administrador. La marca vuelve a 0:
+// esta baja no es en cascada, asi que reactivar la categoria no la deshace.
 const setActivoTipo = async (id_tipo, activo) => {
-  await db.query('UPDATE tipos_movimiento SET activo = ? WHERE id_tipo = ?', [activo, id_tipo])
+  await db.query('UPDATE tipos_movimiento SET activo = ?, baja_en_cascada = 0 WHERE id_tipo = ?', [activo, id_tipo])
 }
 
 // =====================================================================

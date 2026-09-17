@@ -45,7 +45,13 @@ async function cargarHeader() {
     mostrar('item-usuarios')
     mostrar('item-modulos')
   }
-  if (user.rol === 'superadmin') mostrar('item-superadmin')
+  // El superadmin administra la plataforma, no una empresa: su pantalla de
+  // trabajo va en el menu principal, no escondida abajo de su propio nombre.
+  // Y el panel general no es suyo -- le hablaba de "tu empresa", que no tiene.
+  if (user.rol === 'superadmin') {
+    mostrar('nav-empresas')
+    document.getElementById('nav-panel-general')?.classList.add('d-none')
+  }
 
   // --- Por modulo contratado (y rol) ---
   // El superadmin no pertenece a ninguna empresa: no tiene modulos y su menu

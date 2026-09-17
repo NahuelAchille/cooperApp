@@ -150,40 +150,52 @@ exports.registrarMovimiento = async (req, res) => {
       return res.status(400).json({ error: revision.error })
     }
 
+    const descripcion = typeof req.body.descripcion === 'string'
+      ? req.body.descripcion.trim().slice(0, 255) || null
+      : null
+
     // --- Una salida no puede dejar el stock en negativo ---
     //
     // El stock negativo no existe en un deposito: si el sistema lo permite,
     // el numero deja de significar algo y nadie se entera de donde vino el
     // error. El mensaje dice cuanto hay y como cargar lo que falta, porque el
     // caso tipico es una empresa que todavia no cargo su existencia inicial.
-    if (motivo.efecto_stock === 'salida') {
-      const disponible = await stockModel.existenciaDeProducto(producto.id_producto, id_empresa)
+    //
+    // El control y el alta van JUNTOS, con la fila del producto trabada: si no,
+    // dos ventas simultaneas del mismo producto leen las dos la misma
+    // existencia, pasan las dos y el stock termina en negativo.
+    const resultado = await stockModel.conProductoTrabado(
+      producto.id_producto, id_empresa,
+      async (disponible, conexion) => {
 
-      if (cantidad.valor > disponible) {
-        return res.status(400).json({
-          error: `No hay stock suficiente: hay ${formatearCantidad(disponible)} y estás sacando ${formatearCantidad(cantidad.valor)}. ` +
-                 'Si el sistema todavía no tiene la existencia real, cargala con un movimiento de "Ajuste positivo".'
-        })
+        if (motivo.efecto_stock === 'salida' && cantidad.valor > disponible) {
+          return {
+            error: `No hay stock suficiente: hay ${formatearCantidad(disponible)} y estás sacando ${formatearCantidad(cantidad.valor)}. ` +
+                   'Si el sistema todavía no tiene la existencia real, cargala con un movimiento de "Ajuste positivo".'
+          }
+        }
+
+        const id_movimiento_stock = await stockModel.createMovimiento({
+          id_producto: producto.id_producto,
+          id_motivo_stock: motivo.id_motivo_stock,
+          cantidad: cantidad.valor,
+          descripcion,
+          fecha: revision.fecha,
+          id_empresa,
+          id_usuario
+        }, conexion)
+
+        return { id_movimiento_stock }
       }
+    )
+
+    if (resultado.error) {
+      return res.status(400).json({ error: resultado.error })
     }
 
-    const descripcion = typeof req.body.descripcion === 'string'
-      ? req.body.descripcion.trim().slice(0, 255) || null
-      : null
-
-    const id_movimiento_stock = await stockModel.createMovimiento({
-      id_producto: producto.id_producto,
-      id_motivo_stock: motivo.id_motivo_stock,
-      cantidad: cantidad.valor,
-      descripcion,
-      fecha: revision.fecha,
-      id_empresa,
-      id_usuario
-    })
-
-    // Se devuelve la existencia ya recalculada, asi la pantalla muestra como
-    // quedo el producto sin tener que volver a pedir todo el listado.
-    const existencia = await stockModel.existenciaDeProducto(producto.id_producto, id_empresa)
+    // La existencia ya viene recalculada adentro de la transaccion, asi la
+    // pantalla muestra como quedo el producto sin volver a pedir el listado.
+    const { id_movimiento_stock, existencia } = resultado
 
     // Si el motivo mueve plata, se le ofrece a la pantalla registrar tambien
     // el movimiento de dinero, con lo que ya se sabe. NO se crea solo: la
@@ -237,14 +249,10 @@ exports.registrarMovimientoDinero = async (req, res) => {
       return res.status(400).json({ error: `El motivo "${movimiento.motivo_nombre}" no mueve dinero` })
     }
 
-    // Esto es lo que evita cargar la misma venta dos veces: si ya tiene un
-    // movimiento de dinero atado, no se crea otro. Vale tanto para un doble
-    // clic como para un pedido repetido a mano.
-    if (movimiento.id_movimiento) {
-      return res.status(400).json({
-        error: 'Ese movimiento de stock ya tiene su movimiento de dinero registrado'
-      })
-    }
+    // El control de "ya tiene su movimiento de dinero" NO se hace aca: se hace
+    // adentro de la transaccion, con la fila trabada (ver el modelo). Aca
+    // pasaba de a un pedido por vez, pero con dos pedidos juntos los dos veian
+    // el campo vacio y los dos creaban su movimiento.
 
     // El tipo tiene que ser de la empresa, estar activo, y su naturaleza tiene
     // que coincidir con lo que dice el motivo: si el motivo genera un ingreso,
@@ -276,19 +284,24 @@ exports.registrarMovimientoDinero = async (req, res) => {
     //
     // Pasa por aFechaISO porque la base devuelve la fecha como objeto Date:
     // mandarla asi terminaba guardando 0000-00-00.
-    const id_movimiento = await movimientoModel.create({
-      id_tipo: tipo.id_tipo,
-      monto: monto.valor,
-      descripcion,
-      fecha: aFechaISO(movimiento.fecha),
-      id_empresa,
-      id_usuario
-    })
+    const resultado = await stockModel.registrarDineroDeMovimiento(
+      id, id_empresa,
+      (conexion) => movimientoModel.create({
+        id_tipo: tipo.id_tipo,
+        monto: monto.valor,
+        descripcion,
+        fecha: aFechaISO(movimiento.fecha),
+        id_empresa,
+        id_usuario
+      }, conexion)
+    )
 
-    await stockModel.vincularMovimientoDinero(id, id_empresa, id_movimiento)
+    if (resultado.error) {
+      return res.status(400).json({ error: resultado.error })
+    }
 
     res.status(201).json({
-      id_movimiento,
+      id_movimiento: resultado.id_movimiento,
       message: `Movimiento de dinero registrado y vinculado al movimiento de stock`
     })
 
@@ -315,27 +328,51 @@ exports.anularMovimiento = async (req, res) => {
 
     // Anular una ENTRADA le saca mercaderia al producto, asi que puede dejar
     // el stock en negativo: si entraron 20 y ya se vendieron 15, anular la
-    // entrada dejaria -15. Es la contracara de la regla del alta.
-    if (movimiento.efecto_stock === 'entrada') {
-      const disponible = await stockModel.existenciaDeProducto(movimiento.id_producto, id_empresa)
-      const cantidad = Number(movimiento.cantidad)
+    // entrada dejaria -15. Es la contracara de la regla del alta, y va con el
+    // mismo candado: una anulacion y una venta al mismo tiempo se pisaban igual.
+    const resultado = await stockModel.conProductoTrabado(
+      movimiento.id_producto, id_empresa,
+      async (disponible, conexion) => {
 
-      if (cantidad > disponible) {
-        return res.status(400).json({
-          error: `No se puede anular: este movimiento sumó ${formatearCantidad(cantidad)} y hoy quedan ${formatearCantidad(disponible)}. ` +
-                 'Anularlo dejaría el stock en negativo, así que primero hay que anular las salidas que se cargaron después.'
-        })
+        // Se vuelve a mirar ADENTRO del candado: entre la consulta de arriba y
+        // este momento, otro pedido pudo haberlo anulado. Sin esto, dos
+        // anulaciones simultaneas contestaban las dos "movimiento anulado",
+        // como si cada una hubiera hecho el trabajo.
+        const [[actual]] = await conexion.query(
+          'SELECT anulado FROM movimientos_stock WHERE id_movimiento_stock = ? AND id_empresa = ?',
+          [id, id_empresa]
+        )
+
+        if (!actual || actual.anulado) {
+          return { error: 'Ese movimiento ya estaba anulado' }
+        }
+
+        const cantidad = Number(movimiento.cantidad)
+
+        if (movimiento.efecto_stock === 'entrada' && cantidad > disponible) {
+          return {
+            error: `No se puede anular: este movimiento sumó ${formatearCantidad(cantidad)} y hoy quedan ${formatearCantidad(disponible)}. ` +
+                   'Anularlo dejaría el stock en negativo, así que primero hay que anular las salidas que se cargaron después.'
+          }
+        }
+
+        await stockModel.anularMovimiento(id, id_empresa, conexion)
+        return {}
       }
+    )
+
+    if (resultado.error) {
+      return res.status(400).json({ error: resultado.error })
     }
 
-    await stockModel.anularMovimiento(id, id_empresa)
-
-    const existencia = await stockModel.existenciaDeProducto(movimiento.id_producto, id_empresa)
+    const { existencia } = resultado
 
     // El movimiento de dinero NO se anula solo: puede necesitar permisos que
     // esta persona no tiene (un operador no toca finanzas) y el cobro pudo
     // haber sido real aunque la mercaderia se haya cargado mal. Se avisa.
-    const avisoDinero = movimiento.id_movimiento
+    // Solo se avisa si el movimiento de dinero sigue vigente: si ya estaba
+    // anulado, no hay nada que dar de baja.
+    const avisoDinero = (movimiento.id_movimiento && !movimiento.dinero_anulado)
       ? ' Ojo: este movimiento tenía un movimiento de dinero asociado, que sigue vigente. Si también hay que darlo de baja, se anula desde Movimientos.'
       : ''
 

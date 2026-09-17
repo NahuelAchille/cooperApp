@@ -72,9 +72,12 @@ const findById = async (id_movimiento, id_empresa) => {
   return rows[0] || null
 }
 
-const create = async ({ id_tipo, monto, descripcion, fecha, id_empresa, id_usuario }) => {
+// El "ejecutor" es normalmente el pool. El alta que sale de una venta de stock
+// le pasa la conexion de su transaccion, para que el movimiento de dinero y su
+// vinculo con el stock entren juntos o no entre ninguno.
+const create = async ({ id_tipo, monto, descripcion, fecha, id_empresa, id_usuario }, ejecutor = db) => {
 
-  const [result] = await db.query(`
+  const [result] = await ejecutor.query(`
     INSERT INTO movimientos (id_tipo, monto, descripcion, fecha, id_empresa, id_usuario)
     VALUES (?, ?, ?, ?, ?, ?)
   `, [id_tipo, monto, descripcion || null, fecha, id_empresa, id_usuario])

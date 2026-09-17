@@ -39,6 +39,21 @@
       color: #ffffff !important;
     }
     .form-label { color: rgba(255,255,255,0.85); font-size: 0.85rem; margin-bottom: 4px; }
+    .obligatorio { color: #ffd166; font-weight: 700; }
+    .texto-ayuda-registro { color: rgba(255,255,255,0.8); }
+    /* El rojo de Bootstrap se pierde sobre el fondo verde: el campo con error
+       se marca con un borde amarillo, que es el que se ve en este fondo. */
+    .form-control-registro.is-invalid {
+      border-color: #ffd166 !important;
+      box-shadow: 0 0 0 3px rgba(255,209,102,0.25) !important;
+      background-image: none !important;
+    }
+    #registro-error {
+      background-color: #fff3cd;
+      border: 1.5px solid #ffd166;
+      color: #6b4c00;
+      font-weight: 600;
+    }
     .modal-body hr { border-color: rgba(255,255,255,0.2); }
     .modal-seccion-titulo { color: rgba(255,255,255,0.95); font-weight: 600; }
     .btn-registro-enviar {
@@ -116,32 +131,31 @@
         <div class="modal-body">
           <form id="form-registro" novalidate autocomplete="new-password">
 
+            <div id="registro-error" class="alert alert-danger py-2 small d-none" role="alert"></div>
+
             <!-- Datos de la empresa -->
             <h6 class="mb-3" style="color:white;font-weight:700;"><i class="fa-solid fa-building me-2"></i>Datos de la empresa</h6>
+            <p class="small mb-3 texto-ayuda-registro">Los campos con <span class="obligatorio">*</span> son obligatorios.</p>
             <div class="row g-3">
               <div class="col-md-8">
-                <label class="form-label">Nombre de la empresa</label>
+                <label class="form-label">Nombre de la empresa <span class="obligatorio">*</span></label>
                 <input type="text" class="form-control form-control-registro" name="empresa_nombre" placeholder="Mi Empresa S.R.L." autocomplete="new-password" required>
               </div>
               <div class="col-md-4">
-                <label class="form-label">CUIT</label>
+                <label class="form-label">CUIT <span class="obligatorio">*</span></label>
                 <input type="text" class="form-control form-control-registro" name="empresa_cuit" placeholder="20123456789" autocomplete="new-password" required>
               </div>
               <div class="col-md-6">
-                <label class="form-label">Email de la empresa</label>
+                <label class="form-label">Email de la empresa <span class="obligatorio">*</span></label>
                 <input type="email" class="form-control form-control-registro" name="empresa_email" placeholder="contacto@miempresa.com" autocomplete="new-password" required>
-              </div>
-              <div class="col-md-6">
-                <label class="form-label">Matrícula</label>
-                <input type="text" class="form-control form-control-registro" name="empresa_matricula" placeholder="Nro. de matrícula" autocomplete="new-password" required>
               </div>
               <div class="col-md-6">
                 <label class="form-label">Domicilio</label>
                 <input type="text" class="form-control form-control-registro" name="empresa_domicilio" placeholder="Av. Siempre Viva 123" autocomplete="new-password">
               </div>
-              <div class="col-md-6">
-                <label class="form-label">Federación</label>
-                <input type="text" class="form-control form-control-registro" name="empresa_federacion" placeholder="Nombre de la federación (opcional)" autocomplete="new-password">
+              <div class="col-12">
+                <label class="form-label">Cámara o federación a la que pertenece</label>
+                <input type="text" class="form-control form-control-registro" name="empresa_federacion" placeholder="Si no pertenece a ninguna, dejalo en blanco" autocomplete="new-password">
               </div>
             </div>
 
@@ -151,30 +165,31 @@
             <h6 class="mb-3" style="color:white;font-weight:700;"><i class="fa-solid fa-user-shield me-2"></i>Datos del administrador</h6>
             <div class="row g-3">
               <div class="col-md-6">
-                <label class="form-label">Nombre</label>
+                <label class="form-label">Nombre <span class="obligatorio">*</span></label>
                 <input type="text" class="form-control form-control-registro" name="nombre" placeholder="Juan" autocomplete="new-password" required>
               </div>
               <div class="col-md-6">
-                <label class="form-label">Apellido</label>
+                <label class="form-label">Apellido <span class="obligatorio">*</span></label>
                 <input type="text" class="form-control form-control-registro" name="apellido" placeholder="Pérez" autocomplete="new-password" required>
               </div>
               <div class="col-md-6">
-                <label class="form-label">Email</label>
+                <label class="form-label">Email <span class="obligatorio">*</span></label>
                 <input type="email" class="form-control form-control-registro" name="email" placeholder="juan@miempresa.com" autocomplete="new-password" required>
               </div>
               <div class="col-md-6">
-                <label class="form-label">DNI</label>
+                <label class="form-label">DNI <span class="obligatorio">*</span></label>
                 <input type="text" class="form-control form-control-registro" name="dni" placeholder="12345678" autocomplete="new-password" required>
               </div>
               <div class="col-md-6">
-                <label class="form-label">Contraseña</label>
+                <label class="form-label">Contraseña <span class="obligatorio">*</span></label>
                 <div class="input-con-icono">
-                  <input type="password" class="form-control form-control-registro" name="password" id="reg-password" placeholder="Contraseña" autocomplete="new-password" required>
+                  <input type="password" class="form-control form-control-registro" name="password" id="reg-password" placeholder="Mínimo 6 caracteres" autocomplete="new-password" required>
                   <i class="fa-solid fa-lock"></i>
                 </div>
+                <div class="form-text texto-ayuda-registro">Al menos 6 caracteres.</div>
               </div>
               <div class="col-md-6">
-                <label class="form-label">Confirmar contraseña</label>
+                <label class="form-label">Confirmar contraseña <span class="obligatorio">*</span></label>
                 <div class="input-con-icono">
                   <input type="password" class="form-control form-control-registro" name="password_confirm" id="reg-password-confirm" placeholder="Repetir contraseña" autocomplete="new-password" required>
                   <i class="fa-solid fa-lock"></i>
@@ -259,15 +274,53 @@
     })
 
     // Registro
+    const formRegistro = document.getElementById('form-registro')
+    const registroError = document.getElementById('registro-error')
+
+    // Muestra el error ADENTRO del modal y marca el campo que lo causo.
+    //
+    // Antes el modal se cerraba siempre, incluso con error: la persona veia
+    // desaparecer los doce campos que acababa de escribir y un cartelito que
+    // se iba solo a los cuatro segundos, sin decir que estaba mal. La
+    // conclusion razonable era "se colgo" o "ya lo mande".
+    const mostrarErrorRegistro = (mensaje, campo) => {
+
+      formRegistro.querySelectorAll('.is-invalid').forEach(i => i.classList.remove('is-invalid'))
+
+      registroError.textContent = mensaje
+      registroError.classList.remove('d-none')
+
+      const input = campo ? formRegistro.querySelector(`[name="${campo}"]`) : null
+
+      if (input) {
+        input.classList.add('is-invalid')
+        input.scrollIntoView({ block: 'center', behavior: 'smooth' })
+        input.focus({ preventScroll: true })
+      } else {
+        registroError.scrollIntoView({ block: 'center', behavior: 'smooth' })
+      }
+    }
+
+    const limpiarErrorRegistro = () => {
+      registroError.classList.add('d-none')
+      registroError.textContent = ''
+      formRegistro.querySelectorAll('.is-invalid').forEach(i => i.classList.remove('is-invalid'))
+    }
+
+    // Que el aviso no quede contradiciendo lo que la persona ya corrigio
+    formRegistro.addEventListener('input', (e) => {
+      if (e.target.classList.contains('is-invalid')) limpiarErrorRegistro()
+    })
+
     document.getElementById('btn-enviar-registro').addEventListener('click', async () => {
 
       if (pass.value !== passConfirm.value) {
         passError.classList.remove('d-none')
+        mostrarErrorRegistro('Las contraseñas no coinciden', 'password_confirm')
         return
       }
 
-      const form = document.getElementById('form-registro');
-      const data = Object.fromEntries(new FormData(form));
+      const data = Object.fromEntries(new FormData(formRegistro));
 
       const res = await fetch('/users/register', {
         method: 'POST',
@@ -276,15 +329,17 @@
       })
 
       const result = await res.json();
-      bootstrap.Modal.getInstance(document.getElementById('modalRegistro')).hide()
 
+      // El modal se cierra SOLO si el registro salio bien
       if (res.ok) {
+        limpiarErrorRegistro()
+        bootstrap.Modal.getInstance(document.getElementById('modalRegistro')).hide()
         mostrarToast(result.message, 'success')
-        form.reset()
+        formRegistro.reset()
       } else {
-        mostrarToast(result.error, 'error')
+        mostrarErrorRegistro(result.error, result.campo)
       }
-      
+
     })
 
   </script>

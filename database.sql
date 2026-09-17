@@ -80,7 +80,12 @@ CREATE TABLE empresas (
   email VARCHAR(150) NOT NULL UNIQUE,
   cuit BIGINT NOT NULL UNIQUE,
   id_tipo_empresa TINYINT(2),
-  matricula INT NOT NULL UNIQUE,
+  -- La matricula se saco el 16/09/2026: era un dato del mundo cooperativo
+  -- (numero de inscripcion en el INAES) y el producto ahora apunta a empresas
+  -- en general. Una S.R.L., un monotributista o un negocio chico no tienen.
+  -- El dato registral obligatorio es el CUIT, que ya esta arriba.
+  -- Opcional: la camara o federacion a la que pertenece la empresa, si es que
+  -- pertenece a alguna. Nunca fue obligatorio.
   federacion VARCHAR(255),
   domicilio VARCHAR(255),
   id_pais INT,
@@ -151,6 +156,12 @@ CREATE TABLE tipos_movimiento (
   nombre       VARCHAR(80) NOT NULL,
   id_categoria INT NOT NULL,
   activo       TINYINT(1) DEFAULT 1,
+  -- Guarda POR QUE este tipo quedo de baja: 1 si se fue arrastrado al dar de
+  -- baja su categoria, 0 si lo dio de baja el administrador a proposito.
+  -- Al reactivar la categoria vuelven solo los que se fueron en cascada: sin
+  -- esta marca volvian todos, incluidos los que el admin habia apagado el mes
+  -- pasado, y la configuracion se deshacia sola.
+  baja_en_cascada TINYINT(1) DEFAULT 0,
   FOREIGN KEY (id_categoria) REFERENCES categorias_movimiento(id_categoria),
   UNIQUE (id_categoria, nombre)
 );
@@ -202,6 +213,9 @@ CREATE TABLE subcategorias_producto (
   nombre                   VARCHAR(80) NOT NULL,
   id_categoria_producto    INT NOT NULL,
   activo                   TINYINT(1) DEFAULT 1,
+  -- Mismo criterio que en tipos_movimiento: distingue la baja en cascada de
+  -- la que decidio el administrador, para no revivir lo que apago a proposito.
+  baja_en_cascada          TINYINT(1) DEFAULT 0,
   FOREIGN KEY (id_categoria_producto) REFERENCES categorias_producto(id_categoria_producto),
   UNIQUE (id_categoria_producto, nombre)
 );
@@ -388,7 +402,7 @@ INSERT INTO modulos (clave, nombre, descripcion, opcional, activo_por_defecto, o
 ('movimientos',  'Movimientos',  'Registro de ingresos y egresos de dinero. Es la base del sistema y no se puede desactivar.', 0, 1, 1),
 ('productos',    'Productos',    'Catálogo de productos, categorías propias y control de stock.',                              1, 0, 2),
 ('servicios',    'Servicios',    'Servicios que la empresa presta o contrata y que generan ingresos o egresos.',               1, 0, 3),
-('reportes',     'Reportes',     'Reportes por período, categoría, producto y servicio, con descarga.',                        1, 1, 4),
+('reportes',     'Reportes',     'Reportes por período, categoría, producto y servicio, con descarga.',                        1, 0, 4),
 ('articulacion', 'Articulación', 'Publicar necesidades y ofertas, y encontrar coincidencias con otras empresas.',              1, 0, 5);
 
 -- Usuario superadmin (contraseña: password)

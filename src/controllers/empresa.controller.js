@@ -3,6 +3,7 @@ const moduloModel = require('../models/modulo.model')
 const categoriaModel = require('../models/categoria.model')
 const motivoStockModel = require('../models/motivo-stock.model')
 const { CATEGORIAS_INICIALES, MOTIVOS_STOCK_INICIALES } = require('../config/datos-iniciales')
+const { validarLargos, LARGOS } = require('../services/validacion.service')
 
 // Convierte un campo de cantidad del formulario a numero.
 // Devuelve null si vino vacio, o undefined si el valor no sirve.
@@ -83,6 +84,11 @@ exports.actualizarMiEmpresa = async (req, res) => {
 
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailLimpio)) {
       return res.status(400).json({ error: 'El email no tiene un formato válido' })
+    }
+
+    const largo = validarLargos(req.body, LARGOS.empresa)
+    if (largo) {
+      return res.status(400).json({ error: largo.error })
     }
 
     if (await empresaModel.findByEmailExcluyendo(emailLimpio, id_empresa)) {

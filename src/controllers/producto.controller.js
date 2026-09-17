@@ -20,6 +20,11 @@ const limpiarTexto = (valor, maximo) => {
 const limpiarStockMinimo = (valor) => {
   if (valor === undefined || valor === null || valor === '') return { valor: 0 }
 
+  // Un booleano se convierte en 1 o en 0: hay que descartarlo antes.
+  if (typeof valor === 'boolean') {
+    return { error: 'El stock mínimo tiene que ser un número' }
+  }
+
   const numero = Number(valor)
   if (!Number.isFinite(numero)) {
     return { error: 'El stock mínimo tiene que ser un número' }
@@ -28,6 +33,14 @@ const limpiarStockMinimo = (valor) => {
   const redondeado = Math.round(numero * 100) / 100
   if (redondeado < 0) {
     return { error: 'El stock mínimo no puede ser negativo' }
+  }
+
+  // Aca el 0 es delicado, porque significa lo contrario que un numero chico:
+  // 0 es "no me avises". Un 0,001 redondeaba a 0 y el producto quedaba SIN
+  // aviso de reposicion, que es justo lo opuesto de lo que la persona quiso.
+  // Se rechaza en vez de aceptarlo en silencio.
+  if (numero > 0 && redondeado === 0) {
+    return { error: 'El stock mínimo es demasiado chico: usá al menos 0,01, o dejalo en 0 para no recibir avisos' }
   }
   if (redondeado > 9999999999.99) {  // no entra en DECIMAL(12,2)
     return { error: 'El stock mínimo es demasiado grande' }

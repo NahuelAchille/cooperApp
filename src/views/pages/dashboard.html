@@ -50,6 +50,13 @@
         const user = await cargarHeader()
         if (!user) return
 
+        // El superadmin no pertenece a ninguna empresa: este panel le mostraba
+        // casilleros vacios y avisos sobre "tu empresa". Va a lo suyo.
+        if (user.rol === 'superadmin') {
+            window.location.href = '/pages/superadmin.html'
+            return
+        }
+
         // Hacen falta las dos cosas: el rol y que la empresa tenga el módulo.
         // Se guardan por separado para poder explicar cuál de las dos falló.
         const rolDeFinanzas = user.rol === 'admin_empresa' || user.rol === 'tesorero'

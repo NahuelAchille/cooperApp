@@ -108,8 +108,8 @@
             <input type="email" class="form-control" name="email" required>
           </div>
           <div class="col-md-6">
-            <label class="form-label">Federación</label>
-            <input type="text" class="form-control" name="federacion" placeholder="Sin federación">
+            <label class="form-label">Cámara o federación a la que pertenece</label>
+            <input type="text" class="form-control" name="federacion" placeholder="Si no pertenece a ninguna, dejalo en blanco">
           </div>
           <div class="col-md-6">
             <label class="form-label">Domicilio</label>
@@ -145,15 +145,11 @@
             <label class="form-label">CUIT</label>
             <input type="text" class="form-control" id="cuit" readonly>
           </div>
-          <div class="col-md-6">
-            <label class="form-label">Matrícula</label>
-            <input type="text" class="form-control" id="matricula" readonly>
-          </div>
         </div>
 
         <div class="nota-solo-lectura mb-4">
           <i class="fa-solid fa-lock me-1"></i>
-          El CUIT y la matrícula no se pueden modificar desde acá. Si están mal cargados,
+          El CUIT no se puede modificar desde acá. Si está mal cargado,
           hay que pedirle el cambio al administrador de la plataforma.
         </div>
 
@@ -253,7 +249,6 @@
       form.cantidadDiversidad.value   = empresa.cantidadDiversidad ?? ''
 
       document.getElementById('cuit').value      = empresa.cuit ?? ''
-      document.getElementById('matricula').value = empresa.matricula ?? ''
 
       const estado = document.getElementById('estado-empresa')
       estado.className = `badge-estado badge-${empresa.estado}`

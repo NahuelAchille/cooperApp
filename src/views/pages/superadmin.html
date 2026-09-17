@@ -290,9 +290,8 @@
       <dl class="row mb-0">
         <dt class="col-5">CUIT</dt><dd class="col-7">${esc(c.cuit)}</dd>
         <dt class="col-5">Email</dt><dd class="col-7">${esc(c.email)}</dd>
-        <dt class="col-5">Matrícula</dt><dd class="col-7">${esc(c.matricula)}</dd>
         <dt class="col-5">Domicilio</dt><dd class="col-7">${c.domicilio ? esc(c.domicilio) : '-'}</dd>
-        <dt class="col-5">Federación</dt><dd class="col-7">${c.federacion ? esc(c.federacion) : '-'}</dd>
+        <dt class="col-5">Cámara o federación</dt><dd class="col-7">${c.federacion ? esc(c.federacion) : '-'}</dd>
         <dt class="col-5">Administrador</dt><dd class="col-7">${c.admin_nombre ? `${esc(c.admin_nombre)} ${esc(c.admin_apellido)}` : '-'}</dd>
         <dt class="col-5">Email admin</dt><dd class="col-7">${c.admin_email ? esc(c.admin_email) : '-'}</dd>
       </dl>`

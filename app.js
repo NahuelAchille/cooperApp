@@ -41,4 +41,30 @@ app.use('/productos/motivos', motivoStockRoutes)
 app.use('/productos/stock', stockRoutes)
 app.use('/productos', productoRoutes)
 
+// Ultimo de todos: recoge lo que ningun controlador atajo.
+//
+// Sin esto contestaba el manejador por defecto de Express, que devuelve una
+// pagina HTML con el stack trace completo: la ruta absoluta del disco, la
+// estructura de carpetas y las versiones de las librerias, en una API que
+// declara devolver JSON siempre. Y el front, que hace res.json() sobre la
+// respuesta, reventaba con un error que no decia nada.
+//
+// El caso mas facil de provocar es un JSON mal escrito contra cualquier
+// endpoint, incluso el registro publico, sin sesion.
+app.use((err, req, res, next) => {
+
+  console.error(err)
+
+  // Cuerpo que no es JSON valido: es culpa del pedido, no del servidor.
+  if (err.type === 'entity.parse.failed' || err instanceof SyntaxError) {
+    return res.status(400).json({ error: 'El pedido no tiene un formato válido' })
+  }
+
+  if (err.type === 'entity.too.large') {
+    return res.status(413).json({ error: 'El pedido es demasiado grande' })
+  }
+
+  res.status(500).json({ error: 'Error del servidor' })
+})
+
 app.listen(3000, () => console.log('Servidor corriendo en puerto 3000'))

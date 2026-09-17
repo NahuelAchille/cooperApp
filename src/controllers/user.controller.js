@@ -1,5 +1,10 @@
 const bcrypt = require('bcrypt')
 const userModel = require('../models/user.model')
+const { validarLargos, LARGOS, mensajeDeDuplicado } = require('../services/validacion.service')
+
+// Las claves unicas de usuarios, para poder explicar cual se repitio.
+const DUPLICADOS_USUARIO = [['email', 'Ya existe un usuario con ese email'],
+                            ['dni', 'Ya existe un usuario con ese DNI']]
 
 const ID_ROL_ADMIN_EMPRESA = 1
 const ID_ROL_SUPERADMIN = 4
@@ -83,6 +88,12 @@ exports.login = async (req, res) => {
       return res.json({ redirect: '/pages/cambiar-password.html'})
     }
 
+    // El superadmin no pertenece a ninguna empresa: el panel general le mostraba
+    // cuatro casilleros vacios y dos avisos sobre "tu empresa". Va directo a lo suyo.
+    if (user.rol === 'superadmin') {
+      return res.json({ redirect: '/pages/superadmin.html'})
+    }
+
     res.json({ redirect: '/pages/dashboard.html'})
 
   } catch (error) {
@@ -142,6 +153,11 @@ exports.crearUsuario = async (req, res) => {
       return res.status(400).json({ error: 'El DNI debe tener entre 7 y 9 dígitos' })
     }
 
+    const largo = validarLargos(req.body, LARGOS.usuario)
+    if (largo) {
+      return res.status(400).json({ error: largo.error })
+    }
+
     if (await userModel.findByEmail(email)) {
       return res.status(400).json({ error: 'Ya existe un usuario con ese email' })
     }
@@ -165,6 +181,10 @@ exports.crearUsuario = async (req, res) => {
 
   } catch (error) {
     console.error(error)
+
+    const repetido = mensajeDeDuplicado(error, DUPLICADOS_USUARIO)
+    if (repetido) return res.status(400).json({ error: repetido })
+
     res.status(500).json({ error: 'Error al crear usuario' })
   }
 
@@ -200,6 +220,11 @@ exports.actualizarUsuario = async (req, res) => {
 
     if (!ROLES_ASIGNABLES.includes(Number(id_rol))) {
       return res.status(400).json({ error: 'El rol seleccionado no es válido' })
+    }
+
+    const largo = validarLargos(req.body, LARGOS.usuario)
+    if (largo) {
+      return res.status(400).json({ error: largo.error })
     }
 
     if (await userModel.findByEmailExcluyendo(emailLimpio, objetivo.id)) {

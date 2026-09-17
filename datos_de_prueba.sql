@@ -101,11 +101,11 @@ DELETE FROM empresas WHERE email IN (
 -- 1 · Alimentos La Esperanza S.R.L.  (activa · 7 empleados · alimentos)
 -- =============================================================================
 INSERT INTO empresas
-  (nombre, email, cuit, matricula, federacion, domicilio, estado,
+  (nombre, email, cuit, federacion, domicilio, estado,
    cantidadTrabajadores, cantidadMujer, cantidadHombre, cantidadDiversidad)
 VALUES
   ('Alimentos La Esperanza S.R.L.', 'contacto@laesperanza.com.ar',
-   30712345678, 48211, NULL, 'Av. San Martín 2450, Ituzaingó', 'activa',
+   30712345678, NULL, 'Av. San Martín 2450, Ituzaingó', 'activa',
    7, 4, 3, 0);
 
 INSERT INTO usuarios
@@ -123,11 +123,11 @@ VALUES
 -- 2 · Textil El Amanecer S.A.  (activa · 6 empleados)
 -- =============================================================================
 INSERT INTO empresas
-  (nombre, email, cuit, matricula, federacion, domicilio, estado,
+  (nombre, email, cuit, federacion, domicilio, estado,
    cantidadTrabajadores, cantidadMujer, cantidadHombre, cantidadDiversidad)
 VALUES
   ('Textil El Amanecer S.A.', 'contacto@elamanecer.com.ar',
-   30698765432, 51702, NULL, 'Belgrano 1180, Morón', 'activa',
+   30698765432, NULL, 'Belgrano 1180, Morón', 'activa',
    6, 5, 1, 0);
 
 INSERT INTO usuarios
@@ -144,11 +144,11 @@ VALUES
 -- 3 · Metalúrgica del Oeste S.A.  (activa · 9 empleados)
 -- =============================================================================
 INSERT INTO empresas
-  (nombre, email, cuit, matricula, federacion, domicilio, estado,
+  (nombre, email, cuit, federacion, domicilio, estado,
    cantidadTrabajadores, cantidadMujer, cantidadHombre, cantidadDiversidad)
 VALUES
   ('Metalúrgica del Oeste S.A.', 'contacto@metaloeste.com.ar',
-   30655443322, 44980, NULL, 'Ruta 200 km 3, Merlo', 'activa',
+   30655443322, NULL, 'Ruta 200 km 3, Merlo', 'activa',
    9, 2, 7, 0);
 
 INSERT INTO usuarios
@@ -170,11 +170,11 @@ VALUES
 --     no pueden iniciar sesión hasta que la empresa sea aprobada.
 -- =============================================================================
 INSERT INTO empresas
-  (nombre, email, cuit, matricula, federacion, domicilio, estado,
+  (nombre, email, cuit, federacion, domicilio, estado,
    cantidadTrabajadores, cantidadMujer, cantidadHombre, cantidadDiversidad)
 VALUES
   ('Distribuidora Huerta Norte S.R.L.', 'contacto@huertanorte.com.ar',
-   30677889900, 56341, NULL, 'Camino Real 540, San Miguel', 'pendiente',
+   30677889900, NULL, 'Camino Real 540, San Miguel', 'pendiente',
    5, 3, 1, 1);
 
 INSERT INTO usuarios

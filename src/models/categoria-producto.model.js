@@ -66,10 +66,20 @@ const setActivoCategoria = async (id_categoria_producto, id_empresa, activo) => 
     [activo, id_categoria_producto, id_empresa]
   )
 
-  await db.query(
-    'UPDATE subcategorias_producto SET activo = ? WHERE id_categoria_producto = ?',
-    [activo, id_categoria_producto]
-  )
+  if (activo) {
+    // Vuelven SOLO las que se fueron arrastradas por esta misma cascada, no
+    // las que el administrador habia dado de baja a proposito. Mismo criterio
+    // que en la clasificacion de movimientos.
+    await db.query(
+      'UPDATE subcategorias_producto SET activo = 1, baja_en_cascada = 0 WHERE id_categoria_producto = ? AND baja_en_cascada = 1',
+      [id_categoria_producto]
+    )
+  } else {
+    await db.query(
+      'UPDATE subcategorias_producto SET activo = 0, baja_en_cascada = 1 WHERE id_categoria_producto = ? AND activo = 1',
+      [id_categoria_producto]
+    )
+  }
 }
 
 // =====================================================================
@@ -122,9 +132,11 @@ const updateSubcategoria = async (id_subcategoria_producto, { nombre }) => {
   )
 }
 
+// Baja o alta de UNA subcategoria, decidida por el administrador. La marca
+// vuelve a 0: reactivar la categoria no deshace esta decision.
 const setActivoSubcategoria = async (id_subcategoria_producto, activo) => {
   await db.query(
-    'UPDATE subcategorias_producto SET activo = ? WHERE id_subcategoria_producto = ?',
+    'UPDATE subcategorias_producto SET activo = ?, baja_en_cascada = 0 WHERE id_subcategoria_producto = ?',
     [activo, id_subcategoria_producto]
   )
 }

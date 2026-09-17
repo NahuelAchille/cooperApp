@@ -554,8 +554,15 @@
 
         // Un movimiento con impacto económico al que todavía nadie le cargó el
         // dinero queda marcado: es lo que después se olvida y descuadra.
+        //
+        // Se mira que el movimiento de dinero EXISTA y que siga vigente: si se
+        // anuló (caso típico, se cargó el monto equivocado), la venta volvió a
+        // quedar sin cobro y decir "$ cargado" sería mentir justo donde la
+        // marca existe para avisar.
+        const tieneDinero = m.id_movimiento && !m.dinero_anulado
+
         const marcaDinero = !mueveDinero ? ''
-          : m.id_movimiento
+          : tieneDinero
             ? '<span class="marca-dinero hecho" title="Ya tiene su movimiento de dinero"><i class="fa-solid fa-circle-check me-1"></i>$ cargado</span>'
             : '<span class="marca-dinero falta" title="Este movimiento genera dinero y todavía no se registró"><i class="fa-solid fa-circle-exclamation me-1"></i>Falta el $</span>'
 
@@ -581,7 +588,7 @@
             <td><span class="detalle-mov">${esc(m.usuario_nombre)} ${esc(m.usuario_apellido)}</span></td>
             <td class="text-end">
               ${m.anulado ? '' : `
-                ${(mueveDinero && !m.id_movimiento && puedeDinero) ? `
+                ${(mueveDinero && !tieneDinero && puedeDinero) ? `
                   <button class="btn-mini" data-accion="cargar-dinero" data-id="${m.id_movimiento_stock}" title="Registrar el movimiento de dinero">
                     <i class="fa-solid fa-dollar-sign"></i>
                   </button>` : ''}
@@ -875,7 +882,9 @@
       // saber antes de confirmar.
       let aviso = '<i class="fa-solid fa-circle-info me-1"></i>No se borra: queda en el historial marcado como anulado, y la existencia se recalcula sola.'
 
-      if (movimiento.id_movimiento) {
+      // Sólo si el movimiento de dinero sigue vigente: si ya está anulado, no
+      // hay nada que dar de baja y el aviso confundiría.
+      if (movimiento.id_movimiento && !movimiento.dinero_anulado) {
         aviso += '<br><i class="fa-solid fa-triangle-exclamation me-1"></i>Este movimiento tiene un <strong>movimiento de dinero asociado</strong>, que NO se anula solo. Si también hay que darlo de baja, se hace desde Movimientos.'
       }
 
