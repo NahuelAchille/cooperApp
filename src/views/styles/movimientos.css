@@ -135,6 +135,17 @@ body {
 .badge-ingreso { background-color: #d1f5e0; color: var(--verde-oscuro); font-size: 0.75rem; padding: 4px 10px; border-radius: 20px; font-weight: 600; }
 .badge-egreso  { background-color: #fde8e8; color: var(--danger);      font-size: 0.75rem; padding: 4px 10px; border-radius: 20px; font-weight: 600; }
 .badge-cat     { background-color: #e4f2eb; color: var(--verde-primario); font-size: 0.76rem; padding: 3px 9px; border-radius: 20px; font-weight: 600; }
+
+/* De dónde salió la plata: va debajo de la descripción, no en una columna
+   propia. La tabla ya tiene ocho columnas y acaba de pasar por el trabajo de
+   que entre en el celular. Se muestra sólo cuando el movimiento tiene un
+   servicio, que es la minoría. */
+.origen-servicio {
+  font-size: 0.78rem;
+  color: #6c7a72;
+  margin-top: 3px;
+}
+.origen-servicio i { margin-right: 5px; opacity: 0.75; }
 .badge-anulado { background-color: #eee; color: #777; font-size: 0.75rem; padding: 4px 10px; border-radius: 20px; font-weight: 600; }
 
 /* Fila anulada */

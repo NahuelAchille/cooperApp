@@ -22,6 +22,12 @@ const construirFiltro = (id_empresa, filtros = {}) => {
     condiciones.push('m.id_tipo = ?')
     params.push(filtros.id_tipo)
   }
+  // De donde salio la plata. Como el resumen usa este mismo filtro, pedir un
+  // servicio da directamente sus ingresos, sus egresos y lo que deja.
+  if (filtros.id_servicio) {
+    condiciones.push('m.id_servicio = ?')
+    params.push(filtros.id_servicio)
+  }
   if (filtros.desde) {
     condiciones.push('m.fecha >= ?')
     params.push(filtros.desde)
@@ -48,11 +54,16 @@ const findByEmpresa = async (id_empresa, filtros = {}) => {
     SELECT m.id_movimiento, m.monto, m.descripcion, m.fecha, m.anulado, m.creado_en,
            t.id_tipo, t.nombre AS tipo_nombre,
            c.id_categoria, c.nombre AS categoria_nombre, c.naturaleza,
-           u.nombre AS usuario_nombre, u.apellido AS usuario_apellido
+           u.nombre AS usuario_nombre, u.apellido AS usuario_apellido,
+           m.id_servicio, sv.nombre AS servicio_nombre
     FROM movimientos m
     JOIN tipos_movimiento t      ON t.id_tipo = m.id_tipo
     JOIN categorias_movimiento c ON c.id_categoria = t.id_categoria
     JOIN usuarios u              ON u.id = m.id_usuario
+    -- LEFT JOIN: el servicio es opcional y casi siempre va vacio. Con un JOIN
+    -- comun desapareceria del listado todo lo que no viene de un servicio,
+    -- que es la mayor parte del historial.
+    LEFT JOIN productos sv       ON sv.id_producto = m.id_servicio
     WHERE ${where}
     ORDER BY m.fecha DESC, m.id_movimiento DESC
     ${limite}
@@ -75,12 +86,13 @@ const findById = async (id_movimiento, id_empresa) => {
 // El "ejecutor" es normalmente el pool. El alta que sale de una venta de stock
 // le pasa la conexion de su transaccion, para que el movimiento de dinero y su
 // vinculo con el stock entren juntos o no entre ninguno.
-const create = async ({ id_tipo, monto, descripcion, fecha, id_empresa, id_usuario }, ejecutor = db) => {
+const create = async ({ id_tipo, monto, descripcion, fecha, id_empresa, id_usuario,
+                        id_servicio = null }, ejecutor = db) => {
 
   const [result] = await ejecutor.query(`
-    INSERT INTO movimientos (id_tipo, monto, descripcion, fecha, id_empresa, id_usuario)
-    VALUES (?, ?, ?, ?, ?, ?)
-  `, [id_tipo, monto, descripcion || null, fecha, id_empresa, id_usuario])
+    INSERT INTO movimientos (id_tipo, monto, descripcion, fecha, id_empresa, id_usuario, id_servicio)
+    VALUES (?, ?, ?, ?, ?, ?, ?)
+  `, [id_tipo, monto, descripcion || null, fecha, id_empresa, id_usuario, id_servicio])
 
   return result.insertId
 }

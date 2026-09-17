@@ -316,7 +316,9 @@ INSERT INTO tipos_movimiento (nombre, id_categoria) VALUES
   ('Chapa',           @cat_insumos),
   ('Electrodos',      @cat_insumos),
   ('Luz',             @cat_servicios),
-  ('Gas',             @cat_servicios);
+  ('Gas',             @cat_servicios),
+  -- Lo usa un egreso atado a un servicio contratado (ver mas abajo).
+  ('Flete',           @cat_servicios);
 
 INSERT INTO movimientos (id_tipo, monto, descripcion, fecha, id_empresa, id_usuario, anulado) VALUES
   ((SELECT id_tipo FROM tipos_movimiento WHERE id_categoria = @cat_ventas   AND nombre = 'Venta de piezas'),  520000.00, 'Venta de piezas a fábrica',     CURDATE() - INTERVAL 2  DAY, @empresa, @tesorero, 0),
@@ -500,6 +502,37 @@ INSERT INTO productos (nombre, descripcion, unidad_medida, stock_minimo, id_cate
   ('Mantenimiento de máquinas', 'Service del taller',             NULL, 0, @cat_contratados, NULL,            @empresa, 1, 1),
   -- Uno de baja, para ver el filtro de estado sin tener que dar de baja nada.
   ('Pintura electrostática',   'Se dejó de ofrecer',              NULL, 0, @cat_trabajos,    NULL,            @empresa, 1, 0);
+
+-- De donde salio la plata: se atan algunos movimientos ya cargados al servicio
+-- que los origino. Va como UPDATE y no adentro del INSERT de mas arriba porque
+-- los movimientos se cargan antes que los servicios en este archivo.
+--
+-- Quedan movimientos SIN servicio a proposito (la luz, el gas, los sueldos, la
+-- compra de chapa): es el caso normal y hay que poder ver que la columna
+-- convive vacia con los que si tienen.
+SET @sv_soldadura := (SELECT id_producto FROM productos WHERE id_empresa = @empresa AND es_servicio = 1 AND nombre = 'Soldadura a domicilio');
+SET @sv_corte     := (SELECT id_producto FROM productos WHERE id_empresa = @empresa AND es_servicio = 1 AND nombre = 'Corte de chapa a medida');
+SET @sv_flete     := (SELECT id_producto FROM productos WHERE id_empresa = @empresa AND es_servicio = 1 AND nombre = 'Flete de materiales');
+
+UPDATE movimientos SET id_servicio = @sv_soldadura
+  WHERE id_empresa = @empresa AND descripcion = 'Soldadura de estructura';
+UPDATE movimientos SET id_servicio = @sv_corte
+  WHERE id_empresa = @empresa AND descripcion = 'Trabajo para automotriz';
+
+-- Dos mas, para que el mismo servicio tenga varios movimientos y para que haya
+-- un EGRESO atado a un servicio contratado: un servicio puede traer plata (lo
+-- prestas) o llevarsela (lo contratas), y el filtro tiene que mostrar las dos.
+--
+-- Las categorias se vuelven a buscar en vez de reusar las variables de mas
+-- arriba: entre medio pasaron dos secciones y depender de que una variable
+-- siga valiendo lo mismo es la clase de cosa que se rompe sola al reordenar.
+SET @tesorero      := (SELECT id FROM usuarios WHERE email = 'daniel@metaloeste.com.ar');
+SET @cat_terceros  := (SELECT id_categoria FROM categorias_movimiento WHERE id_empresa = @empresa AND naturaleza = 'ingreso' AND nombre = 'Trabajos a terceros');
+SET @cat_servicios := (SELECT id_categoria FROM categorias_movimiento WHERE id_empresa = @empresa AND naturaleza = 'egreso'  AND nombre = 'Servicios');
+
+INSERT INTO movimientos (id_tipo, monto, descripcion, fecha, id_empresa, id_usuario, id_servicio, anulado) VALUES
+  ((SELECT id_tipo FROM tipos_movimiento WHERE id_categoria = @cat_terceros  AND nombre = 'Soldadura'), 67000.00, 'Soldadura de portón', CURDATE() - INTERVAL 11 DAY, @empresa, @tesorero, @sv_soldadura, 0),
+  ((SELECT id_tipo FROM tipos_movimiento WHERE id_categoria = @cat_servicios AND nombre = 'Flete'),     18000.00, 'Flete de la chapa',   CURDATE() - INTERVAL 9  DAY, @empresa, @tesorero, @sv_flete,     0);
 
 -- =============================================================================
 -- MOTIVOS DE MOVIMIENTO DE STOCK

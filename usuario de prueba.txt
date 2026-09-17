@@ -1,6 +1,7 @@
 ===========================================================
  CooperApp - USUARIOS DE PRUEBA
- Actualizado: 17/09/2026  (catalogo de servicios, HU-47)
+ Actualizado: 17/09/2026  (servicios: catalogo y vinculo con el dinero,
+                           HU-47 y HU-48)
 ===========================================================
 
 La app corre en http://localhost:3000
@@ -12,9 +13,10 @@ corriendo ese archivo (ver el final de este documento).
 OJO: el esquema de la base cambio varias veces en el Sprint 07 y 08
 (productos, stock y motivos), el 16/09 se saco la columna "matricula"
 de la tabla empresas y se agrego "baja_en_cascada", y el 17/09 se
-agrego "es_servicio" en productos y en categorias_producto. Si venis
-de una version anterior hay que BORRAR la base y volver a crearla, no
-alcanza con reimportar. Los comandos estan al final.
+agrego "es_servicio" en productos y en categorias_producto, y
+"id_servicio" en movimientos. Si venis de una version anterior hay que
+BORRAR la base y volver a crearla, no alcanza con reimportar. Los
+comandos estan al final.
 
 CAMBIOS DEL 17/09 - SERVICIOS (HU-47):
   - Servicios ya NO es un boton muerto: tiene su catalogo propio,
@@ -27,9 +29,16 @@ CAMBIOS DEL 17/09 - SERVICIOS (HU-47):
   - Los dos arboles de categorias van separados: las categorias de
     productos no aparecen al cargar un servicio, y al reves.
   - Quien lo trabaja: el ADMIN carga y edita; el TESORERO solo mira
-    (lo necesita para el proximo paso, decir de donde viene cada
-    ingreso o egreso); el OPERADOR no entra, porque un servicio no
-    pasa por el deposito.
+    (lo necesita para decir de donde viene cada ingreso o egreso);
+    el OPERADOR no entra, porque un servicio no pasa por el deposito.
+  - Al cargar un movimiento de dinero se puede decir DE DONDE SALIO:
+    el campo "Salio de un servicio?" va ultimo y es opcional. Casi
+    todos los movimientos van sin nada (la luz, el alquiler, un
+    sueldo). No reemplaza a la categoria ni al tipo: esos siguen
+    siendo obligatorios. Uno dice el rubro, el otro el origen.
+  - El listado tiene un filtro "Servicio", y el RESUMEN de arriba
+    (ingresos, egresos, balance) se recalcula con ese filtro: asi ya
+    se puede ver cuanto deja cada servicio.
 
 CAMBIOS DEL 16/09 QUE CONVIENE SABER AL PROBAR:
   - El registro de empresa ya NO pide matricula (un negocio chico
@@ -286,6 +295,32 @@ CAMBIOS DEL 16/09 POR LA AUDITORIA DE QA:
        pantalla le dice otra cosa distinta -- que el modulo no
        esta activo. Son dos problemas distintos y se resuelven de
        maneras distintas.
+
+ --- DE DONDE SALIO CADA PESO ---
+
+   Como Osvaldo o como Daniel (tesorero), en "Movimientos".
+
+   De los 10 movimientos de Metal Oeste, 4 vienen de un servicio y
+   el resto no. Los que si lo tienen lo muestran abajo de la
+   descripcion, con una llave inglesa al lado.
+
+   Que conviene probar:
+     - Filtrar por "Soldadura a domicilio": quedan 2 movimientos y
+       el RESUMEN de arriba pasa a mostrar solo esa plata
+       ($ 152.000 de ingresos). Ese es el numero de cuanto deja ese
+       servicio.
+     - Hay un EGRESO atado a un servicio ("Flete de la chapa"): un
+       servicio puede traer plata si lo prestas o llevarsela si lo
+       contratas.
+     - Cargar uno nuevo eligiendo un servicio: el campo esta ultimo
+       y dice "opcional". Fijarse que igual hay que elegir
+       categoria y tipo -- el servicio dice el ORIGEN, no el rubro.
+     - "Pintura electrostatica" (el servicio dado de baja) NO
+       aparece al cargar uno nuevo, pero SI aparece en el filtro,
+       marcado "(de baja)": sus movimientos existen y hay que poder
+       encontrarlos.
+     - Como Marta (modulo de servicios apagado): no le aparece ni
+       el campo ni el filtro, y sus movimientos andan igual.
 
  --- MODULOS ---
 

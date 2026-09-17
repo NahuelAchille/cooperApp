@@ -168,6 +168,20 @@ CREATE TABLE tipos_movimiento (
 
 -- El movimiento en si. El monto siempre es positivo: el signo lo da la
 -- naturaleza de la categoria. Los movimientos no se borran: se anulan.
+-- Sobre id_servicio: de donde salio esta plata. Es OPCIONAL y casi siempre va
+-- vacio -- la luz, el alquiler y un sueldo no vienen de ningun servicio -- y
+-- se completa cuando el movimiento lo origino un servicio que la empresa
+-- presta o contrata. Con eso se puede filtrar el listado y el resumen por
+-- servicio, que es lo que responde "cuanto me deja cada uno".
+--
+-- OJO: NO es la clasificacion del movimiento. El dinero ya tiene la suya
+-- (categoria -> tipo) y esa sigue siendo obligatoria. Este campo dice el
+-- ORIGEN, no el rubro: una misma venta de soldadura se clasifica igual que
+-- cualquier otro ingreso por ventas.
+--
+-- Apunta a productos porque ahi viven tambien los servicios (es_servicio = 1).
+-- La clave foranea se agrega mas abajo con un ALTER, porque esta tabla se crea
+-- antes que productos.
 CREATE TABLE movimientos (
   id_movimiento  INT AUTO_INCREMENT PRIMARY KEY,
   id_tipo        INT NOT NULL,
@@ -176,6 +190,7 @@ CREATE TABLE movimientos (
   fecha          DATE NOT NULL,
   id_empresa INT NOT NULL,
   id_usuario     INT NOT NULL,
+  id_servicio    INT NULL,
   anulado        TINYINT(1) DEFAULT 0,
   creado_en      DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
   FOREIGN KEY (id_tipo)        REFERENCES tipos_movimiento(id_tipo),
@@ -274,6 +289,14 @@ CREATE TABLE productos (
   FOREIGN KEY (id_empresa)               REFERENCES empresas(id_empresa),
   UNIQUE (id_empresa, es_servicio, nombre)
 );
+
+-- El vinculo entre un movimiento de dinero y el servicio que lo origino.
+-- Va aca abajo y no adentro del CREATE TABLE porque "movimientos" se crea
+-- mucho antes que "productos", y una clave foranea no puede apuntar a una
+-- tabla que todavia no existe.
+ALTER TABLE movimientos
+  ADD CONSTRAINT fk_movimientos_servicio
+  FOREIGN KEY (id_servicio) REFERENCES productos(id_producto);
 
 -- Por que se mueve el stock. Cada empresa arma los suyos, y cada motivo lleva
 -- su impacto CONFIGURADO, no cableado en el codigo: asi el administrador puede

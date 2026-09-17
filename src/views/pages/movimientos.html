@@ -81,6 +81,13 @@
               <option value="">Todas</option>
             </select>
           </div>
+          <!-- Sólo si la empresa tiene el módulo de Servicios -->
+          <div class="col-6 col-md-3 d-none" id="filtro-servicio-caja">
+            <label class="form-label">Servicio</label>
+            <select class="form-select form-select-sm" id="filtro-servicio">
+              <option value="">Todos</option>
+            </select>
+          </div>
           <div class="col-6 col-md-2">
             <label class="form-label">Desde</label>
             <input type="date" class="form-control form-control-sm" id="filtro-desde">
@@ -187,6 +194,18 @@
                 <label class="form-label">Descripción <span class="text-muted fw-normal">(opcional)</span></label>
                 <input type="text" class="form-control" name="descripcion" maxlength="255" placeholder="Ej: Venta de conservas">
               </div>
+              <!-- De dónde salió la plata. Sólo aparece si la empresa tiene el
+                   módulo de Servicios; si no, es una pregunta sobre algo que
+                   no usa. Y va al final a propósito: es opcional y casi
+                   siempre se deja vacío, así que no puede quedar en el medio
+                   del camino de lo que sí hay que contestar. -->
+              <div class="col-12 d-none" id="campo-servicio">
+                <label class="form-label">¿Salió de un servicio? <span class="text-muted fw-normal">(opcional)</span></label>
+                <select class="form-select" name="id_servicio" id="mov-servicio">
+                  <option value="">No, ninguno</option>
+                </select>
+                <div class="form-text">Sirve para saber después cuánto te deja cada servicio. La categoría y el tipo van igual.</div>
+              </div>
             </div>
             <div id="mov-error" class="text-danger small mt-2 d-none"></div>
           </form>
@@ -234,6 +253,7 @@
 
     let usuarioActual = null
     let categorias = []   // categorias activas (para filtros y para el alta)
+    let servicios = []    // el catálogo de servicios, si la empresa lo tiene
 
     // --- Utilidades ---
     const formatoMoneda = new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'ARS', minimumFractionDigits: 2 })
@@ -266,12 +286,14 @@
       const params = new URLSearchParams()
       const naturaleza = document.getElementById('filtro-naturaleza').value
       const categoria  = document.getElementById('filtro-categoria').value
+      const servicio   = document.getElementById('filtro-servicio').value
       const desde      = document.getElementById('filtro-desde').value
       const hasta      = document.getElementById('filtro-hasta').value
       const anulados   = document.getElementById('filtro-anulados').checked
 
       if (naturaleza) params.set('naturaleza', naturaleza)
       if (categoria)  params.set('id_categoria', categoria)
+      if (servicio)   params.set('id_servicio', servicio)
       if (desde)      params.set('desde', desde)
       if (hasta)      params.set('hasta', hasta)
       if (anulados)   params.set('incluirAnulados', 'true')
@@ -319,6 +341,7 @@
       inputFecha.max = fechaDeHoy()
 
       await cargarCategorias()
+      await cargarServicios()
       await cargarMovimientos()
 
       // Si se llega desde los accesos rapidos del dashboard (?nuevo=ingreso o
@@ -337,6 +360,36 @@
       const res = await fetch('/categorias?soloActivas=true')
       categorias = res.ok ? await res.json() : []
       poblarFiltroCategorias()
+    }
+
+    // Trae el catálogo de servicios, si la empresa tiene ese módulo. Es lo que
+    // permite decir de dónde salió cada peso: sin esto, el movimiento queda
+    // clasificado (categoría y tipo) pero no se sabe qué lo originó.
+    //
+    // Si el módulo está apagado, el campo del alta y el filtro no aparecen:
+    // preguntar por algo que la empresa no usa es ruido, y el servidor
+    // rechaza igual el vínculo.
+    async function cargarServicios() {
+      if (!moduloActivo('servicios')) return
+
+      servicios = await fetch('/servicios').then(r => r.ok ? r.json() : []).catch(() => [])
+      if (!servicios.length) return   // con el módulo prendido pero sin cargar nada, tampoco tiene sentido
+
+      document.getElementById('campo-servicio').classList.remove('d-none')
+      document.getElementById('filtro-servicio-caja').classList.remove('d-none')
+
+      // En el ALTA sólo los activos: se está clasificando algo nuevo.
+      document.getElementById('mov-servicio').innerHTML =
+        '<option value="">No, ninguno</option>' +
+        servicios.filter(s => s.activo)
+          .map(s => `<option value="${s.id_producto}">${esc(s.nombre)}</option>`).join('')
+
+      // En el FILTRO van todos, también los dados de baja: sus movimientos
+      // siguen existiendo y hay que poder encontrarlos. Es el mismo criterio
+      // que el filtro de categorías del catálogo de productos.
+      document.getElementById('filtro-servicio').innerHTML =
+        '<option value="">Todos</option>' +
+        servicios.map(s => `<option value="${s.id_producto}">${esc(s.nombre)}${s.activo ? '' : ' (de baja)'}</option>`).join('')
     }
 
     // Llena el filtro por categoria respetando la naturaleza elegida: si el
@@ -388,7 +441,14 @@
         return `
           <tr class="${m.anulado ? 'fila-anulada' : ''}">
             <td data-label="Fecha">${new Date(m.fecha).toLocaleDateString('es-AR')}</td>
-            <td class="td-principal" data-label="Descripción">${m.descripcion ? esc(m.descripcion) : '<span class="text-muted">—</span>'}</td>
+            <!-- El servicio va acá abajo y no en una columna propia: la tabla
+                 ya tiene ocho y acaba de pasar por el trabajo de que entre en
+                 el celular. Además se lee mejor junto a la descripción, que
+                 es lo otro que cuenta qué fue este movimiento. -->
+            <td class="td-principal" data-label="Descripción">
+              ${m.descripcion ? esc(m.descripcion) : '<span class="text-muted">—</span>'}
+              ${m.servicio_nombre ? `<div class="origen-servicio"><i class="fa-solid fa-screwdriver-wrench"></i>${esc(m.servicio_nombre)}</div>` : ''}
+            </td>
             <td data-label="Categoría"><span class="badge-cat">${esc(m.categoria_nombre)}</span></td>
             <td data-label="Tipo">${esc(m.tipo_nombre)}</td>
             <td class="td-oculto-movil" data-label="Entró / Salió"><span class="badge-${m.naturaleza}">${esIngreso ? 'Entró' : 'Salió'}</span></td>
@@ -494,7 +554,10 @@
           id_tipo: datos.id_tipo,
           monto: datos.monto,
           fecha: datos.fecha,
-          descripcion: datos.descripcion
+          descripcion: datos.descripcion,
+          // Va null si no se eligió ninguno, o si la empresa no tiene el
+          // módulo (ahí el campo ni siquiera está en el formulario).
+          id_servicio: datos.id_servicio || null
         })
       })
 
@@ -559,7 +622,7 @@
       cargarMovimientos()
     })
 
-    ;['filtro-categoria', 'filtro-desde', 'filtro-hasta', 'filtro-anulados'].forEach(id => {
+    ;['filtro-categoria', 'filtro-servicio', 'filtro-desde', 'filtro-hasta', 'filtro-anulados'].forEach(id => {
       document.getElementById(id).addEventListener('change', cargarMovimientos)
     })
 
@@ -579,6 +642,7 @@
       document.getElementById('filtro-naturaleza').value = ''
       document.getElementById('filtro-desde').value = ''
       document.getElementById('filtro-hasta').value = ''
+      document.getElementById('filtro-servicio').value = ''
       document.getElementById('filtro-anulados').checked = false
       sincronizarRango()
       poblarFiltroCategorias() // vuelve a mostrar todas y resetea la categoria

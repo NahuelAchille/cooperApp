@@ -1,8 +1,46 @@
 const movimientoModel = require('../models/movimiento.model')
 const categoriaModel = require('../models/categoria.model')
+const productoModel = require('../models/producto.model')
+const moduloModel = require('../models/modulo.model')
 const { parsearFecha, validarFechaDeCarga } = require('../services/fecha.service')
 
 const NATURALEZAS = ['ingreso', 'egreso']
+
+// De donde salio la plata (HU-48). Es OPCIONAL: la mayor parte de los
+// movimientos -- la luz, el alquiler, un sueldo -- no viene de ningun
+// servicio, y el campo queda vacio.
+//
+// Devuelve { id_servicio } listo para guardar, o { error }.
+//
+// No confunde el ORIGEN con la CLASIFICACION: el movimiento igual tiene que
+// elegir su categoria y su tipo, que es lo que lo ordena en el balance. Esto
+// dice de donde vino, y es lo que despues responde cuanto deja cada servicio.
+const validarServicio = async (valor, id_empresa) => {
+
+  if (valor === undefined || valor === null || valor === '') {
+    return { id_servicio: null }
+  }
+
+  // Si la empresa no tiene el modulo, la pantalla no ofrece el campo. Un
+  // pedido armado a mano si lo puede mandar, y se rechaza: si no, quedarian
+  // movimientos atados a un modulo que esa empresa nunca prendio.
+  if (!await moduloModel.estaActivo(id_empresa, 'servicios')) {
+    return { error: 'El módulo de Servicios no está activo en tu empresa' }
+  }
+
+  const servicio = await productoModel.findProductoById(valor, id_empresa)
+
+  // Un id de PRODUCTO tambien llegaria hasta aca (comparten la tabla), asi que
+  // no alcanza con que exista y sea de la empresa.
+  if (!servicio || !servicio.es_servicio) {
+    return { error: 'Elegí un servicio válido' }
+  }
+  if (!servicio.activo) {
+    return { error: 'Ese servicio está dado de baja: elegí uno activo o dejá el campo vacío' }
+  }
+
+  return { id_servicio: servicio.id_producto }
+}
 
 // Valida un monto: debe ser un numero positivo con hasta 2 decimales
 const parsearMonto = (valor) => {
@@ -41,6 +79,12 @@ const filtrosDeQuery = (query) => {
   // si diera 0 o NaN (invalido), guarda undefined (nada) en vez de basura.
   if (query.id_categoria) filtros.id_categoria = Number(query.id_categoria) || undefined
   if (query.id_tipo) filtros.id_tipo = Number(query.id_tipo) || undefined
+
+  // Filtrar por servicio no valida nada mas: el WHERE ya lleva la empresa, asi
+  // que un id ajeno o inventado simplemente no trae filas. Y a proposito
+  // acepta tambien los servicios dados de baja: sus movimientos siguen
+  // existiendo y hay que poder encontrarlos, igual que en el catalogo.
+  if (query.id_servicio) filtros.id_servicio = Number(query.id_servicio) || undefined
 
   if (parsearFecha(query.desde)) filtros.desde = query.desde
   if (parsearFecha(query.hasta)) filtros.hasta = query.hasta
@@ -118,8 +162,15 @@ exports.crearMovimiento = async (req, res) => {
 
     const descripcion = typeof req.body.descripcion === 'string' ? req.body.descripcion.trim().slice(0, 255) : null
 
+    // De donde salio la plata. Opcional: casi siempre viene vacio.
+    const origen = await validarServicio(req.body.id_servicio, id_empresa)
+    if (origen.error) {
+      return res.status(400).json({ error: origen.error })
+    }
+
     const id_movimiento = await movimientoModel.create({
-      id_tipo: tipo.id_tipo, monto, descripcion, fecha, id_empresa, id_usuario
+      id_tipo: tipo.id_tipo, monto, descripcion, fecha, id_empresa, id_usuario,
+      id_servicio: origen.id_servicio
     })
 
     res.status(201).json({ id_movimiento, message: 'Movimiento registrado correctamente' })
