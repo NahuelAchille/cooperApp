@@ -127,6 +127,13 @@ exports.registrarMovimiento = async (req, res) => {
     if (!producto) {
       return res.status(404).json({ error: 'No se encontró el producto' })
     }
+    // Un servicio se presta, no se guarda: no tiene existencia que sumar ni
+    // restar. Comparte la tabla con los productos, asi que el id existe y la
+    // empresa da bien -- lo unico que lo frena es este control. La pantalla
+    // de stock tampoco lo ofrece, pero el pedido se puede armar a mano.
+    if (producto.es_servicio) {
+      return res.status(400).json({ error: 'Los servicios no llevan stock: no se les pueden cargar entradas ni salidas' })
+    }
     if (!producto.activo) {
       return res.status(400).json({ error: 'Ese producto está dado de baja: no se le pueden cargar movimientos' })
     }
@@ -137,7 +144,7 @@ exports.registrarMovimiento = async (req, res) => {
       return res.status(404).json({ error: 'No se encontró el motivo' })
     }
     if (!motivo.activo) {
-      return res.status(400).json({ error: 'Ese motivo está desactivado: elegí uno activo' })
+      return res.status(400).json({ error: 'Ese motivo está dado de baja: elegí uno activo' })
     }
 
     const cantidad = parsearCantidad(req.body.cantidad)
@@ -262,7 +269,7 @@ exports.registrarMovimientoDinero = async (req, res) => {
       return res.status(404).json({ error: 'No se encontró el tipo de movimiento' })
     }
     if (!tipo.activo || !tipo.categoria_activa) {
-      return res.status(400).json({ error: 'Ese tipo de movimiento está desactivado: elegí uno activo' })
+      return res.status(400).json({ error: 'Ese tipo de movimiento está dado de baja: elegí uno activo' })
     }
     if (tipo.naturaleza !== movimiento.efecto_dinero) {
       return res.status(400).json({

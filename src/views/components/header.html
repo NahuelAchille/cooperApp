@@ -4,6 +4,14 @@
     <h1>CooperApp</h1>
   </section>
 
+  <!-- Sólo en celular: el menú entero entra acá adentro. Antes se apilaba en
+       dos filas y, con el logo y la chapa del usuario, el encabezado se comía
+       335 px de los 812 de la pantalla: el 41% del teléfono para no mostrar
+       ningún dato. -->
+  <button id="btn-menu" aria-label="Abrir el menú" aria-expanded="false">
+    <i class="fa-solid fa-bars"></i>
+  </button>
+
   <nav id="main-nav">
     <ul>
       <li id="nav-panel-general"><a href="/pages/dashboard.html">Panel general</a></li>
@@ -12,12 +20,52 @@
       <li id="nav-movimientos" class="d-none"><a href="/pages/movimientos.html">Movimientos</a></li>
       <li id="nav-productos" class="d-none"><a href="/pages/productos.html">Productos</a></li>
       <li id="nav-stock" class="d-none"><a href="/pages/stock.html">Stock</a></li>
-      <!-- Los tres modulos que todavia no existen llevan a una pantalla que lo
+      <li id="nav-servicios" class="d-none"><a href="/pages/servicios.html">Servicios</a></li>
+      <!-- Los modulos que todavia no existen llevan a una pantalla que lo
            dice. Antes eran href="#": se apretaban y no pasaba nada, que para
            alguien con poca experiencia digital se lee como "esta fallando". -->
-      <li id="nav-servicios" class="d-none"><a href="/pages/en-construccion.html?modulo=servicios">Servicios</a></li>
       <li id="nav-reportes" class="d-none"><a href="/pages/en-construccion.html?modulo=reportes">Reportes</a></li>
       <li id="nav-articulacion" class="d-none"><a href="/pages/en-construccion.html?modulo=articulacion">Articulación</a></li>
+
+      <!-- Toda la configuracion vive aca, en el menu principal y en un solo
+           lugar. Antes estaba desparramada abajo del nombre del usuario, que
+           en cualquier programa es "mis cosas y salir": nadie busca ahi como
+           clasifica sus productos. Y no habia criterio -- las categorias de
+           dinero no estaban en ese menu, sino adentro de Movimientos.
+           Lo ve solo el administrador de la empresa. -->
+      <li id="nav-configuracion" class="d-none dropdown">
+        <a href="#" class="dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false">
+          <i class="fa-solid fa-gear me-1"></i>Configuración
+        </a>
+        <ul class="dropdown-menu" id="menu-configuracion">
+          <li id="cfg-categorias" class="d-none">
+            <a class="dropdown-item" href="/pages/configuracion-categorias.html">
+              <i class="fa-solid fa-tags me-2"></i>Categorías de movimientos
+            </a>
+          </li>
+          <li id="cfg-categorias-producto" class="d-none">
+            <a class="dropdown-item" href="/pages/configuracion-categorias-producto.html">
+              <i class="fa-solid fa-sitemap me-2"></i>Categorías de productos
+            </a>
+          </li>
+          <li id="cfg-categorias-servicio" class="d-none">
+            <a class="dropdown-item" href="/pages/configuracion-categorias-servicio.html">
+              <i class="fa-solid fa-screwdriver-wrench me-2"></i>Categorías de servicios
+            </a>
+          </li>
+          <li id="cfg-motivos-stock" class="d-none">
+            <a class="dropdown-item" href="/pages/configuracion-motivos-stock.html">
+              <i class="fa-solid fa-right-left me-2"></i>Motivos de stock
+            </a>
+          </li>
+          <li><hr class="dropdown-divider"></li>
+          <li id="cfg-modulos">
+            <a class="dropdown-item" href="/pages/configuracion-modulos.html">
+              <i class="fa-solid fa-toggle-on me-2"></i>Módulos del sistema
+            </a>
+          </li>
+        </ul>
+      </li>
     </ul>
   </nav>
 
@@ -29,29 +77,9 @@
     <ul class="dropdown-menu dropdown-menu-end" id="dropdown-menu">
       <li><h6 class="dropdown-header" id="dropdown-empresa"></h6></li>
       <li><hr class="dropdown-divider"></li>
-      <li>
+      <li id="item-mi-empresa">
         <a class="dropdown-item" href="/pages/perfil-empresa.html">
           <i class="fa-solid fa-building me-2"></i>Mi empresa
-        </a>
-      </li>
-      <li id="item-usuarios" class="d-none">
-        <a class="dropdown-item" href="/pages/usuarios.html">
-          <i class="fa-solid fa-users me-2"></i>Gestión de usuarios
-        </a>
-      </li>
-      <li id="item-categorias-producto" class="d-none">
-        <a class="dropdown-item" href="/pages/configuracion-categorias-producto.html">
-          <i class="fa-solid fa-boxes-stacked me-2"></i>Categorías de productos
-        </a>
-      </li>
-      <li id="item-motivos-stock" class="d-none">
-        <a class="dropdown-item" href="/pages/configuracion-motivos-stock.html">
-          <i class="fa-solid fa-right-left me-2"></i>Motivos de stock
-        </a>
-      </li>
-      <li id="item-modulos" class="d-none">
-        <a class="dropdown-item" href="/pages/configuracion-modulos.html">
-          <i class="fa-solid fa-toggle-on me-2"></i>Módulos del sistema
         </a>
       </li>
       <li><hr class="dropdown-divider"></li>

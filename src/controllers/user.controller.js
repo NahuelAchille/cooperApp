@@ -50,7 +50,7 @@ exports.login = async (req, res) => {
     }
 
     if (!user.activo) {
-      return res.status(403).json({ error: 'Tu cuenta está desactivada' })
+      return res.status(403).json({ error: 'Tu cuenta está dada de baja' })
     }
 
     const esSuperadmin = user.rol === 'superadmin'

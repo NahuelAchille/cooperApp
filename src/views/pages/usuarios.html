@@ -7,6 +7,7 @@
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css">
   <link rel="stylesheet" href="/styles/header.css">
   <link rel="stylesheet" href="/styles/usuarios.css">
+  <link rel="stylesheet" href="/styles/tabla-mobile.css">
   <title>Usuarios - CooperApp</title>
 </head>
 <body>
@@ -26,7 +27,7 @@
   </div>
 
   <div class="content">
-    <div class="card-tabla">
+    <div class="card-tabla tabla-tarjetas">
       <div class="table-responsive">
         <table class="table table-hover mb-0">
           <thead>
@@ -41,7 +42,7 @@
             </tr>
           </thead>
           <tbody id="tabla-usuarios">
-            <tr><td colspan="7" class="text-center py-4 text-muted">
+            <tr class="fila-aviso"><td colspan="7" class="text-center py-4 text-muted">
               <i class="fa-solid fa-spinner fa-spin me-2"></i>Cargando...
             </td></tr>
           </tbody>
@@ -249,9 +250,9 @@
 
       const baja = u.activo
         ? `<button class="btn-accion peligro" data-accion="baja" ${datos} title="Dar de baja">
-             <i class="fa-solid fa-user-slash"></i></button>`
+             <i class="fa-solid fa-circle-minus"></i></button>`
         : `<button class="btn-accion" data-accion="alta" ${datos} title="Reactivar">
-             <i class="fa-solid fa-user-check"></i></button>`
+             <i class="fa-solid fa-circle-plus"></i></button>`
 
       return `<div class="d-flex gap-1 justify-content-end">
                 <button class="btn-accion" data-accion="editar" ${datos} title="Editar">
@@ -275,7 +276,7 @@
       const tbody = document.getElementById('tabla-usuarios')
 
       if (!data.length) {
-        tbody.innerHTML = '<tr><td colspan="7" class="text-center py-4 text-muted">No hay usuarios registrados.</td></tr>'
+        tbody.innerHTML = '<tr class="fila-aviso"><td colspan="7" class="text-center py-4 text-muted">No hay usuarios registrados.</td></tr>'
         return
       }
 
@@ -284,15 +285,15 @@
 
       tbody.innerHTML = data.map(u => `
         <tr class="${u.activo ? '' : 'fila-inactiva'}">
-          <td><strong>${esc(u.nombre)} ${esc(u.apellido)}</strong></td>
-          <td>${esc(u.email)}</td>
-          <td>${esc(u.dni)}</td>
-          <td><span class="badge-rol">${esc(u.rol)}</span></td>
-          <td>
-            ${!u.activo ? '<span class="badge-inactivo">Dado de baja</span>' : u.debe_cambiar_password ? '<span class="badge-temp">Contraseña temporal</span>' : '<span class="badge-activo">Activo</span>'}
+          <td class="td-principal" data-label="Nombre"><strong>${esc(u.nombre)} ${esc(u.apellido)}</strong></td>
+          <td data-label="Email">${esc(u.email)}</td>
+          <td data-label="DNI">${esc(u.dni)}</td>
+          <td data-label="Rol"><span class="badge-rol">${esc(u.rol)}</span></td>
+          <td data-label="Estado">
+            ${!u.activo ? '<span class="badge-inactivo">De baja</span>' : u.debe_cambiar_password ? '<span class="badge-temp">Contraseña temporal</span>' : '<span class="badge-activo">Activo</span>'}
           </td>
-          <td>${new Date(u.fecha_registro).toLocaleDateString('es-AR')}</td>
-          <td class="text-end">${botonesAccion(u)}</td>
+          <td class="td-oculto-movil" data-label="Fecha registro">${new Date(u.fecha_registro).toLocaleDateString('es-AR')}</td>
+          <td class="text-end td-acciones" data-label="Acciones">${botonesAccion(u)}</td>
         </tr>
       `).join('')
     }
@@ -339,8 +340,8 @@
       const btnConfirmar = document.getElementById('btn-confirmar-estado')
 
       document.getElementById('estado-titulo').innerHTML = dandoDeBaja
-        ? '<i class="fa-solid fa-user-slash me-2"></i>Dar de baja'
-        : '<i class="fa-solid fa-user-check me-2"></i>Reactivar usuario'
+        ? '<i class="fa-solid fa-circle-minus me-2"></i>Dar de baja el usuario'
+        : '<i class="fa-solid fa-circle-plus me-2"></i>Reactivar el usuario'
 
       document.getElementById('estado-pregunta').innerHTML = dandoDeBaja
         ? `¿Confirmás dar de baja a <strong>${esc(nombre)}</strong>?`
@@ -351,8 +352,8 @@
         : '<i class="fa-solid fa-circle-info me-1"></i>El usuario va a poder iniciar sesión de nuevo con la contraseña que tenía.'
 
       btnConfirmar.innerHTML = dandoDeBaja
-        ? '<i class="fa-solid fa-user-slash me-2"></i>Dar de baja'
-        : '<i class="fa-solid fa-user-check me-2"></i>Reactivar'
+        ? '<i class="fa-solid fa-circle-minus me-2"></i>Dar de baja'
+        : '<i class="fa-solid fa-circle-plus me-2"></i>Reactivar'
       btnConfirmar.style.backgroundColor = dandoDeBaja ? '#a01c1c' : '#2d7a4f'
       btnConfirmar.dataset.id = id
       btnConfirmar.dataset.activo = dandoDeBaja ? '0' : '1'

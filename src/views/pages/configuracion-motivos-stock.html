@@ -133,7 +133,7 @@
     </div>
   </div>
 
-  <!-- Modal confirmar activar / desactivar -->
+  <!-- Modal confirmar dar de baja / reactivar -->
   <div class="modal fade" id="modalEstado" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
       <div class="modal-content">
@@ -224,11 +224,11 @@
               ${TEXTO_DINERO[m.efecto_dinero]}
             </span>
           </td>
-          <td><span class="badge-estado ${m.activo ? 'badge-activo' : 'badge-inactivo'}">${m.activo ? 'Activo' : 'Inactivo'}</span></td>
+          <td><span class="badge-estado ${m.activo ? 'badge-activo' : 'badge-inactivo'}">${m.activo ? 'Activo' : 'De baja'}</span></td>
           <td class="text-end">
             <button class="btn-mini" data-accion="editar" data-id="${m.id_motivo_stock}" title="Editar"><i class="fa-solid fa-pen"></i></button>
-            <button class="btn-mini ${m.activo ? 'peligro' : ''}" data-accion="toggle" data-id="${m.id_motivo_stock}" data-nombre="${esc(m.nombre)}" data-activo="${m.activo}" title="${m.activo ? 'Desactivar' : 'Activar'}">
-              <i class="fa-solid ${m.activo ? 'fa-eye-slash' : 'fa-eye'}"></i>
+            <button class="btn-mini ${m.activo ? 'peligro' : ''}" data-accion="toggle" data-id="${m.id_motivo_stock}" data-nombre="${esc(m.nombre)}" data-activo="${m.activo}" title="${m.activo ? 'Dar de baja' : 'Reactivar'}">
+              <i class="fa-solid ${m.activo ? 'fa-circle-minus' : 'fa-circle-plus'}"></i>
             </button>
           </td>
         </tr>`).join('')
@@ -348,28 +348,28 @@
 
     // ================= ACTIVAR / DESACTIVAR =================
     function abrirModalEstado(id, nombre, estaActivo) {
-      const desactivando = estaActivo
+      const dandoDeBaja = estaActivo
 
-      document.getElementById('estado-titulo').innerHTML = desactivando
-        ? '<i class="fa-solid fa-eye-slash me-2"></i>Desactivar motivo'
-        : '<i class="fa-solid fa-eye me-2"></i>Activar motivo'
+      document.getElementById('estado-titulo').innerHTML = dandoDeBaja
+        ? '<i class="fa-solid fa-circle-minus me-2"></i>Dar de baja el motivo'
+        : '<i class="fa-solid fa-circle-plus me-2"></i>Reactivar el motivo'
 
-      document.getElementById('estado-pregunta').innerHTML = desactivando
-        ? `¿Desactivar <strong>${esc(nombre)}</strong>?`
-        : `¿Activar <strong>${esc(nombre)}</strong>?`
+      document.getElementById('estado-pregunta').innerHTML = dandoDeBaja
+        ? `¿Dar de baja <strong>${esc(nombre)}</strong>?`
+        : `¿Reactivar <strong>${esc(nombre)}</strong>?`
 
-      document.getElementById('estado-aviso').innerHTML = desactivando
-        ? '<i class="fa-solid fa-circle-info me-1"></i>No se borra: deja de aparecer al registrar movimientos nuevos, pero los movimientos ya registrados con este motivo se conservan.'
+      document.getElementById('estado-aviso').innerHTML = dandoDeBaja
+        ? '<i class="fa-solid fa-circle-info me-1"></i>No se borra, y se puede reactivar cuando quieras: deja de aparecer al registrar entradas y salidas nuevas, pero las ya registradas con este motivo se conservan.'
         : '<i class="fa-solid fa-circle-info me-1"></i>Vuelve a estar disponible para registrar movimientos de stock.'
 
       const btn = document.getElementById('btn-confirmar-estado')
-      btn.innerHTML = desactivando
-        ? '<i class="fa-solid fa-eye-slash me-2"></i>Desactivar'
-        : '<i class="fa-solid fa-eye me-2"></i>Activar'
-      btn.style.backgroundColor = desactivando ? '#a01c1c' : '#2d7a4f'
+      btn.innerHTML = dandoDeBaja
+        ? '<i class="fa-solid fa-circle-minus me-2"></i>Dar de baja'
+        : '<i class="fa-solid fa-circle-plus me-2"></i>Reactivar'
+      btn.style.backgroundColor = dandoDeBaja ? '#a01c1c' : '#2d7a4f'
       btn.style.color = 'white'
       btn.dataset.id = id
-      btn.dataset.activo = desactivando ? '0' : '1'
+      btn.dataset.activo = dandoDeBaja ? '0' : '1'
 
       document.getElementById('estado-error').classList.add('d-none')
       new bootstrap.Modal(document.getElementById('modalEstado')).show()

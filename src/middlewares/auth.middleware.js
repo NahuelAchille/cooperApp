@@ -18,7 +18,7 @@ exports.requireLogin = async (req, res, next) => {
 
     if (!estado || !estado.activo) {
       return req.session.destroy(() =>
-        res.status(401).json({ error: 'Tu cuenta fue desactivada. Hablá con el administrador de tu empresa.' })
+        res.status(401).json({ error: 'Tu cuenta fue dada de baja. Hablá con el administrador de tu empresa.' })
       )
     }
 

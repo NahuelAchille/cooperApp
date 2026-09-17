@@ -1,4 +1,8 @@
 const categoriaProductoModel = require('../models/categoria-producto.model')
+const { flagServicio, rotulo } = require('../middlewares/catalogo.middleware')
+
+// Este controlador sirve los DOS arboles, el de productos y el de servicios.
+// De cual se trata lo dice la ruta (ver catalogo.middleware), no el pedido.
 
 // Normaliza un nombre libre: recorta espacios y valida que no quede vacio ni
 // se pase del limite de la columna (80). Devuelve null si no sirve.
@@ -18,13 +22,14 @@ exports.getCategorias = async (req, res) => {
   try {
     const id_empresa = req.session.user.empresa.id
     const soloActivas = req.query.soloActivas === 'true'
+    const es_servicio = flagServicio(req)
 
-    const categorias = await categoriaProductoModel.findCategorias(id_empresa, { soloActivas })
+    const categorias = await categoriaProductoModel.findCategorias(id_empresa, { soloActivas, es_servicio })
     res.json(categorias)
 
   } catch (error) {
     console.error(error)
-    res.status(500).json({ error: 'Error al obtener las categorías de productos' })
+    res.status(500).json({ error: `Error al obtener las categorías de ${rotulo(req).varios}` })
   }
 }
 
@@ -38,12 +43,12 @@ exports.crearCategoria = async (req, res) => {
       return res.status(400).json({ error: 'El nombre de la categoría es obligatorio (máximo 80 caracteres)' })
     }
 
-    const id = await categoriaProductoModel.createCategoria({ nombre, id_empresa })
+    const id = await categoriaProductoModel.createCategoria({ nombre, id_empresa, es_servicio: flagServicio(req) })
     res.status(201).json({ id_categoria_producto: id, message: 'Categoría creada correctamente' })
 
   } catch (error) {
     if (error.code === 'ER_DUP_ENTRY') {
-      return res.status(400).json({ error: 'Ya existe una categoría de productos con ese nombre' })
+      return res.status(400).json({ error: `Ya existe una categoría de ${rotulo(req).varios} con ese nombre` })
     }
     console.error(error)
     res.status(500).json({ error: 'Error al crear la categoría' })
@@ -56,7 +61,7 @@ exports.actualizarCategoria = async (req, res) => {
     const id_empresa = req.session.user.empresa.id
     const { id } = req.params
 
-    const categoria = await categoriaProductoModel.findCategoriaById(id, id_empresa)
+    const categoria = await categoriaProductoModel.findCategoriaById(id, id_empresa, flagServicio(req))
     if (!categoria) {
       return res.status(404).json({ error: 'No se encontró la categoría' })
     }
@@ -71,7 +76,7 @@ exports.actualizarCategoria = async (req, res) => {
 
   } catch (error) {
     if (error.code === 'ER_DUP_ENTRY') {
-      return res.status(400).json({ error: 'Ya existe una categoría de productos con ese nombre' })
+      return res.status(400).json({ error: `Ya existe una categoría de ${rotulo(req).varios} con ese nombre` })
     }
     console.error(error)
     res.status(500).json({ error: 'Error al actualizar la categoría' })
@@ -84,7 +89,7 @@ exports.cambiarEstadoCategoria = async (req, res) => {
     const id_empresa = req.session.user.empresa.id
     const { id } = req.params
 
-    const categoria = await categoriaProductoModel.findCategoriaById(id, id_empresa)
+    const categoria = await categoriaProductoModel.findCategoriaById(id, id_empresa, flagServicio(req))
     if (!categoria) {
       return res.status(404).json({ error: 'No se encontró la categoría' })
     }
@@ -94,8 +99,8 @@ exports.cambiarEstadoCategoria = async (req, res) => {
 
     res.json({
       message: activo
-        ? 'Categoría activada (sus subcategorías también)'
-        : 'Categoría desactivada (sus subcategorías también)'
+        ? 'Categoría reactivada (sus subcategorías también)'
+        : 'Categoría dada de baja (sus subcategorías también)'
     })
 
   } catch (error) {
@@ -115,7 +120,7 @@ exports.getSubcategorias = async (req, res) => {
     const { id } = req.params // id de la categoria
 
     // Verifica que la categoria sea de esta empresa antes de listar nada.
-    const categoria = await categoriaProductoModel.findCategoriaById(id, id_empresa)
+    const categoria = await categoriaProductoModel.findCategoriaById(id, id_empresa, flagServicio(req))
     if (!categoria) {
       return res.status(404).json({ error: 'No se encontró la categoría' })
     }
@@ -135,7 +140,7 @@ exports.crearSubcategoria = async (req, res) => {
     const id_empresa = req.session.user.empresa.id
     const { id } = req.params // id de la categoria
 
-    const categoria = await categoriaProductoModel.findCategoriaById(id, id_empresa)
+    const categoria = await categoriaProductoModel.findCategoriaById(id, id_empresa, flagServicio(req))
     if (!categoria) {
       return res.status(404).json({ error: 'No se encontró la categoría' })
     }
@@ -157,7 +162,7 @@ exports.crearSubcategoria = async (req, res) => {
       id_subcategoria_producto,
       message: categoria.activo
         ? 'Subcategoría creada correctamente'
-        : 'Subcategoría creada, pero queda inactiva porque su categoría está desactivada'
+        : 'Subcategoría creada, pero queda de baja porque su categoría está dada de baja'
     })
 
   } catch (error) {
@@ -175,7 +180,7 @@ exports.actualizarSubcategoria = async (req, res) => {
     const id_empresa = req.session.user.empresa.id
     const { id } = req.params // id de la subcategoria
 
-    const subcategoria = await categoriaProductoModel.findSubcategoriaById(id, id_empresa)
+    const subcategoria = await categoriaProductoModel.findSubcategoriaById(id, id_empresa, flagServicio(req))
     if (!subcategoria) {
       return res.status(404).json({ error: 'No se encontró la subcategoría' })
     }
@@ -203,7 +208,7 @@ exports.cambiarEstadoSubcategoria = async (req, res) => {
     const id_empresa = req.session.user.empresa.id
     const { id } = req.params // id de la subcategoria
 
-    const subcategoria = await categoriaProductoModel.findSubcategoriaById(id, id_empresa)
+    const subcategoria = await categoriaProductoModel.findSubcategoriaById(id, id_empresa, flagServicio(req))
     if (!subcategoria) {
       return res.status(404).json({ error: 'No se encontró la subcategoría' })
     }
@@ -212,11 +217,11 @@ exports.cambiarEstadoSubcategoria = async (req, res) => {
     // quedaria disponible para elegir dentro de algo que no se ve.
     const activo = req.body.activo ? 1 : 0
     if (activo && !subcategoria.categoria_activa) {
-      return res.status(400).json({ error: 'No se puede activar la subcategoría: su categoría está desactivada' })
+      return res.status(400).json({ error: 'No se puede reactivar la subcategoría: su categoría está dada de baja' })
     }
 
     await categoriaProductoModel.setActivoSubcategoria(id, activo)
-    res.json({ message: activo ? 'Subcategoría activada' : 'Subcategoría desactivada' })
+    res.json({ message: activo ? 'Subcategoría reactivada' : 'Subcategoría dada de baja' })
 
   } catch (error) {
     console.error(error)

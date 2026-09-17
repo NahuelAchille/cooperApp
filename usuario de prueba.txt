@@ -1,6 +1,6 @@
 ===========================================================
  CooperApp - USUARIOS DE PRUEBA
- Actualizado: 16/09/2026  (correcciones de las auditorias de UX y QA)
+ Actualizado: 17/09/2026  (catalogo de servicios, HU-47)
 ===========================================================
 
 La app corre en http://localhost:3000
@@ -10,18 +10,34 @@ Cualquiera del grupo puede tener exactamente estos mismos usuarios
 corriendo ese archivo (ver el final de este documento).
 
 OJO: el esquema de la base cambio varias veces en el Sprint 07 y 08
-(productos, stock y motivos), y el 16/09 se saco la columna
-"matricula" de la tabla empresas y se agrego "baja_en_cascada" en
-tipos_movimiento y en subcategorias_producto. Si venis de una version
-anterior hay que BORRAR la base y volver a crearla, no alcanza con
-reimportar. Los comandos estan al final.
+(productos, stock y motivos), el 16/09 se saco la columna "matricula"
+de la tabla empresas y se agrego "baja_en_cascada", y el 17/09 se
+agrego "es_servicio" en productos y en categorias_producto. Si venis
+de una version anterior hay que BORRAR la base y volver a crearla, no
+alcanza con reimportar. Los comandos estan al final.
+
+CAMBIOS DEL 17/09 - SERVICIOS (HU-47):
+  - Servicios ya NO es un boton muerto: tiene su catalogo propio,
+    con categorias, subcategorias, busqueda y filtros, igual que
+    Productos.
+  - Un servicio es un producto SIN STOCK. Por eso comparten las
+    tablas (se distinguen por la columna es_servicio) pero el
+    servicio no pide unidad de medida ni stock minimo, y no aparece
+    en la pantalla de Stock.
+  - Los dos arboles de categorias van separados: las categorias de
+    productos no aparecen al cargar un servicio, y al reves.
+  - Quien lo trabaja: el ADMIN carga y edita; el TESORERO solo mira
+    (lo necesita para el proximo paso, decir de donde viene cada
+    ingreso o egreso); el OPERADOR no entra, porque un servicio no
+    pasa por el deposito.
 
 CAMBIOS DEL 16/09 QUE CONVIENE SABER AL PROBAR:
   - El registro de empresa ya NO pide matricula (un negocio chico
     o una S.R.L. no tienen: el dato registral es el CUIT).
   - El superadmin entra directo a su panel de empresas.
-  - Servicios, Reportes y Articulacion ya no son botones muertos:
-    llevan a una pantalla que avisa que el modulo esta en construccion.
+  - Reportes y Articulacion ya no son botones muertos: llevan a una
+    pantalla que avisa que el modulo esta en construccion. (Servicios
+    dejo de estar en esa lista el 17/09: ya tiene su pantalla.)
   - Reportes ya no viene prendido de fabrica en las empresas nuevas.
   - La contrasena del registro ahora pide 6 caracteres como minimo.
 
@@ -127,6 +143,12 @@ CAMBIOS DEL 16/09 POR LA AUDITORIA DE QA:
 
  Es la unica con el modulo de Servicios prendido: sirve para
  ver que el menu cambia segun lo que contrato cada empresa.
+
+ Su catalogo de servicios trae 6, en dos categorias: los que
+ PRESTA ("Trabajos a terceros": soldadura, corte, plegado) y los
+ que CONTRATA ("Servicios contratados": flete, mantenimiento).
+ Uno viene dado de baja a proposito ("Pintura electrostatica"),
+ para poder probar el filtro de estado sin dar de baja nada.
 
  --- Distribuidora Huerta Norte S.R.L. (PENDIENTE) ---
  5 miembros - San Miguel
@@ -236,6 +258,34 @@ CAMBIOS DEL 16/09 POR LA AUDITORIA DE QA:
      - Cambiarle el efecto a "Venta": lo rechaza, porque ya
        tiene movimientos cargados y daria vuelta el historial.
        Renombrarlo si deja.
+
+ --- SERVICIOS ---
+
+   Entrando como Osvaldo (admin de Metal Oeste, la unica empresa
+   con el modulo prendido) -> "Servicios" en el menu.
+
+   Que conviene probar:
+     - Cargar uno nuevo: fijarse que NO pide unidad de medida ni
+       stock minimo. No es que falten: un servicio no se guarda
+       en ningun lado.
+     - Ir a Stock: los 6 servicios NO aparecen ahi. Solo los 5
+       productos.
+     - "Categorias" (el boton, o Configuracion -> Categorias de
+       servicios): el arbol es APARTE del de productos. Al cargar
+       un servicio no aparece "Materia prima", y al cargar un
+       producto no aparece "Trabajos a terceros".
+     - Se puede tener un producto y un servicio con el MISMO
+       nombre: son dos catalogos distintos. Repetir el nombre
+       adentro del mismo catalogo si lo rechaza.
+     - Entrar como Daniel (tesorero): ve el listado completo pero
+       sin ningun boton, ni el de "Nuevo servicio" ni los de las
+       filas. Solo consulta.
+     - Entrar como Fabian (operador): la pantalla le dice que no
+       tiene acceso al catalogo de servicios.
+     - Entrar como Marta (La Esperanza, modulo apagado): la misma
+       pantalla le dice otra cosa distinta -- que el modulo no
+       esta activo. Son dos problemas distintos y se resuelven de
+       maneras distintas.
 
  --- MODULOS ---
 

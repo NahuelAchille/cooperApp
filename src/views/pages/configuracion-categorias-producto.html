@@ -117,7 +117,7 @@
     </div>
   </div>
 
-  <!-- Modal confirmar activar / desactivar -->
+  <!-- Modal confirmar dar de baja / reactivar -->
   <div class="modal fade" id="modalEstado" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
       <div class="modal-content">
@@ -208,12 +208,12 @@
               <li class="subcat-item">
                 <span class="subcat-nombre ${s.activo ? '' : 'inactivo'}">
                   <i class="fa-solid fa-tag" style="opacity:.4"></i>${esc(s.nombre)}
-                  ${s.activo ? '' : '<span class="badge-inactivo">Inactiva</span>'}
+                  ${s.activo ? '' : '<span class="badge-inactivo">De baja</span>'}
                 </span>
                 <span class="subcat-acciones">
                   <button class="btn-mini" data-accion="editar-subcat" data-subcat-id="${s.id_subcategoria_producto}" data-subcat-nombre="${esc(s.nombre)}" data-cat-nombre="${esc(c.nombre)}" title="Renombrar"><i class="fa-solid fa-pen"></i></button>
-                  <button class="btn-mini ${s.activo ? 'peligro' : ''}" data-accion="toggle-subcat" data-subcat-id="${s.id_subcategoria_producto}" data-subcat-nombre="${esc(s.nombre)}" data-activo="${s.activo}" title="${s.activo ? 'Desactivar' : 'Activar'}">
-                    <i class="fa-solid ${s.activo ? 'fa-eye-slash' : 'fa-eye'}"></i>
+                  <button class="btn-mini ${s.activo ? 'peligro' : ''}" data-accion="toggle-subcat" data-subcat-id="${s.id_subcategoria_producto}" data-subcat-nombre="${esc(s.nombre)}" data-activo="${s.activo}" title="${s.activo ? 'Dar de baja' : 'Reactivar'}">
+                    <i class="fa-solid ${s.activo ? 'fa-circle-minus' : 'fa-circle-plus'}"></i>
                   </button>
                 </span>
               </li>`).join('')}</ul>`
@@ -224,13 +224,13 @@
             <div class="cat-header">
               <span class="cat-nombre">
                 ${esc(c.nombre)}
-                ${c.activo ? '' : '<span class="badge-inactivo">Inactiva</span>'}
+                ${c.activo ? '' : '<span class="badge-inactivo">De baja</span>'}
               </span>
               <span class="cat-acciones">
                 <button class="btn-mini" data-accion="add-subcat" data-cat-id="${c.id_categoria_producto}" data-cat-nombre="${esc(c.nombre)}" title="Agregar subcategoría"><i class="fa-solid fa-plus"></i></button>
                 <button class="btn-mini" data-accion="editar-cat" data-cat-id="${c.id_categoria_producto}" data-cat-nombre="${esc(c.nombre)}" title="Renombrar"><i class="fa-solid fa-pen"></i></button>
-                <button class="btn-mini ${c.activo ? 'peligro' : ''}" data-accion="toggle-cat" data-cat-id="${c.id_categoria_producto}" data-cat-nombre="${esc(c.nombre)}" data-activo="${c.activo}" title="${c.activo ? 'Desactivar' : 'Activar'}">
-                  <i class="fa-solid ${c.activo ? 'fa-eye-slash' : 'fa-eye'}"></i>
+                <button class="btn-mini ${c.activo ? 'peligro' : ''}" data-accion="toggle-cat" data-cat-id="${c.id_categoria_producto}" data-cat-nombre="${esc(c.nombre)}" data-activo="${c.activo}" title="${c.activo ? 'Dar de baja' : 'Reactivar'}">
+                  <i class="fa-solid ${c.activo ? 'fa-circle-minus' : 'fa-circle-plus'}"></i>
                 </button>
               </span>
             </div>
@@ -375,31 +375,31 @@
 
     // ================= ACTIVAR / DESACTIVAR =================
     function abrirModalEstado(destino, id, nombre, estaActiva) {
-      const desactivando = estaActiva
+      const dandoDeBaja = estaActiva
       const esCat = destino === 'categoria'
-      const palabra = esCat ? 'categoría' : 'subcategoría'
+      const palabra = esCat ? 'la categoría' : 'la subcategoría'
 
-      document.getElementById('estado-titulo').innerHTML = desactivando
-        ? `<i class="fa-solid fa-eye-slash me-2"></i>Desactivar ${palabra}`
-        : `<i class="fa-solid fa-eye me-2"></i>Activar ${palabra}`
+      document.getElementById('estado-titulo').innerHTML = dandoDeBaja
+        ? `<i class="fa-solid fa-circle-minus me-2"></i>Dar de baja ${palabra}`
+        : `<i class="fa-solid fa-circle-plus me-2"></i>Reactivar ${palabra}`
 
-      document.getElementById('estado-pregunta').innerHTML = desactivando
-        ? `¿Desactivar <strong>${esc(nombre)}</strong>?`
-        : `¿Activar <strong>${esc(nombre)}</strong>?`
+      document.getElementById('estado-pregunta').innerHTML = dandoDeBaja
+        ? `¿Dar de baja <strong>${esc(nombre)}</strong>?`
+        : `¿Reactivar <strong>${esc(nombre)}</strong>?`
 
-      document.getElementById('estado-aviso').innerHTML = desactivando
-        ? `<i class="fa-solid fa-circle-info me-1"></i>No se borra: deja de aparecer al cargar productos nuevos, pero lo que ya esté clasificado se conserva.${esCat ? ' Al desactivar la categoría, sus subcategorías también quedan inactivas.' : ''}`
+      document.getElementById('estado-aviso').innerHTML = dandoDeBaja
+        ? `<i class="fa-solid fa-circle-info me-1"></i>No se borra, y se puede reactivar cuando quieras: deja de aparecer al cargar productos nuevos, pero lo que ya esté clasificado se conserva.${esCat ? ' Al dar de baja la categoría, sus subcategorías también quedan de baja.' : ''}`
         : `<i class="fa-solid fa-circle-info me-1"></i>Vuelve a estar disponible para clasificar productos.${esCat ? ' Sus subcategorías también vuelven a quedar activas.' : ''}`
 
       const btn = document.getElementById('btn-confirmar-estado')
-      btn.innerHTML = desactivando
-        ? '<i class="fa-solid fa-eye-slash me-2"></i>Desactivar'
-        : '<i class="fa-solid fa-eye me-2"></i>Activar'
-      btn.style.backgroundColor = desactivando ? '#a01c1c' : '#2d7a4f'
+      btn.innerHTML = dandoDeBaja
+        ? '<i class="fa-solid fa-circle-minus me-2"></i>Dar de baja'
+        : '<i class="fa-solid fa-circle-plus me-2"></i>Reactivar'
+      btn.style.backgroundColor = dandoDeBaja ? '#a01c1c' : '#2d7a4f'
       btn.style.color = 'white'
       btn.dataset.destino = destino
       btn.dataset.id = id
-      btn.dataset.activo = desactivando ? '0' : '1'
+      btn.dataset.activo = dandoDeBaja ? '0' : '1'
 
       document.getElementById('estado-error').classList.add('d-none')
       new bootstrap.Modal(document.getElementById('modalEstado')).show()

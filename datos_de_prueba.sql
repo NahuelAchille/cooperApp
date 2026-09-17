@@ -458,6 +458,50 @@ INSERT INTO productos (nombre, descripcion, unidad_medida, stock_minimo, id_cate
   ('Pintura antióxido',      'Balde de 4 litros',    'litro',  8,   @cat_materia,      NULL,            @empresa, 1);
 
 -- =============================================================================
+-- CATÁLOGO DE SERVICIOS
+-- =============================================================================
+-- Viven en las MISMAS tablas que los productos, separados por es_servicio: un
+-- servicio es un producto sin stock. De ahi las dos diferencias que se ven
+-- aca abajo -- unidad de medida en NULL y stock minimo en 0 -- que ademas las
+-- fuerza el servidor, no este archivo.
+--
+-- Solo Metal Oeste tiene el modulo de Servicios prendido, asi que es la unica
+-- que carga. Sirve para ver en la demo que el menu cambia segun la empresa.
+
+SET @empresa := (SELECT id_empresa FROM empresas WHERE email = 'contacto@metaloeste.com.ar');
+
+-- El arbol de servicios es APARTE del de productos, aunque comparta la tabla:
+-- "Trabajos a terceros" no tiene nada que ver con "Materia prima", y mezclarlos
+-- haria que el alta de un producto ofreciera categorias de servicios.
+INSERT INTO categorias_producto (nombre, id_empresa, es_servicio, activo) VALUES
+  ('Trabajos a terceros', @empresa, 1, 1),
+  ('Servicios contratados', @empresa, 1, 1);
+
+SET @cat_trabajos    := (SELECT id_categoria_producto FROM categorias_producto WHERE id_empresa = @empresa AND es_servicio = 1 AND nombre = 'Trabajos a terceros');
+SET @cat_contratados := (SELECT id_categoria_producto FROM categorias_producto WHERE id_empresa = @empresa AND es_servicio = 1 AND nombre = 'Servicios contratados');
+
+INSERT INTO subcategorias_producto (nombre, id_categoria_producto, activo) VALUES
+  ('Soldadura',   @cat_trabajos,    1),
+  ('Corte y plegado', @cat_trabajos, 1),
+  ('Transporte',  @cat_contratados, 1);
+
+SET @sub_soldadura  := (SELECT id_subcategoria_producto FROM subcategorias_producto WHERE id_categoria_producto = @cat_trabajos AND nombre = 'Soldadura');
+SET @sub_corte      := (SELECT id_subcategoria_producto FROM subcategorias_producto WHERE id_categoria_producto = @cat_trabajos AND nombre = 'Corte y plegado');
+SET @sub_transporte := (SELECT id_subcategoria_producto FROM subcategorias_producto WHERE id_categoria_producto = @cat_contratados AND nombre = 'Transporte');
+
+-- Los que presta la empresa (generan ingreso) y los que contrata (generan
+-- egreso). El sistema no distingue una cosa de la otra en el catalogo: eso lo
+-- dice el movimiento de dinero, que es lo que viene despues (HU-48).
+INSERT INTO productos (nombre, descripcion, unidad_medida, stock_minimo, id_categoria_producto, id_subcategoria_producto, id_empresa, es_servicio, activo) VALUES
+  ('Soldadura a domicilio',    'Trabajo en el lugar del cliente', NULL, 0, @cat_trabajos,    @sub_soldadura,  @empresa, 1, 1),
+  ('Corte de chapa a medida',  NULL,                              NULL, 0, @cat_trabajos,    @sub_corte,      @empresa, 1, 1),
+  ('Plegado de chapa',         NULL,                              NULL, 0, @cat_trabajos,    @sub_corte,      @empresa, 1, 1),
+  ('Flete de materiales',      'Contratado a un tercero',         NULL, 0, @cat_contratados, @sub_transporte, @empresa, 1, 1),
+  ('Mantenimiento de máquinas', 'Service del taller',             NULL, 0, @cat_contratados, NULL,            @empresa, 1, 1),
+  -- Uno de baja, para ver el filtro de estado sin tener que dar de baja nada.
+  ('Pintura electrostática',   'Se dejó de ofrecer',              NULL, 0, @cat_trabajos,    NULL,            @empresa, 1, 0);
+
+-- =============================================================================
 -- MOTIVOS DE MOVIMIENTO DE STOCK
 --
 -- Los seis motivos con los que arranca cualquier empresa (los mismos que
@@ -583,20 +627,23 @@ WHERE c.estado = 'activa'
 GROUP BY c.id_empresa
 ORDER BY c.id_empresa;
 
--- Clasificación del catálogo de productos por empresa
+-- Clasificación del catálogo, separando los dos árboles (productos y servicios
+-- comparten la tabla y se distinguen por es_servicio).
 SELECT e.nombre AS empresa,
-       COUNT(DISTINCT cp.id_categoria_producto) AS categorias,
-       COUNT(sp.id_subcategoria_producto)       AS subcategorias
+       SUM(CASE WHEN cp.es_servicio = 0 THEN 1 ELSE 0 END) AS cat_productos,
+       SUM(CASE WHEN cp.es_servicio = 1 THEN 1 ELSE 0 END) AS cat_servicios,
+       COUNT(sp.id_subcategoria_producto)                  AS subcategorias
 FROM empresas e
 JOIN categorias_producto cp     ON cp.id_empresa = e.id_empresa
 LEFT JOIN subcategorias_producto sp ON sp.id_categoria_producto = cp.id_categoria_producto
 GROUP BY e.id_empresa
 ORDER BY e.id_empresa;
 
--- Catálogo de productos por empresa
+-- Catálogo por empresa: productos y servicios, cada uno por su lado
 SELECT e.nombre AS empresa,
-       COUNT(p.id_producto)                                 AS productos,
-       SUM(CASE WHEN p.activo = 1 THEN 1 ELSE 0 END)        AS activos,
+       SUM(CASE WHEN p.es_servicio = 0 THEN 1 ELSE 0 END)  AS productos,
+       SUM(CASE WHEN p.es_servicio = 1 THEN 1 ELSE 0 END)  AS servicios,
+       SUM(CASE WHEN p.activo = 1 THEN 1 ELSE 0 END)       AS activos,
        SUM(CASE WHEN p.id_subcategoria_producto IS NULL THEN 1 ELSE 0 END) AS sin_subcategoria
 FROM empresas e
 JOIN productos p ON p.id_empresa = e.id_empresa

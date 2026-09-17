@@ -21,7 +21,11 @@ const SUMA_STOCK = `
 // desapareceria del listado justo cuando hay que cargarle la existencia inicial.
 const findExistencias = async (id_empresa, filtros = {}) => {
 
-  const condiciones = ['p.id_empresa = ?']
+  // Los servicios viven en la misma tabla que los productos, pero no tienen
+  // existencia: no se guardan en ningun lado. Si entraran al listado
+  // apareceria "Servicio técnico: 0, sin stock" y el aviso de reponer, que no
+  // significa nada.
+  const condiciones = ['p.id_empresa = ?', 'p.es_servicio = 0']
   const params = [id_empresa]
 
   if (filtros.soloActivos) condiciones.push('p.activo = 1')

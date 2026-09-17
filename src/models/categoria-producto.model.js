@@ -7,43 +7,50 @@ const db = require('../config/db')
 // bajas son logicas y van en cascada a los dos lados. Lo que NO comparten es
 // la naturaleza (ingreso/egreso): un producto no es dinero, el dinero tiene
 // su propia clasificacion aparte.
+//
+// Estas mismas tablas guardan los dos arboles, el de productos y el de
+// servicios, separados por la columna es_servicio. Por eso casi todas las
+// funciones de aca abajo lo reciben: sin ese filtro, el alta de un servicio
+// ofreceria las categorias de los productos.
 
 // =====================================================================
 // CATEGORIAS (nivel 1)
 // =====================================================================
 
 // Categorias de la empresa con la cantidad de subcategorias de cada una.
-const findCategorias = async (id_empresa, { soloActivas = false } = {}) => {
+const findCategorias = async (id_empresa, { soloActivas = false, es_servicio = 0 } = {}) => {
 
   const [rows] = await db.query(`
     SELECT c.id_categoria_producto, c.nombre, c.activo,
            (SELECT COUNT(*) FROM subcategorias_producto s
              WHERE s.id_categoria_producto = c.id_categoria_producto) AS cantidad_subcategorias
     FROM categorias_producto c
-    WHERE c.id_empresa = ? ${soloActivas ? 'AND c.activo = 1' : ''}
+    WHERE c.id_empresa = ? AND c.es_servicio = ? ${soloActivas ? 'AND c.activo = 1' : ''}
     ORDER BY c.nombre
-  `, [id_empresa])
+  `, [id_empresa, es_servicio])
 
   return rows
 }
 
-// Busca una categoria propia de la empresa (sirve para validar pertenencia).
-const findCategoriaById = async (id_categoria_producto, id_empresa) => {
+// Busca una categoria propia de la empresa y del arbol que corresponde
+// (sirve para validar pertenencia).
+const findCategoriaById = async (id_categoria_producto, id_empresa, es_servicio = 0) => {
 
   const [rows] = await db.query(
-    `SELECT id_categoria_producto, nombre, activo
-     FROM categorias_producto WHERE id_categoria_producto = ? AND id_empresa = ?`,
-    [id_categoria_producto, id_empresa]
+    `SELECT id_categoria_producto, nombre, activo, es_servicio
+     FROM categorias_producto
+     WHERE id_categoria_producto = ? AND id_empresa = ? AND es_servicio = ?`,
+    [id_categoria_producto, id_empresa, es_servicio]
   )
 
   return rows[0] || null
 }
 
-const createCategoria = async ({ nombre, id_empresa }) => {
+const createCategoria = async ({ nombre, id_empresa, es_servicio = 0 }) => {
 
   const [result] = await db.query(
-    'INSERT INTO categorias_producto (nombre, id_empresa) VALUES (?, ?)',
-    [nombre, id_empresa]
+    'INSERT INTO categorias_producto (nombre, id_empresa, es_servicio) VALUES (?, ?, ?)',
+    [nombre, id_empresa, es_servicio]
   )
 
   return result.insertId
@@ -97,18 +104,19 @@ const findSubcategoriasByCategoria = async (id_categoria_producto) => {
   return rows
 }
 
-// Busca una subcategoria verificando que sea de la empresa, subiendo por su
-// categoria. Devuelve tambien el estado de la categoria: hace falta para no
-// dejar activa una subcategoria colgada de una categoria dada de baja.
-const findSubcategoriaById = async (id_subcategoria_producto, id_empresa) => {
+// Busca una subcategoria verificando que sea de la empresa y del arbol que
+// corresponde, subiendo por su categoria. Devuelve tambien el estado de la
+// categoria: hace falta para no dejar activa una subcategoria colgada de una
+// categoria dada de baja.
+const findSubcategoriaById = async (id_subcategoria_producto, id_empresa, es_servicio = 0) => {
 
   const [rows] = await db.query(`
     SELECT s.id_subcategoria_producto, s.nombre, s.activo, s.id_categoria_producto,
            c.nombre AS categoria_nombre, c.activo AS categoria_activa
     FROM subcategorias_producto s
     JOIN categorias_producto c ON c.id_categoria_producto = s.id_categoria_producto
-    WHERE s.id_subcategoria_producto = ? AND c.id_empresa = ?
-  `, [id_subcategoria_producto, id_empresa])
+    WHERE s.id_subcategoria_producto = ? AND c.id_empresa = ? AND c.es_servicio = ?
+  `, [id_subcategoria_producto, id_empresa, es_servicio])
 
   return rows[0] || null
 }

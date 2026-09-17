@@ -11,6 +11,8 @@ const categoriaProductoRoutes = require('./src/routes/categoria-producto.routes'
 const productoRoutes = require('./src/routes/producto.routes')
 const motivoStockRoutes = require('./src/routes/motivo-stock.routes')
 const stockRoutes = require('./src/routes/stock.routes')
+const servicioRoutes = require('./src/routes/servicio.routes')
+const categoriaServicioRoutes = require('./src/routes/categoria-servicio.routes')
 
 app.use(express.urlencoded({ extended: true }))
 app.use(express.json())
@@ -40,6 +42,12 @@ app.use('/productos/categorias', categoriaProductoRoutes)
 app.use('/productos/motivos', motivoStockRoutes)
 app.use('/productos/stock', stockRoutes)
 app.use('/productos', productoRoutes)
+
+// Servicios: mismo criterio de orden que arriba, el arbol antes que el
+// catalogo. Comparten las tablas y los controladores con productos -- un
+// servicio es un producto sin stock -- y por eso NO hay rutas de stock aca.
+app.use('/servicios/categorias', categoriaServicioRoutes)
+app.use('/servicios', servicioRoutes)
 
 // Ultimo de todos: recoge lo que ningun controlador atajo.
 //

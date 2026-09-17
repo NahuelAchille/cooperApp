@@ -5,14 +5,18 @@ const db = require('../config/db')
 //
 // Los productos no se borran: se dan de baja (activo = 0). Manana van a
 // tener stock e historial colgando y un borrado fisico los dejaria huerfanos.
+//
+// Esta misma tabla guarda los SERVICIOS, que son productos sin stock, y los
+// separa la columna es_servicio. Por eso el filtro la lleva siempre: sin ella
+// el catalogo de productos mostraria los servicios mezclados.
 
 // Arma la clausula WHERE y sus parametros a partir de los filtros opcionales.
 // Todo va parametrizado, incluida la busqueda por nombre: el texto lo escribe
 // el usuario y nunca se pega dentro de la consulta.
 const construirFiltro = (id_empresa, filtros = {}) => {
 
-  const condiciones = ['p.id_empresa = ?']
-  const params = [id_empresa]
+  const condiciones = ['p.id_empresa = ?', 'p.es_servicio = ?']
+  const params = [id_empresa, filtros.es_servicio ? 1 : 0]
 
   if (filtros.soloActivos) condiciones.push('p.activo = 1')
   if (filtros.soloInactivos) condiciones.push('p.activo = 0')
@@ -48,7 +52,7 @@ const findProductos = async (id_empresa, filtros = {}) => {
 
   const [rows] = await db.query(`
     SELECT p.id_producto, p.nombre, p.descripcion, p.unidad_medida, p.stock_minimo, p.activo,
-           p.id_categoria_producto, p.id_subcategoria_producto,
+           p.es_servicio, p.id_categoria_producto, p.id_subcategoria_producto,
            c.nombre AS categoria_nombre,
            s.nombre AS subcategoria_nombre
     FROM productos p
@@ -62,11 +66,16 @@ const findProductos = async (id_empresa, filtros = {}) => {
 }
 
 // Busca un producto propio de la empresa (sirve para validar pertenencia).
+//
+// NO filtra por es_servicio a proposito: devuelve la columna y deja que
+// decida el que llama. El controlador del catalogo la usa para rechazar el
+// cruce entre las dos pantallas, y el de stock, para rechazar un servicio
+// (que no tiene existencias). Son dos respuestas distintas al mismo dato.
 const findProductoById = async (id_producto, id_empresa) => {
 
   const [rows] = await db.query(`
     SELECT p.id_producto, p.nombre, p.descripcion, p.unidad_medida, p.stock_minimo, p.activo,
-           p.id_categoria_producto, p.id_subcategoria_producto
+           p.es_servicio, p.id_categoria_producto, p.id_subcategoria_producto
     FROM productos p
     WHERE p.id_producto = ? AND p.id_empresa = ?
   `, [id_producto, id_empresa])
@@ -75,15 +84,16 @@ const findProductoById = async (id_producto, id_empresa) => {
 }
 
 const createProducto = async ({ nombre, descripcion, unidad_medida, stock_minimo,
-                                id_categoria_producto, id_subcategoria_producto, id_empresa }) => {
+                                id_categoria_producto, id_subcategoria_producto,
+                                id_empresa, es_servicio = 0 }) => {
 
   const [result] = await db.query(`
     INSERT INTO productos
       (nombre, descripcion, unidad_medida, stock_minimo,
-       id_categoria_producto, id_subcategoria_producto, id_empresa)
-    VALUES (?, ?, ?, ?, ?, ?, ?)
+       id_categoria_producto, id_subcategoria_producto, id_empresa, es_servicio)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?)
   `, [nombre, descripcion, unidad_medida, stock_minimo,
-      id_categoria_producto, id_subcategoria_producto, id_empresa])
+      id_categoria_producto, id_subcategoria_producto, id_empresa, es_servicio])
 
   return result.insertId
 }

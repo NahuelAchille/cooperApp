@@ -198,13 +198,25 @@ CREATE TABLE movimientos (
 -- la misma venta quedaria clasificada dos veces y los totales no cerrarian.
 
 -- Nivel 1: categorias de producto. Una por empresa, con nombre unico.
+--
+-- Sobre es_servicio: un SERVICIO es un producto sin stock. Misma estructura de
+-- categoria -> subcategoria y, manana, mismo vinculo con los movimientos, asi
+-- que comparten estas tablas y se distinguen por esta columna. Un solo modelo
+-- de datos abajo y dos pantallas arriba.
+--
+-- Los dos arboles van separados a proposito: si fueran uno solo, el alta de
+-- un producto ofreceria "Transporte" y la de un servicio ofreceria
+-- "Alimentos". Son dos catalogos distintos aunque vivan en la misma tabla.
+-- Por eso el nombre unico incluye es_servicio: una empresa puede tener la
+-- categoria de productos "Transporte" y la de servicios tambien.
 CREATE TABLE categorias_producto (
   id_categoria_producto INT AUTO_INCREMENT PRIMARY KEY,
   nombre                VARCHAR(80) NOT NULL,
   id_empresa            INT NOT NULL,
+  es_servicio           TINYINT(1) NOT NULL DEFAULT 0,
   activo                TINYINT(1) DEFAULT 1,
   FOREIGN KEY (id_empresa) REFERENCES empresas(id_empresa),
-  UNIQUE (id_empresa, nombre)
+  UNIQUE (id_empresa, es_servicio, nombre)
 );
 
 -- Nivel 2: subcategorias. Cuelgan de una categoria, que ya es de una empresa.
@@ -233,21 +245,34 @@ CREATE TABLE subcategorias_producto (
 -- El stock_minimo va en DECIMAL y no en entero porque se expresa en la unidad
 -- del producto: hay cosas que se miden por unidad (5) y otras por peso o
 -- volumen (2,5 kg). En 0 significa "no me avises", que es el caso de arranque.
+--
+-- Sobre es_servicio: la misma tabla guarda los productos y los servicios. Un
+-- servicio es un producto SIN STOCK -- se presta, no se guarda en el deposito.
+-- De ahi salen las dos diferencias:
+--
+--   unidad_medida  queda en NULL: un flete o un servicio tecnico no se miden
+--                  en kilos ni en litros, y obligar a contestar "en que se
+--                  mide" para poder guardarlo es una pregunta sin respuesta.
+--   stock_minimo   queda en 0: no hay existencia que pueda bajar de nada.
+--
+-- Las dos las fuerza el servidor, no la pantalla: un pedido armado a mano que
+-- mande unidad y stock minimo en un servicio los pierde igual.
 CREATE TABLE productos (
   id_producto              INT AUTO_INCREMENT PRIMARY KEY,
   nombre                   VARCHAR(120) NOT NULL,
   descripcion              VARCHAR(255),
-  unidad_medida            VARCHAR(20) NOT NULL,
+  unidad_medida            VARCHAR(20) NULL,
   stock_minimo             DECIMAL(12,2) NOT NULL DEFAULT 0,
   id_categoria_producto    INT NOT NULL,
   id_subcategoria_producto INT NULL,
   id_empresa               INT NOT NULL,
+  es_servicio              TINYINT(1) NOT NULL DEFAULT 0,
   activo                   TINYINT(1) DEFAULT 1,
   creado_en                DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
   FOREIGN KEY (id_categoria_producto)    REFERENCES categorias_producto(id_categoria_producto),
   FOREIGN KEY (id_subcategoria_producto) REFERENCES subcategorias_producto(id_subcategoria_producto),
   FOREIGN KEY (id_empresa)               REFERENCES empresas(id_empresa),
-  UNIQUE (id_empresa, nombre)
+  UNIQUE (id_empresa, es_servicio, nombre)
 );
 
 -- Por que se mueve el stock. Cada empresa arma los suyos, y cada motivo lleva

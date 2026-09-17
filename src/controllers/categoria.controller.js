@@ -99,7 +99,7 @@ exports.cambiarEstadoCategoria = async (req, res) => {
     const activo = req.body.activo ? 1 : 0
     await categoriaModel.setActivoCategoria(id, id_empresa, activo)
 
-    res.json({ message: activo ? 'Categoría activada (sus tipos también)' : 'Categoría desactivada (sus tipos también)' })
+    res.json({ message: activo ? 'Categoría reactivada (sus tipos también)' : 'Categoría dada de baja (sus tipos también)' })
 
   } catch (error) {
     console.error(error)
@@ -156,7 +156,7 @@ exports.crearTipo = async (req, res) => {
       id_tipo,
       message: categoria.activo
         ? 'Tipo creado correctamente'
-        : 'Tipo creado, pero queda inactivo porque su categoría está desactivada'
+        : 'Tipo creado, pero queda de baja porque su categoría está dada de baja'
     })
 
   } catch (error) {
@@ -210,11 +210,11 @@ exports.cambiarEstadoTipo = async (req, res) => {
     // No se puede reactivar un tipo si su categoria esta dada de baja.
     const activo = req.body.activo ? 1 : 0
     if (activo && !tipo.activo && !(await esCategoriaActiva(tipo.id_categoria, id_empresa))) {
-      return res.status(400).json({ error: 'No se puede activar el tipo: su categoría está desactivada' })
+      return res.status(400).json({ error: 'No se puede reactivar el tipo: su categoría está dada de baja' })
     }
 
     await categoriaModel.setActivoTipo(id, activo)
-    res.json({ message: activo ? 'Tipo activado' : 'Tipo desactivado' })
+    res.json({ message: activo ? 'Tipo reactivado' : 'Tipo dado de baja' })
 
   } catch (error) {
     console.error(error)

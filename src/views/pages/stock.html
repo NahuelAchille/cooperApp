@@ -7,6 +7,7 @@
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css">
   <link rel="stylesheet" href="/styles/header.css">
   <link rel="stylesheet" href="/styles/stock.css">
+  <link rel="stylesheet" href="/styles/tabla-mobile.css">
   <title>Stock - CooperApp</title>
 </head>
 <body>
@@ -24,8 +25,14 @@
       <a class="btn btn-secundario" href="/pages/productos.html">
         <i class="fa-solid fa-box me-2"></i>Productos
       </a>
+      <!-- Los motivos se usan ACA, en el formulario de entradas y salidas.
+           El atajo estaba en Productos, donde no se usan, y no estaba en esta
+           pantalla, que es la unica donde hacen falta. -->
+      <a class="btn btn-secundario d-none" id="link-motivos" href="/pages/configuracion-motivos-stock.html">
+        <i class="fa-solid fa-right-left me-2"></i>Motivos
+      </a>
       <button class="btn btn-nuevo" id="btn-nuevo">
-        <i class="fa-solid fa-right-left me-2"></i>Registrar movimiento
+        <i class="fa-solid fa-right-left me-2"></i>Registrar entrada o salida
       </button>
     </div>
   </div>
@@ -53,7 +60,7 @@
           <i class="fa-solid fa-boxes-stacked me-2"></i>Existencias
         </button>
         <button class="pestana" data-vista="movimientos">
-          <i class="fa-solid fa-clock-rotate-left me-2"></i>Movimientos
+          <i class="fa-solid fa-clock-rotate-left me-2"></i>Entradas y salidas
         </button>
       </div>
 
@@ -91,7 +98,7 @@
         </div>
       </div>
 
-      <div class="card-tabla">
+      <div class="card-tabla tabla-tarjetas">
         <div class="table-responsive">
           <table class="table table-hover mb-0">
             <thead>
@@ -105,7 +112,7 @@
               </tr>
             </thead>
             <tbody id="tabla-stock">
-              <tr><td colspan="6" class="text-center py-4 text-muted">
+              <tr class="fila-aviso"><td colspan="6" class="text-center py-4 text-muted">
                 <i class="fa-solid fa-spinner fa-spin me-2"></i>Cargando...
               </td></tr>
             </tbody>
@@ -149,7 +156,7 @@
           </div>
         </div>
 
-        <div class="card-tabla">
+        <div class="card-tabla tabla-tarjetas">
           <div class="table-responsive">
             <table class="table table-hover mb-0">
               <thead>
@@ -164,7 +171,7 @@
                 </tr>
               </thead>
               <tbody id="tabla-movimientos">
-                <tr><td colspan="7" class="text-center py-4 text-muted">
+                <tr class="fila-aviso"><td colspan="7" class="text-center py-4 text-muted">
                   <i class="fa-solid fa-spinner fa-spin me-2"></i>Cargando...
                 </td></tr>
               </tbody>
@@ -182,7 +189,7 @@
     <div class="modal-dialog modal-dialog-centered">
       <div class="modal-content">
         <div class="modal-header">
-          <h5 class="modal-title fw-bold"><i class="fa-solid fa-right-left me-2"></i>Registrar movimiento de stock</h5>
+          <h5 class="modal-title fw-bold"><i class="fa-solid fa-right-left me-2"></i>Registrar una entrada o una salida</h5>
           <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
         </div>
         <div class="modal-body">
@@ -362,12 +369,17 @@
       document.getElementById('acciones-header').classList.remove('d-none')
       document.getElementById('zona-stock').classList.remove('d-none')
 
+      // Los motivos los arma el administrador; el operador sólo los usa.
+      if (usuarioActual.rol === 'admin_empresa') {
+        document.getElementById('link-motivos').classList.remove('d-none')
+      }
+
       // El filtro muestra todas las categorías, también las inactivas: sus
       // productos siguen existiendo y hay que poder encontrarlos.
       const categorias = await fetch('/productos/categorias').then(r => r.ok ? r.json() : [])
       document.getElementById('filtro-categoria').innerHTML =
         '<option value="">Todas</option>' +
-        categorias.map(c => `<option value="${c.id_categoria_producto}">${esc(c.nombre)}${c.activo ? '' : ' (inactiva)'}</option>`).join('')
+        categorias.map(c => `<option value="${c.id_categoria_producto}">${esc(c.nombre)}${c.activo ? '' : ' (de baja)'}</option>`).join('')
 
       cargarExistencias()
     }
@@ -420,7 +432,7 @@
         lista.length === 1 ? '1 producto' : `${lista.length} productos`
 
       if (!lista.length) {
-        tbody.innerHTML = `<tr><td colspan="6"><div class="tabla-vacia">${
+        tbody.innerHTML = `<tr class="fila-aviso"><td colspan="6"><div class="tabla-vacia">${
           soloFaltantes
             ? '¡Bien! No hay productos por debajo del mínimo.'
             : 'No hay productos que coincidan. Si todavía no cargaste ninguno, hacelo desde <strong>Productos</strong>.'
@@ -442,20 +454,22 @@
               ? '<span class="aviso-minimo nuevo"><i class="fa-solid fa-circle-info me-1"></i>Sin cargar</span>'
               : ''
 
+        // Los data-label y las clases td-* son lo que arma la tarjeta en el
+        // celular (ver styles/tabla-mobile.css). En escritorio no hacen nada.
         return `
           <tr>
-            <td><div class="prod-nombre">${esc(item.nombre)}</div></td>
-            <td><span class="prod-clasificacion">${clasificacion}</span></td>
-            <td class="text-end">
+            <td class="td-principal" data-label="Producto"><div class="prod-nombre">${esc(item.nombre)}</div></td>
+            <td data-label="Categoría"><span class="prod-clasificacion">${clasificacion}</span></td>
+            <td class="text-end td-destacado" data-label="Existencia">
               <span class="existencia ${estado}">${formatearCantidad(item.existencia)}<span class="unidad">${esc(item.unidad_medida)}</span></span>
             </td>
-            <td class="text-end"><span class="minimo-texto">${Number(item.stock_minimo) > 0 ? formatearCantidad(item.stock_minimo) : '—'}</span></td>
-            <td>${aviso}</td>
-            <td class="text-end">
+            <td class="text-end" data-label="Mínimo"><span class="minimo-texto">${Number(item.stock_minimo) > 0 ? formatearCantidad(item.stock_minimo) : '—'}</span></td>
+            <td data-label="Estado">${aviso}</td>
+            <td class="text-end td-acciones" data-label="Acciones">
               <button class="btn-mini" data-accion="historial" data-id="${item.id_producto}" title="Ver el historial de este producto">
                 <i class="fa-solid fa-clock-rotate-left"></i>
               </button>
-              <button class="btn-mini" data-accion="mover" data-id="${item.id_producto}" title="Registrar movimiento">
+              <button class="btn-mini" data-accion="mover" data-id="${item.id_producto}" title="Registrar una entrada o una salida">
                 <i class="fa-solid fa-right-left"></i>
               </button>
             </td>
@@ -540,10 +554,10 @@
         movimientos.length === 1 ? '1 movimiento' : `${movimientos.length} movimientos`
 
       if (!movimientos.length) {
-        tbody.innerHTML = `<tr><td colspan="7"><div class="tabla-vacia">${
+        tbody.innerHTML = `<tr class="fila-aviso"><td colspan="7"><div class="tabla-vacia">${
           consulta
             ? 'No hay movimientos que coincidan con los filtros.'
-            : 'Todavía no se registró ningún movimiento de stock.'
+            : 'Todavía no se registró ninguna entrada ni salida.'
         }</div></td></tr>`
         return
       }
@@ -568,31 +582,31 @@
 
         return `
           <tr class="${m.anulado ? 'fila-anulada' : ''}">
-            <td class="fecha-mov">${formatearFecha(m.fecha)}</td>
-            <td>
+            <td class="fecha-mov" data-label="Fecha">${formatearFecha(m.fecha)}</td>
+            <td class="td-principal" data-label="Producto">
               <span class="prod-nombre">${esc(m.producto_nombre)}</span>
               ${m.anulado ? '<span class="badge-anulado">Anulado</span>' : ''}
             </td>
-            <td>
+            <td data-label="Motivo">
               <span class="badge-motivo ${entra ? 'entrada' : 'salida'}">
                 <i class="fa-solid ${entra ? 'fa-arrow-down' : 'fa-arrow-up'} me-1"></i>${esc(m.motivo_nombre)}
               </span>
               ${m.anulado ? '' : marcaDinero}
             </td>
-            <td class="text-end">
+            <td class="text-end td-destacado" data-label="Cantidad">
               <span class="cantidad-mov ${entra ? 'entrada' : 'salida'}">
                 ${entra ? '+' : '−'}${formatearCantidad(m.cantidad)}<span class="unidad">${esc(m.unidad_medida)}</span>
               </span>
             </td>
-            <td><span class="detalle-mov">${m.descripcion ? esc(m.descripcion) : '<span class="sin-dato">—</span>'}</span></td>
-            <td><span class="detalle-mov">${esc(m.usuario_nombre)} ${esc(m.usuario_apellido)}</span></td>
-            <td class="text-end">
+            <td data-label="Detalle"><span class="detalle-mov">${m.descripcion ? esc(m.descripcion) : '<span class="sin-dato">—</span>'}</span></td>
+            <td class="td-oculto-movil" data-label="Registró"><span class="detalle-mov">${esc(m.usuario_nombre)} ${esc(m.usuario_apellido)}</span></td>
+            <td class="text-end td-acciones" data-label="Acciones">
               ${m.anulado ? '' : `
                 ${(mueveDinero && !tieneDinero && puedeDinero) ? `
                   <button class="btn-mini" data-accion="cargar-dinero" data-id="${m.id_movimiento_stock}" title="Registrar el movimiento de dinero">
                     <i class="fa-solid fa-dollar-sign"></i>
                   </button>` : ''}
-                <button class="btn-mini peligro" data-accion="anular" data-id="${m.id_movimiento_stock}" title="Anular este movimiento">
+                <button class="btn-mini peligro" data-accion="anular" data-id="${m.id_movimiento_stock}" title="Anular">
                   <i class="fa-solid fa-ban"></i>
                 </button>`}
             </td>
@@ -833,7 +847,7 @@
 
       document.getElementById('ayuda-tipo').textContent = opciones.length
         ? `Se muestran sólo las categorías de ${propuesta.naturaleza}s.`
-        : `Tu empresa no tiene ninguna categoría de ${propuesta.naturaleza}s activa. Hay que crearla en Clasificación de movimientos.`
+        : `Tu empresa no tiene ninguna categoría de ${propuesta.naturaleza}s activa. Hay que crearla en Categorías de movimientos.`
 
       new bootstrap.Modal(document.getElementById('modalDinero')).show()
     }

@@ -6,9 +6,12 @@
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css">
   <link rel="stylesheet" href="/styles/header.css">
+  <!-- Comparte la hoja con productos a propósito: es el mismo listado, el
+       mismo formulario y los mismos filtros. Un servicio es un producto sin
+       stock, así que la pantalla es la misma con dos columnas menos. -->
   <link rel="stylesheet" href="/styles/productos.css">
   <link rel="stylesheet" href="/styles/tabla-mobile.css">
-  <title>Productos - CooperApp</title>
+  <title>Servicios - CooperApp</title>
 </head>
 <body>
 
@@ -18,18 +21,16 @@
 
   <div class="page-header">
     <div>
-      <h4 class="mb-0 fw-bold"><i class="fa-solid fa-box me-2"></i>Productos</h4>
-      <small>El catálogo de tu empresa: qué productos existen y cómo están clasificados</small>
+      <h4 class="mb-0 fw-bold"><i class="fa-solid fa-screwdriver-wrench me-2"></i>Servicios</h4>
+      <small>Los servicios que tu empresa presta o contrata, y cómo están clasificados</small>
     </div>
     <div class="acciones-header d-none" id="acciones-header">
-      <a class="btn btn-secundario d-none" id="link-categorias" href="/pages/configuracion-categorias-producto.html">
+      <a class="btn btn-secundario d-none" id="link-categorias" href="/pages/configuracion-categorias-servicio.html">
         <i class="fa-solid fa-sitemap me-2"></i>Categorías
       </a>
-      <a class="btn btn-secundario" href="/pages/stock.html">
-        <i class="fa-solid fa-warehouse me-2"></i>Stock
-      </a>
-      <button class="btn btn-nuevo" id="btn-nuevo">
-        <i class="fa-solid fa-plus me-2"></i>Nuevo producto
+      <!-- Acá NO va el botón de Stock: un servicio se presta, no se guarda. -->
+      <button class="btn btn-nuevo d-none" id="btn-nuevo">
+        <i class="fa-solid fa-plus me-2"></i>Nuevo servicio
       </button>
     </div>
   </div>
@@ -39,13 +40,13 @@
     <!-- Se muestra si el rol no llega al catálogo -->
     <div class="aviso-permiso d-none" id="aviso-permiso">
       <i class="fa-solid fa-lock fa-2x mb-3"></i>
-      <p class="mb-0">Tu usuario no tiene acceso al catálogo de productos.</p>
+      <p class="mb-0">Tu usuario no tiene acceso al catálogo de servicios.</p>
     </div>
 
     <!-- Se muestra si la empresa tiene el módulo apagado -->
     <div class="aviso-permiso d-none" id="aviso-modulo">
       <i class="fa-solid fa-plug-circle-xmark fa-2x mb-3"></i>
-      <p class="mb-1">El módulo de <strong>Productos</strong> no está activo en tu empresa.</p>
+      <p class="mb-1">El módulo de <strong>Servicios</strong> no está activo en tu empresa.</p>
       <p class="mb-0 small">El administrador puede activarlo desde <em>Módulos del sistema</em>.</p>
     </div>
 
@@ -92,18 +93,19 @@
       <div class="table-responsive">
         <table class="table table-hover mb-0">
           <thead>
+            <!-- Sin Unidad ni Stock mínimo: un servicio no se mide ni se
+                 guarda. Son las dos únicas columnas que lo separan de un
+                 producto. -->
             <tr>
-              <th>Producto</th>
+              <th>Servicio</th>
               <th>Categoría</th>
               <th>Subcategoría</th>
-              <th>Unidad</th>
-              <th class="text-end">Stock mínimo</th>
               <th>Estado</th>
               <th class="text-end">Acciones</th>
             </tr>
           </thead>
           <tbody id="tabla-productos">
-            <tr class="fila-aviso"><td colspan="7" class="text-center py-4 text-muted">
+            <tr class="fila-aviso"><td colspan="5" class="text-center py-4 text-muted">
               <i class="fa-solid fa-spinner fa-spin me-2"></i>Cargando...
             </td></tr>
           </tbody>
@@ -126,33 +128,25 @@
             <input type="hidden" name="id">
 
             <div class="mb-3">
-              <label class="form-label">Nombre del producto *</label>
-              <input type="text" class="form-control" name="nombre" maxlength="120" placeholder="Ej: Queso cremoso" required>
+              <label class="form-label">Nombre del servicio *</label>
+              <input type="text" class="form-control" name="nombre" maxlength="120" placeholder="Ej: Servicio técnico a domicilio" required>
             </div>
 
             <div class="mb-3">
               <label class="form-label">Descripción</label>
-              <input type="text" class="form-control" name="descripcion" maxlength="255" placeholder="Opcional: alguna aclaración sobre el producto">
+              <input type="text" class="form-control" name="descripcion" maxlength="255" placeholder="Opcional: alguna aclaración sobre el servicio">
             </div>
 
-            <div class="row g-2 mb-3">
-              <div class="col-12 col-sm-7">
-                <label class="form-label">Unidad de medida *</label>
-                <select class="form-select" name="unidad_medida" id="select-unidad" required></select>
-                <div class="form-text">En qué se mide: por unidad, por kilo, por litro...</div>
-              </div>
-              <div class="col-12 col-sm-5">
-                <label class="form-label">Stock mínimo</label>
-                <input type="number" class="form-control" name="stock_minimo" min="0" step="0.01" placeholder="0">
-                <div class="form-text" id="ayuda-stock">Cuando baje de acá, el sistema avisa. En 0 no avisa.</div>
-              </div>
-            </div>
+            <!-- Acá NO van la unidad de medida ni el stock mínimo. Un servicio
+                 no se guarda en ningún lado: no hay existencia que medir ni
+                 que pueda bajar de nada. Preguntarlo sería una pregunta sin
+                 respuesta, obligatoria para poder guardar. -->
 
             <div class="mb-3">
               <label class="form-label">Categoría *</label>
               <select class="form-select" name="id_categoria_producto" id="select-categoria" required></select>
-              <!-- El operador no puede crear categorias: si la que necesita no
-                   esta, queda trabado sin saber a quien pedirle que. -->
+              <!-- Si la categoría que necesita no está, la ayuda dice a dónde
+                   ir a crearla (o a quién pedírsela). -->
               <div class="form-text d-none" id="ayuda-categoria"></div>
             </div>
 
@@ -202,9 +196,9 @@
   <script>
 
     let usuarioActual = null
-    let unidades = []            // lista cerrada que viene del servidor
     let todasLasCategorias = []  // activas e inactivas, para el filtro
     let categorias = []          // sólo las activas, para el formulario de alta
+    let puedeEditar = false      // el tesorero mira el catálogo, no lo arma
 
     function mostrarToast(mensaje) {
       const toast = document.createElement('div')
@@ -219,19 +213,6 @@
       return String(texto).replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
     }
 
-    // Traduce la clave guardada en la base a la etiqueta que se lee en pantalla.
-    function etiquetaUnidad(clave) {
-      return unidades.find(u => u.clave === clave)?.etiqueta || clave
-    }
-
-    // El stock mínimo se guarda con 2 decimales, pero mostrar "5,00 unidades"
-    // cuando son 5 unidades enteras es ruido. Sólo se muestran los decimales
-    // si los tiene de verdad.
-    function formatearCantidad(valor) {
-      const numero = Number(valor)
-      return Number.isInteger(numero) ? String(numero) : numero.toFixed(2).replace('.', ',')
-    }
-
     async function iniciar() {
       usuarioActual = await cargarHeader()
 
@@ -240,7 +221,11 @@
         return
       }
 
-      const puedeVer = usuarioActual.rol === 'admin_empresa' || usuarioActual.rol === 'operador'
+      // El catálogo de servicios lo arma el administrador. El tesorero lo
+      // mira, porque es quien después dice de dónde viene cada ingreso o
+      // egreso. El operador no entra: un servicio no pasa por el depósito.
+      const puedeVer = usuarioActual.rol === 'admin_empresa' || usuarioActual.rol === 'tesorero'
+      puedeEditar = usuarioActual.rol === 'admin_empresa'
       if (!puedeVer) {
         document.getElementById('aviso-permiso').classList.remove('d-none')
         return
@@ -248,7 +233,7 @@
 
       // El rol alcanza, pero la empresa puede tener el módulo apagado.
       // Son dos problemas distintos y se resuelven de maneras distintas.
-      if (!moduloActivo('productos')) {
+      if (!moduloActivo('servicios')) {
         document.getElementById('aviso-modulo').classList.remove('d-none')
         return
       }
@@ -257,16 +242,13 @@
       document.getElementById('card-filtros').classList.remove('d-none')
       document.getElementById('card-tabla').classList.remove('d-none')
 
-      // Armar el árbol de categorías y los motivos es del admin; el operador
-      // sólo los usa.
-      if (usuarioActual.rol === 'admin_empresa') {
+      // Armar el árbol de categorías y dar de alta es del admin; el tesorero
+      // sólo consulta. Sin esto le aparecen botones que la API le va a
+      // rechazar, que es peor que no mostrarlos.
+      if (puedeEditar) {
         document.getElementById('link-categorias').classList.remove('d-none')
+        document.getElementById('btn-nuevo').classList.remove('d-none')
       }
-
-      unidades = await fetch('/productos/unidades').then(r => r.ok ? r.json() : [])
-      document.getElementById('select-unidad').innerHTML =
-        '<option value="">Elegí una unidad</option>' +
-        unidades.map(u => `<option value="${esc(u.clave)}">${esc(u.etiqueta)}</option>`).join('')
 
       // El filtro de categorías las muestra TODAS, activas e inactivas: si una
       // categoría se desactivó, sus productos siguen existiendo y hay que
@@ -305,11 +287,11 @@
     }
 
     async function cargarProductos() {
-      const productos = await fetch(`/productos${armarConsulta()}`).then(r => r.ok ? r.json() : [])
+      const productos = await fetch(`/servicios${armarConsulta()}`).then(r => r.ok ? r.json() : [])
       const tbody = document.getElementById('tabla-productos')
 
       document.getElementById('contador-resultados').textContent =
-        productos.length === 1 ? '1 producto' : `${productos.length} productos`
+        productos.length === 1 ? '1 servicio' : `${productos.length} servicios`
 
       if (!productos.length) {
         // No es lo mismo un catálogo vacío que una búsqueda sin resultados:
@@ -317,33 +299,31 @@
         // cambiar el filtro. Decir lo que no es manda a la persona al lugar
         // equivocado.
         tbody.innerHTML = hayFiltrosPuestos()
-          ? `<tr class="fila-aviso"><td colspan="7"><div class="tabla-vacia">
-              Ningún producto coincide con la búsqueda. Probá con otras palabras o limpiá los filtros.
+          ? `<tr class="fila-aviso"><td colspan="5"><div class="tabla-vacia">
+              Ningún servicio coincide con la búsqueda. Probá con otras palabras o limpiá los filtros.
             </div></td></tr>`
-          : `<tr class="fila-aviso"><td colspan="7"><div class="tabla-vacia">
-              Todavía no hay productos cargados. Empezá con el botón <strong>Nuevo producto</strong>.
+          : `<tr class="fila-aviso"><td colspan="5"><div class="tabla-vacia">
+              ${puedeEditar
+                ? 'Todavía no hay servicios cargados. Empezá con el botón <strong>Nuevo servicio</strong>.'
+                : 'Todavía no hay servicios cargados. Los carga el administrador de tu empresa.'}
             </div></td></tr>`
         return
       }
 
       tbody.innerHTML = productos.map(p => `
         <tr class="${p.activo ? '' : 'fila-inactiva'}">
-          <td class="td-principal" data-label="Producto">
+          <td class="td-principal" data-label="Servicio">
             <div class="prod-nombre">${esc(p.nombre)}</div>
             ${p.descripcion ? `<div class="prod-descripcion">${esc(p.descripcion)}</div>` : ''}
           </td>
           <td data-label="Categoría">${esc(p.categoria_nombre)}</td>
           <td data-label="Subcategoría">${p.subcategoria_nombre ? esc(p.subcategoria_nombre) : '<span class="sin-dato">—</span>'}</td>
-          <td data-label="Unidad"><span class="badge-unidad">${esc(etiquetaUnidad(p.unidad_medida))}</span></td>
-          <td class="text-end" data-label="Stock mínimo">${Number(p.stock_minimo) > 0
-              ? formatearCantidad(p.stock_minimo)
-              : '<span class="sin-dato">—</span>'}</td>
           <td data-label="Estado"><span class="badge-estado ${p.activo ? 'badge-activo' : 'badge-inactivo'}">${p.activo ? 'Activo' : 'De baja'}</span></td>
-          <td class="text-end td-acciones" data-label="Acciones">
+          <td class="text-end td-acciones" data-label="Acciones">${puedeEditar ? `
             <button class="btn-mini" data-accion="editar" data-id="${p.id_producto}" title="Editar"><i class="fa-solid fa-pen"></i></button>
             <button class="btn-mini ${p.activo ? 'peligro' : ''}" data-accion="toggle" data-id="${p.id_producto}" data-nombre="${esc(p.nombre)}" data-activo="${p.activo}" title="${p.activo ? 'Dar de baja' : 'Reactivar'}">
               <i class="fa-solid ${p.activo ? 'fa-circle-minus' : 'fa-circle-plus'}"></i>
-            </button>
+            </button>` : '<span class="sin-dato">—</span>'}
           </td>
         </tr>`).join('')
 
@@ -357,7 +337,7 @@
     // El formulario de alta ofrece sólo las activas a propósito: no se puede
     // clasificar algo nuevo en una categoría que la empresa dejó de usar.
     async function cargarCategorias() {
-      todasLasCategorias = await fetch('/productos/categorias').then(r => r.ok ? r.json() : [])
+      todasLasCategorias = await fetch('/servicios/categorias').then(r => r.ok ? r.json() : [])
       categorias = todasLasCategorias.filter(c => c.activo)
 
       document.getElementById('select-categoria').innerHTML =
@@ -367,22 +347,20 @@
       mostrarAyudaCategoria()
     }
 
-    // La categoria es obligatoria y el operador no puede crearla. Sin esto se
-    // queda frente a un desplegable que no tiene lo que necesita y una pantalla
-    // que no le dice ni que pasa ni a quien recurrir. Al admin, en cambio, le
-    // alcanza con el enlace para ir a armarla.
+    // La categoría es obligatoria. Al admin le alcanza con el enlace para ir
+    // a armarla; el tesorero no entra acá (no tiene el botón de alta), pero
+    // la rama queda por si mañana se le da permiso.
     function mostrarAyudaCategoria() {
 
       const ayuda = document.getElementById('ayuda-categoria')
-      const esAdmin = usuarioActual?.rol === 'admin_empresa'
 
-      if (esAdmin) {
+      if (puedeEditar) {
         ayuda.innerHTML = categorias.length === 0
-          ? '<strong>Todavía no cargaste ninguna categoría.</strong> <a href="/pages/configuracion-categorias-producto.html">Armá las categorías de tus productos</a> antes de dar de alta el primero.'
-          : '¿Falta la categoría que necesitás? <a href="/pages/configuracion-categorias-producto.html">Agregala acá</a>.'
+          ? '<strong>Todavía no cargaste ninguna categoría.</strong> <a href="/pages/configuracion-categorias-servicio.html">Armá las categorías de tus servicios</a> antes de dar de alta el primero.'
+          : '¿Falta la categoría que necesitás? <a href="/pages/configuracion-categorias-servicio.html">Agregala acá</a>.'
       } else {
         ayuda.innerHTML = categorias.length === 0
-          ? '<strong>Todavía no hay categorías cargadas.</strong> Pedile al administrador de tu empresa que las cree para poder dar de alta productos.'
+          ? '<strong>Todavía no hay categorías cargadas.</strong> Pedile al administrador de tu empresa que las cree para poder dar de alta servicios.'
           : '¿No está la categoría que necesitás? Pedísela al administrador de tu empresa.'
       }
 
@@ -400,7 +378,7 @@
         return
       }
 
-      const subcategorias = await fetch(`/productos/categorias/${idCategoria}/subcategorias`)
+      const subcategorias = await fetch(`/servicios/categorias/${idCategoria}/subcategorias`)
         .then(r => r.ok ? r.json() : [])
 
       select.disabled = false
@@ -420,7 +398,7 @@
         return
       }
 
-      const todas = await fetch(`/productos/categorias/${idCategoria}/subcategorias`).then(r => r.ok ? r.json() : [])
+      const todas = await fetch(`/servicios/categorias/${idCategoria}/subcategorias`).then(r => r.ok ? r.json() : [])
       const activas = todas.filter(s => s.activo)
 
       select.disabled = false
@@ -429,7 +407,7 @@
 
       ayuda.textContent = activas.length
         ? 'Es opcional: si no subdividís esta categoría, dejala en blanco.'
-        : 'Esta categoría no tiene subcategorías. El producto queda clasificado sólo por categoría.'
+        : 'Esta categoría no tiene subcategorías. El servicio queda clasificado sólo por categoría.'
     }
 
     document.getElementById('select-categoria').addEventListener('change', (evento) => {
@@ -486,8 +464,8 @@
 
       const esEdicion = !!producto
       document.getElementById('prod-titulo').innerHTML = esEdicion
-        ? '<i class="fa-solid fa-pen me-2"></i>Editar producto'
-        : '<i class="fa-solid fa-plus me-2"></i>Nuevo producto'
+        ? '<i class="fa-solid fa-pen me-2"></i>Editar servicio'
+        : '<i class="fa-solid fa-plus me-2"></i>Nuevo servicio'
 
       await cargarCategorias()
 
@@ -496,8 +474,6 @@
       if (esEdicion) {
         form.nombre.value = producto.nombre
         form.descripcion.value = producto.descripcion || ''
-        form.unidad_medida.value = producto.unidad_medida
-        form.stock_minimo.value = Number(producto.stock_minimo) > 0 ? Number(producto.stock_minimo) : ''
         form.id_categoria_producto.value = producto.id_categoria_producto
 
         // Si la clasificación del producto fue desactivada después de haberlo
@@ -505,7 +481,7 @@
         // campo se ve vacío sin explicación y parece un error del sistema.
         if (!form.id_categoria_producto.value) {
           const aviso = document.getElementById('aviso-clasificacion')
-          aviso.innerHTML = '<i class="fa-solid fa-triangle-exclamation me-1"></i>La categoría de este producto está dada de baja. Elegí una activa para poder guardar.'
+          aviso.innerHTML = '<i class="fa-solid fa-triangle-exclamation me-1"></i>La categoría de este servicio está dada de baja. Elegí una activa para poder guardar.'
           aviso.classList.remove('d-none')
           await cargarSubcategorias('')
         } else {
@@ -531,29 +507,23 @@
       if (!datos.nombre.trim()) {
         return mostrarError(errorDiv, 'El nombre es obligatorio.')
       }
-      if (!datos.unidad_medida) {
-        return mostrarError(errorDiv, 'Elegí una unidad de medida.')
-      }
       if (!datos.id_categoria_producto) {
         return mostrarError(errorDiv, 'Elegí una categoría.')
-      }
-      if (datos.stock_minimo && Number(datos.stock_minimo) < 0) {
-        return mostrarError(errorDiv, 'El stock mínimo no puede ser negativo.')
       }
 
       boton.disabled = true
 
       const esEdicion = !!datos.id
-      const url = esEdicion ? `/productos/${datos.id}` : '/productos'
+      const url = esEdicion ? `/servicios/${datos.id}` : '/servicios'
 
+      // Ni unidad de medida ni stock mínimo: el servidor los fuerza en NULL y
+      // en 0 para los servicios, así que mandarlos no cambiaría nada.
       const res = await fetch(url, {
         method: esEdicion ? 'PUT' : 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           nombre: datos.nombre,
           descripcion: datos.descripcion,
-          unidad_medida: datos.unidad_medida,
-          stock_minimo: datos.stock_minimo,
           id_categoria_producto: datos.id_categoria_producto,
           id_subcategoria_producto: datos.id_subcategoria_producto || null
         })
@@ -580,8 +550,8 @@
       const dandoBaja = estaActivo
 
       document.getElementById('estado-titulo').innerHTML = dandoBaja
-        ? '<i class="fa-solid fa-circle-minus me-2"></i>Dar de baja el producto'
-        : '<i class="fa-solid fa-circle-plus me-2"></i>Reactivar el producto'
+        ? '<i class="fa-solid fa-circle-minus me-2"></i>Dar de baja el servicio'
+        : '<i class="fa-solid fa-circle-plus me-2"></i>Reactivar el servicio'
 
       document.getElementById('estado-pregunta').innerHTML = dandoBaja
         ? `¿Dar de baja <strong>${esc(nombre)}</strong>?`
@@ -610,7 +580,7 @@
 
       boton.disabled = true
 
-      const res = await fetch(`/productos/${boton.dataset.id}/estado`, {
+      const res = await fetch(`/servicios/${boton.dataset.id}/estado`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ activo: Number(boton.dataset.activo) })

@@ -155,6 +155,43 @@ body {
 .btn-accion:hover { background-color: #fde8e8; }
 .btn-accion:disabled { opacity: 0.5; }
 
+/* ===== ENTRÓ / SALIÓ =====
+   La primera pregunta del alta. Van como dos botones grandes y no como un
+   desplegable: se contestan de un toque, incluso con el teléfono en la mano,
+   y el color dice lo mismo que la palabra. Sin elegir quedan en gris; el
+   elegido se pinta. */
+.botones-naturaleza {
+  display: flex;
+  gap: 10px;
+}
+
+.btn-naturaleza {
+  flex: 1;
+  padding: 14px 10px;
+  border: 2px solid #d7e3dc;
+  border-radius: 10px;
+  background: #fff;
+  color: #4a5c52;
+  font-weight: 700;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.btn-naturaleza:hover { border-color: #b9ccc2; background: #f6faf8; }
+
+.btn-naturaleza.ingreso.elegido {
+  background: #d1f5e0;
+  border-color: var(--verde-primario);
+  color: var(--verde-oscuro);
+}
+
+.btn-naturaleza.egreso.elegido {
+  background: #fde8e8;
+  border-color: var(--danger);
+  color: var(--danger);
+}
+
 /* ===== MODALES ===== */
 .modal-content { border-radius: 12px; overflow: hidden; border: none; }
 .modal-header { background-color: var(--verde-primario); color: white; border: none; }

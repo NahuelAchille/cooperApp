@@ -40,10 +40,11 @@ async function cargarHeader() {
   const mostrar = (id) => document.getElementById(id)?.classList.remove('d-none')
 
   // --- Por rol ---
+  // Toda la configuracion es del administrador de la empresa: son reglas del
+  // sistema, no datos del dia a dia. Va junta en el menu principal.
   if (esAdmin) {
     mostrar('nav-usuarios')
-    mostrar('item-usuarios')
-    mostrar('item-modulos')
+    mostrar('nav-configuracion')
   }
   // El superadmin administra la plataforma, no una empresa: su pantalla de
   // trabajo va en el menu principal, no escondida abajo de su propio nombre.
@@ -51,6 +52,10 @@ async function cargarHeader() {
   if (user.rol === 'superadmin') {
     mostrar('nav-empresas')
     document.getElementById('nav-panel-general')?.classList.add('d-none')
+    // Tampoco tiene "Mi empresa": al apretarlo se comia un
+    // "Tu usuario no pertenece a ninguna empresa". Mismo caso que el panel
+    // general, que le hablaba de una empresa que no tiene.
+    document.getElementById('item-mi-empresa')?.classList.add('d-none')
   }
 
   // --- Por modulo contratado (y rol) ---
@@ -60,6 +65,9 @@ async function cargarHeader() {
     modulosEmpresa = await fetch('/modulos').then(r => r.ok ? r.json() : []).catch(() => [])
 
     if (moduloActivo('movimientos') && esFinanzas) mostrar('nav-movimientos')
+    // La clasificacion del dinero es parte del modulo de movimientos: si la
+    // empresa no lo tiene, no hay nada que clasificar.
+    if (moduloActivo('movimientos') && esAdmin) mostrar('cfg-categorias')
     // El catalogo lo trabaja el deposito (operador) y lo arma el admin.
     // El tesorero no entra: lo suyo es el dinero.
     const esCatalogo = esAdmin || user.rol === 'operador'
@@ -67,18 +75,44 @@ async function cargarHeader() {
       mostrar('nav-productos')
       mostrar('nav-stock')
     }
-    // Armar el arbol del catalogo y los motivos de stock es del admin: son
-    // reglas del sistema, no datos del dia a dia. El operador solo los usa.
+    // El arbol del catalogo y los motivos de stock: el operador los usa pero
+    // no los arma.
     if (moduloActivo('productos') && esAdmin) {
-      mostrar('item-categorias-producto')
-      mostrar('item-motivos-stock')
+      mostrar('cfg-categorias-producto')
+      mostrar('cfg-motivos-stock')
     }
+    // El catálogo de servicios lo arma el admin y lo consulta el tesorero,
+    // que es quien después dice de dónde viene cada ingreso o egreso. El
+    // operador no entra: un servicio no pasa por el depósito.
     if (moduloActivo('servicios') && esFinanzas) mostrar('nav-servicios')
+    if (moduloActivo('servicios') && esAdmin) mostrar('cfg-categorias-servicio')
     if (moduloActivo('reportes') && esFinanzas) mostrar('nav-reportes')
     if (moduloActivo('articulacion')) mostrar('nav-articulacion')
   } else {
     modulosEmpresa = []
   }
+
+  // --- La hamburguesa del celular ---
+  // El menú arranca cerrado (lo decide el CSS por debajo de 768 px). Acá sólo
+  // se prende y se apaga la clase.
+  const botonMenu = document.getElementById('btn-menu')
+  const nav = document.getElementById('main-nav')
+
+  botonMenu?.addEventListener('click', () => {
+    const abierto = nav.classList.toggle('abierto')
+    botonMenu.setAttribute('aria-expanded', String(abierto))
+    botonMenu.querySelector('i').className = abierto ? 'fa-solid fa-xmark' : 'fa-solid fa-bars'
+  })
+
+  // Al elegir una opción el menú se cierra solo. Sin esto queda abierto
+  // tapando la pantalla a la que se acaba de entrar.
+  nav?.addEventListener('click', (evento) => {
+    if (evento.target.closest('a') && !evento.target.closest('.dropdown-toggle')) {
+      nav.classList.remove('abierto')
+      botonMenu?.setAttribute('aria-expanded', 'false')
+      if (botonMenu) botonMenu.querySelector('i').className = 'fa-solid fa-bars'
+    }
+  })
 
   return user
 }

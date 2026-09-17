@@ -94,13 +94,13 @@ exports.crearMovimiento = async (req, res) => {
       return res.status(400).json({ error: 'El tipo de movimiento no es válido' })
     }
     if (!tipo.activo) {
-      return res.status(400).json({ error: 'No se puede usar un tipo de movimiento desactivado' })
+      return res.status(400).json({ error: 'No se puede usar un tipo de movimiento dado de baja' })
     }
 
     // Tambien hay que mirar la categoria: un tipo activo colgado de una
     // categoria dada de baja no se puede usar.
     if (!tipo.categoria_activa) {
-      return res.status(400).json({ error: 'No se puede usar un tipo cuya categoría está desactivada' })
+      return res.status(400).json({ error: 'No se puede usar un tipo cuya categoría está dada de baja' })
     }
 
     const monto = parsearMonto(req.body.monto)

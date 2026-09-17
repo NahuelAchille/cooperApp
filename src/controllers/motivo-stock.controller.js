@@ -118,7 +118,7 @@ exports.actualizarMotivo = async (req, res) => {
       if (usos > 0) {
         return res.status(400).json({
           error: `No se puede cambiar el efecto de "${motivo.nombre}": ya tiene ${usos} ${usos === 1 ? 'movimiento registrado' : 'movimientos registrados'} y cambiarlo daría vuelta el historial. ` +
-                 'Podés renombrarlo, o desactivarlo y crear uno nuevo con el efecto que necesitás.'
+                 'Podés renombrarlo, o darlo de baja y crear uno nuevo con el efecto que necesitás.'
         })
       }
     }
@@ -149,7 +149,7 @@ exports.cambiarEstadoMotivo = async (req, res) => {
     const activo = req.body.activo ? 1 : 0
     await motivoStockModel.setActivoMotivo(id, id_empresa, activo)
 
-    res.json({ message: activo ? 'Motivo activado' : 'Motivo desactivado' })
+    res.json({ message: activo ? 'Motivo reactivado' : 'Motivo dado de baja' })
 
   } catch (error) {
     console.error(error)

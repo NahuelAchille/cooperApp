@@ -6,8 +6,11 @@
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css">
   <link rel="stylesheet" href="/styles/header.css">
-  <link rel="stylesheet" href="/styles/configuracion-categorias.css">
-  <title>Categorías de movimientos - CooperApp</title>
+  <!-- Comparte la hoja con las categorías de productos a propósito: es el
+       mismo árbol, las mismas tarjetas y los mismos botones. Copiarla sería
+       tener 178 líneas iguales que hay que corregir dos veces. -->
+  <link rel="stylesheet" href="/styles/configuracion-categorias-producto.css">
+  <title>Categorías de servicios - CooperApp</title>
 </head>
 <body>
 
@@ -17,11 +20,11 @@
 
   <div class="page-header">
     <div>
-      <h4 class="mb-0 fw-bold"><i class="fa-solid fa-sitemap me-2"></i>Categorías de movimientos</h4>
-      <small>Categorías y tipos con los que se ordenan los ingresos y egresos</small>
+      <h4 class="mb-0 fw-bold"><i class="fa-solid fa-screwdriver-wrench me-2"></i>Categorías de servicios</h4>
+      <small>Cómo se ordena el catálogo: categorías y subcategorías propias de tu empresa</small>
     </div>
-    <a class="btn btn-volver" href="/pages/movimientos.html">
-      <i class="fa-solid fa-arrow-left me-2"></i>Volver a movimientos
+    <a class="btn btn-volver" href="/pages/dashboard.html">
+      <i class="fa-solid fa-arrow-left me-2"></i>Volver al panel
     </a>
   </div>
 
@@ -30,46 +33,33 @@
     <!-- Se muestra si el usuario no es admin -->
     <div class="aviso-permiso d-none" id="aviso-permiso">
       <i class="fa-solid fa-lock fa-2x mb-3"></i>
-      <p class="mb-0">Solo el administrador de la empresa puede configurar la clasificación de movimientos.</p>
+      <p class="mb-0">Solo el administrador de la empresa puede configurar las categorías de servicios.</p>
     </div>
 
     <!-- Se muestra si la empresa tiene el módulo apagado -->
     <div class="aviso-permiso d-none" id="aviso-modulo">
       <i class="fa-solid fa-plug-circle-xmark fa-2x mb-3"></i>
-      <p class="mb-1">El módulo de <strong>Movimientos</strong> no está activo en tu empresa.</p>
+      <p class="mb-1">El módulo de <strong>Servicios</strong> no está activo en tu empresa.</p>
       <p class="mb-0 small">El administrador puede activarlo desde <em>Módulos del sistema</em>.</p>
     </div>
 
-    <div class="columnas d-none" id="columnas">
+    <div class="d-none" id="zona-categorias">
 
-      <div class="columna ingresos">
-        <div class="columna-header">
-          <h5><i class="fa-solid fa-arrow-down"></i>Ingresos</h5>
-          <button class="btn-add-cat" data-add-cat data-naturaleza="ingreso">
-            <i class="fa-solid fa-plus me-1"></i>Nueva categoría
-          </button>
-        </div>
-        <div id="col-ingresos">
-          <div class="text-center py-3 text-muted"><i class="fa-solid fa-spinner fa-spin"></i></div>
-        </div>
+      <div class="barra-acciones">
+        <h5><i class="fa-solid fa-sitemap"></i>Estructura del catálogo</h5>
+        <button class="btn-add-cat" id="btn-nueva-cat">
+          <i class="fa-solid fa-plus me-1"></i>Nueva categoría
+        </button>
       </div>
 
-      <div class="columna egresos">
-        <div class="columna-header">
-          <h5><i class="fa-solid fa-arrow-up"></i>Egresos</h5>
-          <button class="btn-add-cat" data-add-cat data-naturaleza="egreso">
-            <i class="fa-solid fa-plus me-1"></i>Nueva categoría
-          </button>
-        </div>
-        <div id="col-egresos">
-          <div class="text-center py-3 text-muted"><i class="fa-solid fa-spinner fa-spin"></i></div>
-        </div>
+      <div class="grilla-categorias" id="grilla">
+        <div class="text-center py-3 text-muted"><i class="fa-solid fa-spinner fa-spin"></i></div>
       </div>
 
     </div>
   </div>
 
-  <!-- Modal categoria (crear / editar) -->
+  <!-- Modal categoría (crear / renombrar) -->
   <div class="modal fade" id="modalCategoria" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
       <div class="modal-content">
@@ -80,14 +70,9 @@
         <div class="modal-body">
           <form id="form-categoria" novalidate>
             <input type="hidden" name="id">
-            <input type="hidden" name="naturaleza">
-            <div class="mb-3">
-              <label class="form-label">Esta categoría es de</label>
-              <div id="cat-naturaleza-texto" class="fw-bold"></div>
-            </div>
             <div>
               <label class="form-label">Nombre de la categoría</label>
-              <input type="text" class="form-control" name="nombre" maxlength="80" placeholder="Ej: Ventas, Sueldos, Servicios" required>
+              <input type="text" class="form-control" name="nombre" maxlength="80" placeholder="Ej: Alimentos, Bebidas, Herramientas" required>
             </div>
             <div id="cat-error" class="text-danger small mt-2 d-none"></div>
           </form>
@@ -102,32 +87,32 @@
     </div>
   </div>
 
-  <!-- Modal tipo (crear / editar) -->
-  <div class="modal fade" id="modalTipo" tabindex="-1" aria-hidden="true">
+  <!-- Modal subcategoría (crear / renombrar) -->
+  <div class="modal fade" id="modalSubcategoria" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
       <div class="modal-content">
         <div class="modal-header">
-          <h5 class="modal-title fw-bold" id="tipo-titulo"></h5>
+          <h5 class="modal-title fw-bold" id="subcat-titulo"></h5>
           <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
         </div>
         <div class="modal-body">
-          <form id="form-tipo" novalidate>
+          <form id="form-subcategoria" novalidate>
             <input type="hidden" name="id">
             <input type="hidden" name="id_categoria">
             <div class="mb-3">
               <label class="form-label">Categoría</label>
-              <div id="tipo-cat-texto" class="fw-bold"></div>
+              <div id="subcat-cat-texto" class="fw-bold"></div>
             </div>
             <div>
-              <label class="form-label">Nombre del tipo</label>
-              <input type="text" class="form-control" name="nombre" maxlength="80" placeholder="Ej: Luz, Internet, Venta mayorista" required>
+              <label class="form-label">Nombre de la subcategoría</label>
+              <input type="text" class="form-control" name="nombre" maxlength="80" placeholder="Ej: Perecederos, Congelados, Manuales" required>
             </div>
-            <div id="tipo-error" class="text-danger small mt-2 d-none"></div>
+            <div id="subcat-error" class="text-danger small mt-2 d-none"></div>
           </form>
         </div>
         <div class="modal-footer">
           <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
-          <button type="button" id="btn-guardar-tipo" class="btn fw-bold px-4" style="background-color:#2d7a4f;color:white;">
+          <button type="button" id="btn-guardar-subcat" class="btn fw-bold px-4" style="background-color:#2d7a4f;color:white;">
             <i class="fa-solid fa-floppy-disk me-2"></i>Guardar
           </button>
         </div>
@@ -170,7 +155,7 @@
       setTimeout(() => toast.remove(), 6000)
     }
 
-    // Evita romper el HTML si un nombre trae comillas
+    // Evita romper el HTML (y que se ejecute código) si un nombre trae comillas o etiquetas
     function esc(texto) {
       return String(texto).replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
     }
@@ -189,53 +174,53 @@
       }
 
       // El rol alcanza, pero la empresa puede tener el módulo apagado.
-      if (!moduloActivo('movimientos')) {
+      // Son dos problemas distintos y se resuelven de maneras distintas.
+      if (!moduloActivo('servicios')) {
         document.getElementById('aviso-modulo').classList.remove('d-none')
         return
       }
 
-      document.getElementById('columnas').classList.remove('d-none')
+      document.getElementById('zona-categorias').classList.remove('d-none')
       cargarArbol()
     }
 
-    // Trae categorias y, para cada una, sus tipos. Arma las dos columnas.
+    // Trae las categorías y, para cada una, sus subcategorías.
     async function cargarArbol() {
-      const categorias = await fetch('/categorias').then(r => r.ok ? r.json() : [])
+      const categorias = await fetch('/servicios/categorias').then(r => r.ok ? r.json() : [])
 
-      // Tipos de cada categoria, en paralelo
-      const conTipos = await Promise.all(categorias.map(async (c) => {
-        const tipos = await fetch(`/categorias/${c.id_categoria}/tipos`).then(r => r.ok ? r.json() : [])
-        return { ...c, tipos }
+      const conSubcategorias = await Promise.all(categorias.map(async (c) => {
+        const subcategorias = await fetch(`/servicios/categorias/${c.id_categoria_producto}/subcategorias`)
+          .then(r => r.ok ? r.json() : [])
+        return { ...c, subcategorias }
       }))
 
-      pintarColumna('ingreso', conTipos.filter(c => c.naturaleza === 'ingreso'))
-      pintarColumna('egreso',  conTipos.filter(c => c.naturaleza === 'egreso'))
+      pintarGrilla(conSubcategorias)
     }
 
-    function pintarColumna(naturaleza, cats) {
-      const cont = document.getElementById(naturaleza === 'ingreso' ? 'col-ingresos' : 'col-egresos')
+    function pintarGrilla(cats) {
+      const cont = document.getElementById('grilla')
 
       if (!cats.length) {
-        cont.innerHTML = '<div class="columna-vacia">Todavía no hay categorías. Creá la primera con el botón de arriba.</div>'
+        cont.innerHTML = '<div class="grilla-vacia">Todavía no hay categorías de servicios. Creá la primera con el botón <strong>Nueva categoría</strong>.</div>'
         return
       }
 
       cont.innerHTML = cats.map(c => {
-        const tiposHtml = c.tipos.length
-          ? `<ul class="tipos-lista">${c.tipos.map(t => `
-              <li class="tipo-item">
-                <span class="tipo-nombre ${t.activo ? '' : 'inactivo'}">
-                  <i class="fa-solid fa-tag" style="opacity:.4"></i>${esc(t.nombre)}
-                  ${t.activo ? '' : '<span class="badge-inactivo">De baja</span>'}
+        const subcatHtml = c.subcategorias.length
+          ? `<ul class="subcat-lista">${c.subcategorias.map(s => `
+              <li class="subcat-item">
+                <span class="subcat-nombre ${s.activo ? '' : 'inactivo'}">
+                  <i class="fa-solid fa-tag" style="opacity:.4"></i>${esc(s.nombre)}
+                  ${s.activo ? '' : '<span class="badge-inactivo">De baja</span>'}
                 </span>
-                <span class="tipo-acciones">
-                  <button class="btn-mini" data-accion="editar-tipo" data-tipo-id="${t.id_tipo}" data-tipo-nombre="${esc(t.nombre)}" data-cat-nombre="${esc(c.nombre)}" title="Renombrar"><i class="fa-solid fa-pen"></i></button>
-                  <button class="btn-mini ${t.activo ? 'peligro' : ''}" data-accion="toggle-tipo" data-tipo-id="${t.id_tipo}" data-tipo-nombre="${esc(t.nombre)}" data-activo="${t.activo}" title="${t.activo ? 'Dar de baja' : 'Reactivar'}">
-                    <i class="fa-solid ${t.activo ? 'fa-circle-minus' : 'fa-circle-plus'}"></i>
+                <span class="subcat-acciones">
+                  <button class="btn-mini" data-accion="editar-subcat" data-subcat-id="${s.id_subcategoria_producto}" data-subcat-nombre="${esc(s.nombre)}" data-cat-nombre="${esc(c.nombre)}" title="Renombrar"><i class="fa-solid fa-pen"></i></button>
+                  <button class="btn-mini ${s.activo ? 'peligro' : ''}" data-accion="toggle-subcat" data-subcat-id="${s.id_subcategoria_producto}" data-subcat-nombre="${esc(s.nombre)}" data-activo="${s.activo}" title="${s.activo ? 'Dar de baja' : 'Reactivar'}">
+                    <i class="fa-solid ${s.activo ? 'fa-circle-minus' : 'fa-circle-plus'}"></i>
                   </button>
                 </span>
               </li>`).join('')}</ul>`
-          : '<div class="sin-tipos">Sin tipos todavía. Agregá uno con el botón +.</div>'
+          : '<div class="sin-subcat">Sin subcategorías todavía. Agregá una con el botón +.</div>'
 
         return `
           <div class="cat-card ${c.activo ? '' : 'inactiva'}">
@@ -245,54 +230,48 @@
                 ${c.activo ? '' : '<span class="badge-inactivo">De baja</span>'}
               </span>
               <span class="cat-acciones">
-                <button class="btn-mini" data-accion="add-tipo" data-cat-id="${c.id_categoria}" data-cat-nombre="${esc(c.nombre)}" title="Agregar tipo"><i class="fa-solid fa-plus"></i></button>
-                <button class="btn-mini" data-accion="editar-cat" data-cat-id="${c.id_categoria}" data-cat-nombre="${esc(c.nombre)}" data-naturaleza="${c.naturaleza}" title="Renombrar"><i class="fa-solid fa-pen"></i></button>
-                <button class="btn-mini ${c.activo ? 'peligro' : ''}" data-accion="toggle-cat" data-cat-id="${c.id_categoria}" data-cat-nombre="${esc(c.nombre)}" data-activo="${c.activo}" title="${c.activo ? 'Dar de baja' : 'Reactivar'}">
+                <button class="btn-mini" data-accion="add-subcat" data-cat-id="${c.id_categoria_producto}" data-cat-nombre="${esc(c.nombre)}" title="Agregar subcategoría"><i class="fa-solid fa-plus"></i></button>
+                <button class="btn-mini" data-accion="editar-cat" data-cat-id="${c.id_categoria_producto}" data-cat-nombre="${esc(c.nombre)}" title="Renombrar"><i class="fa-solid fa-pen"></i></button>
+                <button class="btn-mini ${c.activo ? 'peligro' : ''}" data-accion="toggle-cat" data-cat-id="${c.id_categoria_producto}" data-cat-nombre="${esc(c.nombre)}" data-activo="${c.activo}" title="${c.activo ? 'Dar de baja' : 'Reactivar'}">
                   <i class="fa-solid ${c.activo ? 'fa-circle-minus' : 'fa-circle-plus'}"></i>
                 </button>
               </span>
             </div>
-            ${tiposHtml}
+            ${subcatHtml}
           </div>`
       }).join('')
     }
 
-    // ================= ACCIONES (delegacion sobre toda la seccion) =================
-    document.getElementById('columnas').addEventListener('click', (evento) => {
+    // ================= ACCIONES (delegación sobre la grilla) =================
+    document.getElementById('btn-nueva-cat').addEventListener('click', () => abrirModalCategoria(null))
+
+    document.getElementById('grilla').addEventListener('click', (evento) => {
       const boton = evento.target.closest('button')
       if (!boton) return
-
-      // Nueva categoria
-      if (boton.hasAttribute('data-add-cat')) {
-        abrirModalCategoria(null, boton.dataset.naturaleza)
-        return
-      }
 
       const accion = boton.dataset.accion
 
       if (accion === 'editar-cat') {
-        abrirModalCategoria({ id: boton.dataset.catId, nombre: boton.dataset.catNombre }, boton.dataset.naturaleza)
+        abrirModalCategoria({ id: boton.dataset.catId, nombre: boton.dataset.catNombre })
       } else if (accion === 'toggle-cat') {
         abrirModalEstado('categoria', boton.dataset.catId, boton.dataset.catNombre, boton.dataset.activo === '1')
-      } else if (accion === 'add-tipo') {
-        abrirModalTipo(null, boton.dataset.catId, boton.dataset.catNombre)
-      } else if (accion === 'editar-tipo') {
-        abrirModalTipo({ id: boton.dataset.tipoId, nombre: boton.dataset.tipoNombre }, null, boton.dataset.catNombre)
-      } else if (accion === 'toggle-tipo') {
-        abrirModalEstado('tipo', boton.dataset.tipoId, boton.dataset.tipoNombre, boton.dataset.activo === '1')
+      } else if (accion === 'add-subcat') {
+        abrirModalSubcategoria(null, boton.dataset.catId, boton.dataset.catNombre)
+      } else if (accion === 'editar-subcat') {
+        abrirModalSubcategoria({ id: boton.dataset.subcatId, nombre: boton.dataset.subcatNombre }, null, boton.dataset.catNombre)
+      } else if (accion === 'toggle-subcat') {
+        abrirModalEstado('subcategoria', boton.dataset.subcatId, boton.dataset.subcatNombre, boton.dataset.activo === '1')
       }
     })
 
-    // ================= CATEGORIA =================
-    function abrirModalCategoria(cat, naturaleza) {
+    // ================= CATEGORÍA =================
+    function abrirModalCategoria(cat) {
       const form = document.getElementById('form-categoria')
       form.reset()
       document.getElementById('cat-error').classList.add('d-none')
 
       const esEdicion = !!cat
       form.id.value = esEdicion ? cat.id : ''
-      form.naturaleza.value = naturaleza
-      document.getElementById('cat-naturaleza-texto').textContent = naturaleza === 'ingreso' ? 'plata que entra' : 'plata que sale'
       document.getElementById('cat-titulo').innerHTML = esEdicion
         ? '<i class="fa-solid fa-pen me-2"></i>Renombrar categoría'
         : '<i class="fa-solid fa-plus me-2"></i>Nueva categoría'
@@ -318,14 +297,12 @@
       boton.disabled = true
 
       const esEdicion = !!datos.id
-      const url = esEdicion ? `/categorias/${datos.id}` : '/categorias'
-      const method = esEdicion ? 'PUT' : 'POST'
-      const body = esEdicion ? { nombre: datos.nombre } : { nombre: datos.nombre, naturaleza: datos.naturaleza }
+      const url = esEdicion ? `/servicios/categorias/${datos.id}` : '/servicios/categorias'
 
       const res = await fetch(url, {
-        method,
+        method: esEdicion ? 'PUT' : 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(body)
+        body: JSON.stringify({ nombre: datos.nombre })
       })
       const resultado = await res.json()
       boton.disabled = false
@@ -341,29 +318,29 @@
       cargarArbol()
     })
 
-    // ================= TIPO =================
-    function abrirModalTipo(tipo, idCategoria, nombreCategoria) {
-      const form = document.getElementById('form-tipo')
+    // ================= SUBCATEGORÍA =================
+    function abrirModalSubcategoria(subcat, idCategoria, nombreCategoria) {
+      const form = document.getElementById('form-subcategoria')
       form.reset()
-      document.getElementById('tipo-error').classList.add('d-none')
+      document.getElementById('subcat-error').classList.add('d-none')
 
-      const esEdicion = !!tipo
-      form.id.value = esEdicion ? tipo.id : ''
+      const esEdicion = !!subcat
+      form.id.value = esEdicion ? subcat.id : ''
       form.id_categoria.value = idCategoria || ''
-      document.getElementById('tipo-cat-texto').textContent = nombreCategoria
-      document.getElementById('tipo-titulo').innerHTML = esEdicion
-        ? '<i class="fa-solid fa-pen me-2"></i>Renombrar tipo'
-        : '<i class="fa-solid fa-plus me-2"></i>Nuevo tipo'
+      document.getElementById('subcat-cat-texto').textContent = nombreCategoria
+      document.getElementById('subcat-titulo').innerHTML = esEdicion
+        ? '<i class="fa-solid fa-pen me-2"></i>Renombrar subcategoría'
+        : '<i class="fa-solid fa-plus me-2"></i>Nueva subcategoría'
 
-      if (esEdicion) form.nombre.value = tipo.nombre
+      if (esEdicion) form.nombre.value = subcat.nombre
 
-      new bootstrap.Modal(document.getElementById('modalTipo')).show()
+      new bootstrap.Modal(document.getElementById('modalSubcategoria')).show()
     }
 
-    document.getElementById('btn-guardar-tipo').addEventListener('click', async (evento) => {
+    document.getElementById('btn-guardar-subcat').addEventListener('click', async (evento) => {
       const boton = evento.currentTarget
-      const form = document.getElementById('form-tipo')
-      const errorDiv = document.getElementById('tipo-error')
+      const form = document.getElementById('form-subcategoria')
+      const errorDiv = document.getElementById('subcat-error')
       errorDiv.classList.add('d-none')
 
       const datos = Object.fromEntries(new FormData(form))
@@ -376,11 +353,12 @@
       boton.disabled = true
 
       const esEdicion = !!datos.id
-      const url = esEdicion ? `/categorias/tipos/${datos.id}` : `/categorias/${datos.id_categoria}/tipos`
-      const method = esEdicion ? 'PUT' : 'POST'
+      const url = esEdicion
+        ? `/servicios/categorias/subcategorias/${datos.id}`
+        : `/servicios/categorias/${datos.id_categoria}/subcategorias`
 
       const res = await fetch(url, {
-        method,
+        method: esEdicion ? 'PUT' : 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ nombre: datos.nombre })
       })
@@ -393,7 +371,7 @@
         return
       }
 
-      bootstrap.Modal.getInstance(document.getElementById('modalTipo')).hide()
+      bootstrap.Modal.getInstance(document.getElementById('modalSubcategoria')).hide()
       mostrarToast(resultado.message)
       cargarArbol()
     })
@@ -402,18 +380,19 @@
     function abrirModalEstado(destino, id, nombre, estaActiva) {
       const dandoDeBaja = estaActiva
       const esCat = destino === 'categoria'
+      const palabra = esCat ? 'la categoría' : 'la subcategoría'
 
       document.getElementById('estado-titulo').innerHTML = dandoDeBaja
-        ? `<i class="fa-solid fa-circle-minus me-2"></i>Dar de baja ${esCat ? 'la categoría' : 'el tipo'}`
-        : `<i class="fa-solid fa-circle-plus me-2"></i>Reactivar ${esCat ? 'la categoría' : 'el tipo'}`
+        ? `<i class="fa-solid fa-circle-minus me-2"></i>Dar de baja ${palabra}`
+        : `<i class="fa-solid fa-circle-plus me-2"></i>Reactivar ${palabra}`
 
       document.getElementById('estado-pregunta').innerHTML = dandoDeBaja
         ? `¿Dar de baja <strong>${esc(nombre)}</strong>?`
         : `¿Reactivar <strong>${esc(nombre)}</strong>?`
 
       document.getElementById('estado-aviso').innerHTML = dandoDeBaja
-        ? `<i class="fa-solid fa-circle-info me-1"></i>No se borra, y se puede reactivar cuando quieras: deja de aparecer al cargar nuevos movimientos, pero los movimientos ya cargados se conservan.${esCat ? ' Al dar de baja la categoría, sus tipos también quedan de baja.' : ''}`
-        : `<i class="fa-solid fa-circle-info me-1"></i>Vuelve a estar disponible para cargar movimientos.${esCat ? ' Sus tipos también vuelven a quedar activos.' : ''}`
+        ? `<i class="fa-solid fa-circle-info me-1"></i>No se borra, y se puede reactivar cuando quieras: deja de aparecer al cargar servicios nuevos, pero lo que ya esté clasificado se conserva.${esCat ? ' Al dar de baja la categoría, sus subcategorías también quedan de baja.' : ''}`
+        : `<i class="fa-solid fa-circle-info me-1"></i>Vuelve a estar disponible para clasificar servicios.${esCat ? ' Sus subcategorías también vuelven a quedar activas.' : ''}`
 
       const btn = document.getElementById('btn-confirmar-estado')
       btn.innerHTML = dandoDeBaja
@@ -436,8 +415,8 @@
       boton.disabled = true
 
       const url = boton.dataset.destino === 'categoria'
-        ? `/categorias/${boton.dataset.id}/estado`
-        : `/categorias/tipos/${boton.dataset.id}/estado`
+        ? `/servicios/categorias/${boton.dataset.id}/estado`
+        : `/servicios/categorias/subcategorias/${boton.dataset.id}/estado`
 
       const res = await fetch(url, {
         method: 'PUT',

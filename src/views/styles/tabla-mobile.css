@@ -1,0 +1,148 @@
+/* ===========================================================================
+   LISTADOS EN EL CELULAR: la tabla se convierte en tarjetas
+   ===========================================================================
+
+   El problema que resuelve: la tabla de Stock medía 529 px metida en 375, con
+   ESTADO arrancando en el píxel 361 y ACCIONES en el 462. O sea que el aviso
+   de "Reponer" y los dos botones de cada fila quedaban ENTERAMENTE fuera de la
+   pantalla, y la barra para arrastrar de costado está abajo de todo: uno se
+   entera de que hay más columnas recién cuando llegó al final de la lista.
+   En Movimientos era peor: 791 px, con el MONTO arrancando en el 514.
+
+   Es la pantalla que el operador mira parado en el depósito con el teléfono en
+   la mano. Veía la lista y no veía el aviso.
+
+   Por debajo de 768 px cada fila pasa a ser una tarjeta: el nombre arriba, el
+   número que importa grande, el resto como "etiqueta: valor", y los botones
+   abajo del todo. Nada queda fuera de la pantalla y no hay que arrastrar nada.
+
+   CÓMO SE USA (esto vale para las pantallas que se escriban más adelante):
+
+     1. La tabla va adentro de un contenedor con class="tabla-tarjetas".
+     2. Cada <td> lleva data-label="Lo que dice su encabezado".
+     3. Y opcionalmente una de estas clases:
+
+        td-principal     el nombre o la descripción. Va arriba, grande y sin
+                         etiqueta, porque el dato se explica solo.
+        td-destacado     el número que la persona vino a buscar (la existencia,
+                         el monto). Se muestra más grande.
+        td-acciones      los botones. Van abajo, separados por una línea.
+        td-oculto-movil  las columnas de relleno, que en el celular sólo
+                         empujan lo importante fuera de la vista.
+
+   En 768 px o más no cambia nada: la tabla se sigue viendo como una tabla.
+   =========================================================================== */
+
+@media (max-width: 767px) {
+
+  .tabla-tarjetas table,
+  .tabla-tarjetas thead,
+  .tabla-tarjetas tbody,
+  .tabla-tarjetas tr,
+  .tabla-tarjetas td {
+    display: block;
+    width: 100%;
+  }
+
+  /* El encabezado no sirve cuando cada dato lleva su propia etiqueta.
+     Se esconde así y no con display:none para que los lectores de pantalla
+     lo sigan encontrando. */
+  .tabla-tarjetas thead {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    white-space: nowrap;
+  }
+
+  /* Nada de scroll horizontal: es lo que se venía a sacar. */
+  .tabla-tarjetas,
+  .tabla-tarjetas .table-responsive {
+    overflow-x: visible !important;
+  }
+
+  .tabla-tarjetas table { border-collapse: separate; }
+
+  /* ---- La tarjeta ---- */
+  .tabla-tarjetas tbody tr {
+    background: #fff;
+    border: 1px solid #e3ece7;
+    border-radius: 12px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+    padding: 12px 14px;
+    margin-bottom: 12px;
+  }
+
+  /* Una fila sola que ocupa toda la tabla (el "no hay nada que mostrar" o el
+     "Cargando...") no es una tarjeta: es un aviso. */
+  .tabla-tarjetas tbody tr.fila-aviso {
+    border: none;
+    box-shadow: none;
+    background: transparent;
+  }
+
+  /* ---- Cada dato: etiqueta a la izquierda, valor a la derecha ---- */
+  .tabla-tarjetas tbody td {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    gap: 12px;
+    padding: 5px 0;
+    border: none;
+    text-align: right;
+  }
+
+  .tabla-tarjetas tbody td::before {
+    content: attr(data-label);
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: #7a8a80;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    text-align: left;
+    flex-shrink: 0;
+  }
+
+  /* ---- El nombre: arriba, grande y sin etiqueta ---- */
+  .tabla-tarjetas tbody td.td-principal {
+    display: block;
+    text-align: left;
+    font-size: 1.05rem;
+    font-weight: 700;
+    padding-bottom: 8px;
+    margin-bottom: 6px;
+    border-bottom: 1px solid #f0f4f2;
+  }
+
+  .tabla-tarjetas tbody td.td-principal::before { content: none; }
+
+  /* ---- El número que se vino a buscar ---- */
+  .tabla-tarjetas tbody td.td-destacado { font-size: 1.15rem; font-weight: 700; }
+
+  /* ---- Los botones, abajo y cómodos para el pulgar ---- */
+  .tabla-tarjetas tbody td.td-acciones {
+    display: flex;
+    justify-content: flex-end;
+    gap: 8px;
+    padding-top: 10px;
+    margin-top: 8px;
+    border-top: 1px solid #f0f4f2;
+  }
+
+  .tabla-tarjetas tbody td.td-acciones::before { content: none; }
+
+  .tabla-tarjetas tbody td.td-acciones .btn-mini,
+  .tabla-tarjetas tbody td.td-acciones .btn-accion {
+    min-width: 42px;
+    min-height: 38px;
+    font-size: 0.95rem;
+  }
+
+  /* Las columnas que en el celular sólo empujan lo importante fuera de la
+     vista. Siguen estando en escritorio. */
+  .tabla-tarjetas tbody td.td-oculto-movil { display: none; }
+
+  /* Un dato vacío no merece un renglón con su etiqueta al lado. */
+  .tabla-tarjetas tbody td:empty { display: none; }
+}

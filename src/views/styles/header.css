@@ -1,62 +1,132 @@
-/* ===== Base: Mobile ===== */
+/* ===== Base: Mobile =====
+   Todo en UNA fila: logo a la izquierda, el usuario y la hamburguesa a la
+   derecha. El menú se despliega abajo cuando se toca la hamburguesa.
+
+   Antes se apilaba —logo, nombre, menú en dos renglones y la chapa del
+   usuario— y se comía 335 px de los 812 del teléfono: el 41% de la pantalla
+   sin mostrar un solo dato. En Stock había que bajar casi dos pantallas para
+   ver el primer producto. */
 #main-header {
   display: flex;
-  flex-direction: column; /* mobile: apilado */
+  flex-direction: row;
+  flex-wrap: wrap;
   align-items: center;
-  justify-content: center;
-  padding: 10px;
+  justify-content: space-between;
+  padding: 8px 12px;
   border-bottom: 2px solid #ccc;
-  gap: 10px;
+  gap: 8px;
 }
 
 /* Logo */
 #logo {
   display: flex;
-  flex-direction: column; /* logo arriba, texto abajo */
+  flex-direction: row;
   align-items: center;
-  gap: 6px;
+  gap: 8px;
 }
 
 #logo img {
-  height: 50px;
+  height: 32px;
 }
 
 #logo h1 {
-  font-size: 1.2rem;
+  font-size: 1.05rem;
   margin: 0;
   color: #2d7a4f;
   font-weight: 700;
-  text-align: center;
 }
 
-/* Navegación */
-#main-nav ul {
+/* ===== Botón de hamburguesa (sólo celular) ===== */
+#btn-menu {
+  order: 3;
+  background: none;
+  border: 1.5px solid #c8e6d5;
+  border-radius: 8px;
+  color: #2d7a4f;
+  font-size: 1.1rem;
+  padding: 7px 12px;
+  cursor: pointer;
+  line-height: 1;
+}
+
+#btn-menu:hover { background-color: #e4f2eb; }
+
+/* En el celular la chapa del usuario queda sólo con las iniciales: con el
+   nombre completo, el logo, el avatar y la hamburguesa no entraban en una
+   fila y el botón se caía a un segundo renglón. El nombre sigue estando
+   adentro del menú, en el encabezado del desplegable. */
+@media (max-width: 767px) {
+  .user-dropdown-btn { padding: 5px 8px; gap: 4px; }
+  .user-dropdown-btn #user-nombre { display: none; }
+}
+
+/* Navegación
+   Los selectores van con ">" a proposito: sin eso alcanzaban tambien al
+   <ul class="dropdown-menu"> del submenu de Configuracion, le pisaban el
+   display:none de Bootstrap por especificidad, y el submenu quedaba abierto
+   todo el tiempo. */
+
+/* En celular el menú arranca cerrado y se despliega debajo de la fila del
+   logo, ocupando todo el ancho. El order lo manda al final aunque en el HTML
+   esté en el medio. */
+#main-nav {
+  display: none;
+  order: 4;
+  width: 100%;
+}
+
+#main-nav.abierto { display: block; }
+
+#main-nav > ul {
   margin: 0;
-  padding: 0;
+  padding: 6px 0 0;
   list-style: none;
   display: flex;
-  flex-direction: row; /* menú vertical en mobile */
-  gap: 6px;
+  flex-direction: column;  /* uno abajo del otro, cómodos para el pulgar */
+  gap: 2px;
   width: 100%;
-  align-items: center;
-  flex-wrap: wrap;
-  justify-content: center;
+  align-items: stretch;
 }
 
-#main-nav ul li a {
+#main-nav > ul > li > a {
   white-space: nowrap; /* evita que el texto se parta */
   display: block;
-  padding: 0px 10px;
+  padding: 12px 12px;   /* alto cómodo para tocar con el dedo */
   color: #333;
   font-size: 0.95rem;
   text-decoration: none;
   border-radius: 6px;
   transition: background-color 0.2s;
-  line-height: 10vh;
-    font-size: 0.85rem;
 }
 
-#main-nav ul li a:hover {
+#main-nav > ul > li > a:hover {
+  background-color: #e4f2eb;
+  color: #2d7a4f;
+}
+
+/* Configuracion: es una opcion mas del menu, pero con submenu.
+   El <li> es el que posiciona el desplegable, asi que la altura de linea
+   grande que usa el menu en celular no puede empujarlo. */
+#nav-configuracion .dropdown-toggle {
+  cursor: pointer;
+}
+
+#nav-configuracion .dropdown-menu {
+  border: 1.5px solid #c8e6d5;
+  border-radius: 8px;
+  box-shadow: 0 6px 18px rgba(0,0,0,0.12);
+  padding: 6px;
+}
+
+#nav-configuracion .dropdown-item {
+  border-radius: 6px;
+  font-size: 0.9rem;
+  padding: 8px 12px;
+  color: #1a2e23;
+  white-space: normal;
+}
+
+#nav-configuracion .dropdown-item:hover {
   background-color: #e4f2eb;
   color: #2d7a4f;
 }
@@ -96,28 +166,34 @@
 
 /* ===== Tablet ===== */
 @media (min-width: 768px) {
+  /* De acá para arriba no hay hamburguesa: el menú entra entero en la fila. */
+  #btn-menu { display: none; }
+
+  #main-nav {
+    display: block;
+    order: 0;
+    width: auto;
+  }
+
  #main-header {
-    flex-direction: row;
-    justify-content: space-between;
-    align-items: center;
+    flex-wrap: nowrap;
     padding: 0 16px;
     height: auto; /* evita que se corte el contenido */
   }
 
-  #logo {
-    flex-direction: row;
-    gap: 10px;
-  }
+  #logo img { height: 50px; }
+  #logo h1 { font-size: 1.2rem; }
 
-  #main-nav ul {
+  #main-nav > ul {
     flex-direction: row;
     flex-wrap: wrap; /* permite que los ítems bajen si no entran */
     justify-content: center;
     align-items: center;
     gap: 6px;
+    padding: 0;
   }
 
-  #main-nav ul li a {
+  #main-nav > ul > li > a {
     line-height: normal; /* evita que se desplace el texto */
     padding: 6px 10px;
     font-size: 0.9rem;
