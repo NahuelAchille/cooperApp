@@ -642,6 +642,29 @@ INSERT INTO movimientos_stock (id_producto, id_motivo_stock, cantidad, descripci
   (@p_electrodos, @m_compra,    6, 'Compra',                  CURDATE() - INTERVAL 9  DAY, @empresa, @operador),
   (@p_electrodos, @m_consumo,   1, 'Consumo del taller',      CURDATE() - INTERVAL 2  DAY, @empresa, @operador);
 
+-- Una venta CON su movimiento de dinero ya cargado, y otra SIN cargar.
+--
+-- Las dos hacen falta para que el reporte por producto (HU-52) se vea como es
+-- de verdad: el sistema no conoce los precios, asi que el movimiento de dinero
+-- se OFRECE y la persona puede decir que no. Un reporte donde todos los
+-- productos tienen su plata seria una demo que miente; uno donde ninguno la
+-- tiene se ve roto. Con las dos se entiende que la columna cuenta lo que se
+-- registro, y el reporte avisa cuantos quedaron sin el $.
+SET @m_venta_metal := (SELECT id_motivo_stock FROM motivos_stock WHERE id_empresa = @empresa AND efecto_stock = 'salida' AND efecto_dinero = 'ingreso' LIMIT 1);
+SET @cat_ventas_metal := (SELECT id_categoria FROM categorias_movimiento WHERE id_empresa = @empresa AND naturaleza = 'ingreso' AND nombre = 'Ventas');
+SET @tipo_venta_metal := (SELECT id_tipo FROM tipos_movimiento WHERE id_categoria = @cat_ventas_metal LIMIT 1);
+
+-- Primero el movimiento de dinero, porque el de stock lo va a apuntar.
+INSERT INTO movimientos (id_tipo, monto, descripcion, fecha, id_empresa, id_usuario, anulado) VALUES
+  (@tipo_venta_metal, 96000.00, 'Venta de chapa cortada', CURDATE() - INTERVAL 7 DAY, @empresa, @tesorero, 0);
+SET @mov_venta_chapa := LAST_INSERT_ID();
+
+INSERT INTO movimientos_stock (id_producto, id_motivo_stock, cantidad, descripcion, fecha, id_empresa, id_usuario, id_movimiento) VALUES
+  -- Con el $ cargado: aparece valorizada en el reporte por producto.
+  (@p_chapa, @m_venta_metal, 4, 'Venta a cliente',        CURDATE() - INTERVAL 7 DAY, @empresa, @operador, @mov_venta_chapa),
+  -- Sin el $: el reporte la cuenta como "sin el $ cargado".
+  (@p_cano,  @m_venta_metal, 10, 'Venta sin cobrar aún',  CURDATE() - INTERVAL 6 DAY, @empresa, @operador, NULL);
+
 -- ------------------------------------------------------------ comprobación --
 SELECT c.nombre AS empresa, c.estado, COUNT(u.id) AS empleados
 FROM empresas c

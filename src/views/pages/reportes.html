@@ -69,6 +69,20 @@
         </div>
 
         <div class="text-danger small mt-2 d-none" id="error-periodo"></div>
+
+        <!-- El mismo período mirado por otro lado. Los totales de arriba no
+             cambian al elegir acá: es la misma plata, agrupada distinto. Eso
+             es a propósito, para que se entienda que no son cuatro reportes
+             sino uno con cuatro maneras de leerlo. -->
+        <div class="selector-vista">
+          <label class="form-label mb-2">¿Cómo querés verlo?</label>
+          <div class="botones-vista" role="group">
+            <button type="button" class="btn-vista elegido" data-vista="movimientos">Uno por uno</button>
+            <button type="button" class="btn-vista" data-vista="categoria">Por categoría</button>
+            <button type="button" class="btn-vista d-none" data-vista="producto" id="vista-producto">Por producto</button>
+            <button type="button" class="btn-vista d-none" data-vista="servicio" id="vista-servicio">Por servicio</button>
+          </div>
+        </div>
       </div>
 
       <!-- El encabezado del reporte: de qué empresa y de qué período habla.
@@ -108,7 +122,8 @@
              posible es que el sistema perdió algo. -->
         <p class="aviso-anulados d-none" id="aviso-anulados"></p>
 
-        <div class="card-tabla tabla-tarjetas">
+        <!-- Vista "uno por uno": los movimientos del período -->
+        <div class="card-tabla tabla-tarjetas" id="caja-movimientos">
           <div class="table-responsive">
             <table class="table mb-0">
               <thead>
@@ -129,6 +144,26 @@
           </div>
         </div>
 
+        <!-- Vista agrupada: una fila por categoría, producto o servicio.
+             Es una sola tabla para los tres porque los tres contestan lo
+             mismo ("de dónde salió esta plata") y sólo cambia el agrupador.
+             Tres tablas casi iguales serían tres lugares para corregir. -->
+        <div class="card-tabla d-none" id="caja-agrupado">
+          <div class="table-responsive">
+            <table class="table mb-0 tabla-agrupada">
+              <thead>
+                <tr>
+                  <th id="th-agrupador">Categoría</th>
+                  <th class="text-end col-detalle">Entró</th>
+                  <th class="text-end col-detalle">Salió</th>
+                  <th class="text-end">Resultado</th>
+                </tr>
+              </thead>
+              <tbody id="tabla-agrupado"></tbody>
+            </table>
+          </div>
+        </div>
+
         <p class="pie-reporte" id="pie-reporte"></p>
       </div>
     </div>
@@ -140,6 +175,10 @@
 
     let usuarioActual = null
     let periodoElegido = 'mes-actual'
+    let vistaElegida = 'movimientos'
+
+    // Cómo se llama la columna del agrupador en cada vista.
+    const AGRUPADOR = { categoria: 'Categoría', producto: 'Producto', servicio: 'Servicio' }
 
     const formatoMoneda = new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'ARS', minimumFractionDigits: 2 })
     const formatMoneda = (n) => formatoMoneda.format(Number(n) || 0)
@@ -180,6 +219,12 @@
 
       document.getElementById('panel-reporte').classList.remove('d-none')
 
+      // Las vistas por producto y por servicio sólo se ofrecen si la empresa
+      // tiene ese módulo. Mostrar un botón que va a devolver una tabla vacía
+      // es peor que no mostrarlo: parece que no hubo movimientos.
+      if (moduloActivo('productos')) document.getElementById('vista-producto').classList.remove('d-none')
+      if (moduloActivo('servicios')) document.getElementById('vista-servicio').classList.remove('d-none')
+
       // No se puede pedir un reporte del futuro: todavía no pasó.
       document.getElementById('campo-desde').max = fechaDeHoy()
       document.getElementById('campo-hasta').max = fechaDeHoy()
@@ -187,24 +232,37 @@
       cargarReporte()
     }
 
-    async function cargarReporte() {
-      const errorDiv = document.getElementById('error-periodo')
-      errorDiv.classList.add('d-none')
-
+    // Arma el querystring del período, que comparten las dos consultas.
+    // Devuelve null si el período personalizado está a medio llenar.
+    function paramsDelPeriodo() {
       const params = new URLSearchParams({ periodo: periodoElegido })
 
       if (periodoElegido === 'personalizado') {
         const desde = document.getElementById('campo-desde').value
         const hasta = document.getElementById('campo-hasta').value
-        if (!desde || !hasta) {
-          errorDiv.textContent = 'Elegí las dos fechas y apretá Ver.'
-          errorDiv.classList.remove('d-none')
-          return
-        }
+        if (!desde || !hasta) return null
         params.set('desde', desde)
         params.set('hasta', hasta)
       }
 
+      return params
+    }
+
+    async function cargarReporte() {
+      const errorDiv = document.getElementById('error-periodo')
+      errorDiv.classList.add('d-none')
+
+      const params = paramsDelPeriodo()
+      if (!params) {
+        errorDiv.textContent = 'Elegí las dos fechas y apretá Ver.'
+        errorDiv.classList.remove('d-none')
+        return
+      }
+
+      // Los totales SIEMPRE salen del reporte del período, se esté mirando la
+      // vista que se esté mirando. Es la misma plata agrupada distinto: si los
+      // casilleros cambiaran al cambiar de vista, parecerían cuatro reportes
+      // que no cierran entre sí.
       const res = await fetch('/reportes/periodo?' + params.toString())
       const datos = await res.json()
 
@@ -215,6 +273,50 @@
       }
 
       pintar(datos)
+
+      if (vistaElegida !== 'movimientos') await cargarAgrupado(params)
+    }
+
+    // La tabla agrupada, para las vistas por categoría, producto y servicio.
+    async function cargarAgrupado(params) {
+      const pedido = new URLSearchParams(params)
+      pedido.set('por', vistaElegida)
+
+      const res = await fetch('/reportes/agrupado?' + pedido.toString())
+      const datos = await res.json()
+      if (!res.ok) return
+
+      document.getElementById('th-agrupador').textContent = AGRUPADOR[vistaElegida]
+
+      const tbody = document.getElementById('tabla-agrupado')
+
+      // El módulo se puede apagar entre que se cargó la pantalla y se apretó
+      // el botón. Se dice qué pasó en vez de mostrar una tabla vacía, que se
+      // leería como "no hubo movimientos".
+      if (datos.modulo_apagado) {
+        tbody.innerHTML = `<tr><td colspan="4"><div class="tabla-vacia">
+          El módulo de <strong>${esc(datos.modulo_apagado)}</strong> no está activo en tu empresa.
+        </div></td></tr>`
+        return
+      }
+
+      if (!datos.filas.length) {
+        tbody.innerHTML = `<tr><td colspan="4"><div class="tabla-vacia">
+          Todavía no hay nada cargado para agrupar acá.
+        </div></td></tr>`
+        return
+      }
+
+      tbody.innerHTML = datos.filas.map(f => `
+        <tr class="${f.activo ? '' : 'fila-inactiva'}">
+          <td>
+            <div class="agr-nombre">${esc(f.nombre)}${f.activo ? '' : ' <span class="chico-gris">(de baja)</span>'}</div>
+            <div class="chico-gris">${esc(f.detalle)}</div>
+          </td>
+          <td class="text-end col-detalle">${f.ingresos ? formatMoneda(f.ingresos) : '<span class="chico-gris">—</span>'}</td>
+          <td class="text-end col-detalle">${f.egresos ? formatMoneda(f.egresos) : '<span class="chico-gris">—</span>'}</td>
+          <td class="text-end fw-bold ${f.resultado > 0 ? 'positivo' : f.resultado < 0 ? 'negativo' : 'text-muted'}">${formatMoneda(f.resultado)}</td>
+        </tr>`).join('')
     }
 
     function pintar(datos) {
@@ -297,6 +399,28 @@
     })
 
     document.getElementById('btn-ver').addEventListener('click', cargarReporte)
+
+    // --- El selector de vista ---
+    document.querySelectorAll('.btn-vista').forEach(boton => {
+      boton.addEventListener('click', () => {
+        vistaElegida = boton.dataset.vista
+
+        document.querySelectorAll('.btn-vista')
+          .forEach(b => b.classList.toggle('elegido', b === boton))
+
+        const esListado = vistaElegida === 'movimientos'
+        document.getElementById('caja-movimientos').classList.toggle('d-none', !esListado)
+        document.getElementById('caja-agrupado').classList.toggle('d-none', esListado)
+
+        // El título de la hoja dice qué se está mirando: es lo que queda en
+        // la captura o en la impresión, donde los botones no se ven.
+        document.getElementById('hoja-titulo').textContent = esListado
+          ? 'Movimientos del período'
+          : `Totales por ${AGRUPADOR[vistaElegida].toLowerCase()}`
+
+        cargarReporte()
+      })
+    })
 
     // Evita que quede un rango imposible: cada fecha le pone el límite a la otra.
     function sincronizarRango() {

@@ -1,4 +1,6 @@
 const reporteModel = require('../models/reporte.model')
+const movimientoModel = require('../models/movimiento.model')
+const moduloModel = require('../models/modulo.model')
 const { resolver } = require('../services/periodo.service')
 
 // Suma montos sin que la coma se corra.
@@ -68,4 +70,146 @@ exports.getReportePeriodo = async (req, res) => {
     console.error(error)
     res.status(500).json({ error: 'Error al armar el reporte' })
   }
+}
+
+// =====================================================================
+// AGRUPADOS (HU-52)
+// =====================================================================
+//
+// El mismo periodo mirado por otro lado: no "cuanto entro y cuanto salio",
+// sino "de donde". Tres criterios, un solo endpoint, porque la pregunta es la
+// misma y lo unico que cambia es por que agrupar.
+
+const CRITERIOS = ['categoria', 'producto', 'servicio']
+
+// Que modulo necesita cada agrupacion. El de categorias no lleva ninguno
+// aparte: toda empresa clasifica su dinero, y la ruta ya pide movimientos.
+const MODULO_DE = { producto: 'productos', servicio: 'servicios' }
+
+exports.getReporteAgrupado = async (req, res) => {
+
+  try {
+    const id_empresa = req.session.user.empresa.id
+
+    const criterio = CRITERIOS.includes(req.query.por) ? req.query.por : 'categoria'
+
+    const periodo = resolver(req.query)
+    if (periodo.error) {
+      return res.status(400).json({ error: periodo.error })
+    }
+
+    // Si la empresa no tiene el modulo, se devuelve vacio y se avisa por que.
+    // No es un pedido invalido: es una empresa que no usa esa parte del
+    // sistema, y la pantalla simplemente no ofrece esa vista. Mismo criterio
+    // que el resumen por servicio de HU-49.
+    const moduloNecesario = MODULO_DE[criterio]
+    if (moduloNecesario && !await moduloModel.estaActivo(id_empresa, moduloNecesario)) {
+      return res.json({
+        criterio,
+        periodo: { desde: periodo.desde, hasta: periodo.hasta, etiqueta: periodo.etiqueta },
+        modulo_apagado: moduloNecesario,
+        filas: []
+      })
+    }
+
+    const filas = await armarFilas(criterio, id_empresa, periodo)
+
+    res.json({
+      criterio,
+      periodo: { desde: periodo.desde, hasta: periodo.hasta, etiqueta: periodo.etiqueta },
+      modulo_apagado: null,
+      filas
+    })
+
+  } catch (error) {
+    console.error(error)
+    res.status(500).json({ error: 'Error al armar el reporte' })
+  }
+}
+
+// Cada criterio devuelve las mismas columnas, aunque las saque de lugares
+// distintos: nombre, ingresos, egresos, resultado y un detalle propio. Asi la
+// pantalla pinta una sola tabla y no tres.
+const armarFilas = async (criterio, id_empresa, periodo) => {
+
+  if (criterio === 'servicio') {
+    // REUSA la consulta de HU-49 en vez de escribir una igual. Si mañana
+    // cambia la regla de que servicio entra en el resumen, cambia en los dos
+    // lados a la vez. Es lo mismo que se hizo con el calculo del stock.
+    const servicios = await movimientoModel.resumenPorServicio(id_empresa, periodo)
+    return servicios.map(s => ({
+      id: s.id_servicio,
+      nombre: s.nombre,
+      activo: s.activo,
+      ingresos: s.total_ingresos,
+      egresos: s.total_egresos,
+      resultado: s.resultado,
+      detalle: s.cantidad === 0
+        ? 'Sin movimientos en el período'
+        : `${s.cantidad} ${s.cantidad === 1 ? 'movimiento' : 'movimientos'}`
+    }))
+  }
+
+  if (criterio === 'producto') {
+    const productos = await reporteModel.porProducto(id_empresa, periodo)
+    return productos.map(p => {
+      const cobrado = Number(p.cobrado)
+      const pagado = Number(p.pagado)
+      const sinValorizar = Number(p.sin_valorizar)
+
+      // El detalle de un producto son las cantidades, no la plata: es lo que
+      // el del deposito reconoce. Y si quedaron movimientos sin el $, se dice
+      // acá mismo: sin eso, el total parece el total y es una parte.
+      const partes = []
+      if (Number(p.entradas) > 0) partes.push(`entraron ${formatearCantidad(p.entradas)}`)
+      if (Number(p.salidas) > 0) partes.push(`salieron ${formatearCantidad(p.salidas)}`)
+      if (!partes.length) partes.push('Sin movimientos en el período')
+      if (sinValorizar > 0) {
+        partes.push(sinValorizar === 1
+          ? '1 movimiento sin el $ cargado'
+          : `${sinValorizar} movimientos sin el $ cargado`)
+      }
+
+      return {
+        id: p.id_producto,
+        nombre: p.nombre,
+        activo: p.activo,
+        ingresos: cobrado,
+        egresos: pagado,
+        resultado: cobrado - pagado,
+        detalle: partes.join(' · '),
+        sin_valorizar: sinValorizar
+      }
+    })
+  }
+
+  // --- categoria ---
+  //
+  // Una categoria es de ingreso O de egreso, nunca las dos: la naturaleza es
+  // fija y vive en la categoria. Por eso su total va de un lado o del otro, y
+  // el "resultado" de una categoria es su propio total con signo.
+  const categorias = await reporteModel.porCategoria(id_empresa, periodo)
+  return categorias.map(c => {
+    const total = Number(c.total)
+    const esIngreso = c.naturaleza === 'ingreso'
+    return {
+      id: c.id_categoria,
+      nombre: c.nombre,
+      activo: c.activo,
+      naturaleza: c.naturaleza,
+      ingresos: esIngreso ? total : 0,
+      egresos: esIngreso ? 0 : total,
+      resultado: esIngreso ? total : -total,
+      detalle: Number(c.cantidad) === 0
+        ? 'Sin movimientos en el período'
+        : `${c.cantidad} ${Number(c.cantidad) === 1 ? 'movimiento' : 'movimientos'}`
+    }
+  })
+}
+
+// Las cantidades se guardan con 2 decimales, pero mostrar "5,00 unidades"
+// cuando son 5 es ruido. Mismo criterio que el catalogo de productos.
+function formatearCantidad(valor) {
+  const numero = Number(valor)
+  return Number.isInteger(numero) ? String(numero) : numero.toFixed(2).replace('.', ',')
 }

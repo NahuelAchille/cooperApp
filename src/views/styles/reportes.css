@@ -93,6 +93,45 @@ body {
 }
 .btn-ver:hover { background: var(--verde-oscuro); color: white; }
 
+/* ===== EL SELECTOR DE VISTA =====
+   El mismo período mirado por otro lado. Va abajo del período y no arriba
+   porque primero se elige DE CUÁNDO y después CÓMO: al revés, uno elige una
+   manera de ver algo que todavía no acotó. */
+.selector-vista {
+  margin-top: 14px;
+  padding-top: 14px;
+  border-top: 1px solid #e6efea;
+}
+.selector-vista .form-label { font-weight: 600; color: var(--verde-primario); }
+
+.botones-vista { display: flex; flex-wrap: wrap; gap: 8px; }
+
+.btn-vista {
+  flex: 1 1 auto;
+  min-width: 100px;
+  background: white;
+  border: 1px solid #d8e6de;
+  border-radius: 20px;
+  padding: 7px 14px;
+  font-size: 0.88rem;
+  font-weight: 600;
+  color: #45564d;
+}
+.btn-vista:hover { border-color: var(--verde-secundario); }
+.btn-vista.elegido {
+  background: #e4f2eb;
+  border-color: var(--verde-primario);
+  color: var(--verde-primario);
+}
+
+/* ===== LA TABLA AGRUPADA ===== */
+.tabla-agrupada td { vertical-align: middle; }
+.agr-nombre { font-weight: 600; }
+.chico-gris { font-size: 0.76rem; color: #9aa8a1; font-weight: 400; }
+.tabla-agrupada .fila-inactiva { opacity: 0.6; }
+.tabla-agrupada .positivo { color: var(--verde-oscuro); }
+.tabla-agrupada .negativo { color: var(--danger); }
+
 /* ===== LA HOJA DEL REPORTE =====
    Se llama "hoja" porque es lo que alguien le muestra a otro: un bloque
    blanco con encabezado, totales y detalle. Por eso no lleva botones de
@@ -199,6 +238,18 @@ body {
   color: #8b9a92;
   margin: 12px 0 0;
   text-align: right;
+}
+
+/* En el celular la tabla agrupada deja dos columnas: el nombre y el
+   resultado. Con las cuatro, "Resultado" -- la única que se vino a mirar --
+   queda cortada contra el borde, que es exactamente lo que pasó en el panel
+   de servicios y lo que HU-85 arregló en el resto.
+   Entró y Salió no se pierden: son el detalle de una cuenta cuyo resultado
+   está a la vista, y en la pantalla grande siguen estando. */
+@media (max-width: 767px) {
+  .tabla-agrupada .col-detalle { display: none; }
+  .tabla-agrupada th, .tabla-agrupada td { padding: 9px 6px; font-size: 0.85rem; }
+  .botones-vista .btn-vista { flex: 1 1 45%; }
 }
 
 /* ===== ESCRITORIO ===== */

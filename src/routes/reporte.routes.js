@@ -15,4 +15,10 @@ const finanzas = [requireLogin, requireRol('admin_empresa', 'tesorero'), require
 
 router.get('/periodo', ...finanzas, reporteController.getReportePeriodo)
 
+// El mismo periodo agrupado por categoria, por producto o por servicio
+// (?por=...). Los tres van por la misma ruta porque la pregunta es la misma
+// y lo unico que cambia es por que agrupar. El control del modulo que
+// necesita cada uno lo hace el controlador, porque depende del criterio.
+router.get('/agrupado', ...finanzas, reporteController.getReporteAgrupado)
+
 module.exports = router

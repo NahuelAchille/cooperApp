@@ -357,6 +357,24 @@ CAMBIOS DEL 16/09 POR LA AUDITORIA DE QA:
        la misma pantalla le dice otra cosa distinta, que el modulo
        no esta activo. Son dos problemas distintos.
 
+   "COMO QUERES VERLO?" - el mismo periodo agrupado distinto:
+     - "Por categoria": la suma de esas filas TIENE QUE DAR igual
+       que los casilleros de arriba. Es la mejor forma de ver si el
+       reporte cierra.
+     - "Por producto" y "Por servicio" son SUBCONJUNTOS: su plata
+       esta adentro del total, nunca por encima.
+     - Fijarse que los casilleros de arriba NO cambian al cambiar
+       de vista. Es la misma plata agrupada distinto, no cuatro
+       reportes.
+     - En "Por producto", la Chapa aparece con $ 96.000 y las
+       demas en cero, y cada una avisa cuantos movimientos quedaron
+       "sin el $ cargado". No es un error: el sistema no conoce los
+       precios, asi que el movimiento de dinero se OFRECE y se
+       puede decir que no. Los datos de prueba traen una venta con
+       el $ cargado y otra sin, justamente para que se vea.
+     - Como Marta (La Esperanza no tiene el modulo de Servicios):
+       el boton "Por servicio" no le aparece.
+
  --- CUANTO DEJA CADA SERVICIO ---
 
    En "Movimientos", el boton "Cuanto deja cada servicio", abajo de
