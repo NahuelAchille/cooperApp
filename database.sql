@@ -450,7 +450,11 @@ INSERT INTO modulos (clave, nombre, descripcion, opcional, activo_por_defecto, o
 ('movimientos',  'Movimientos',  'Registro de ingresos y egresos de dinero. Es la base del sistema y no se puede desactivar.', 0, 1, 1),
 ('productos',    'Productos',    'Catálogo de productos, categorías propias y control de stock.',                              1, 0, 2),
 ('servicios',    'Servicios',    'Servicios que la empresa presta o contrata y que generan ingresos o egresos.',               1, 0, 3),
-('reportes',     'Reportes',     'Reportes por período, categoría, producto y servicio, con descarga.',                        1, 0, 4),
+-- Reportes volvio a venir prendido de fabrica el 27/09/2026. Se habia apagado
+-- el 16/09 porque la pantalla todavia no existia y un boton que no hace nada
+-- se lee como "lo estoy apretando mal". Ahora existe y da un reporte de
+-- verdad, asi que la razon de apagarlo ya no corre.
+('reportes',     'Reportes',     'Reportes por período, categoría, producto y servicio, con descarga.',                        1, 1, 4),
 ('articulacion', 'Articulación', 'Publicar necesidades y ofertas, y encontrar coincidencias con otras empresas.',              1, 0, 5);
 
 -- Usuario superadmin (contraseña: password)

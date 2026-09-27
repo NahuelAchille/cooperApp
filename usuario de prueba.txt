@@ -1,7 +1,6 @@
 ===========================================================
  CooperApp - USUARIOS DE PRUEBA
- Actualizado: 17/09/2026  (modulo de Servicios completo:
-                           HU-47, HU-48 y HU-49)
+ Actualizado: 27/09/2026  (Reportes: el reporte por periodo, HU-51)
 ===========================================================
 
 La app corre en http://localhost:3000
@@ -17,6 +16,16 @@ agrego "es_servicio" en productos y en categorias_producto, y
 "id_servicio" en movimientos. Si venis de una version anterior hay que
 BORRAR la base y volver a crearla, no alcanza con reimportar. Los
 comandos estan al final.
+
+CAMBIOS DEL 27/09 - REPORTES (HU-51):
+  - Reportes ya NO es un boton muerto: tiene su pantalla, con el
+    reporte por periodo. Y volvio a venir PRENDIDO de fabrica, asi
+    que las tres empresas activas lo tienen.
+  - Un reporte NO es el listado de Movimientos con fechas. El
+    listado es para trabajar (cargar, corregir, anular); el reporte
+    es para mirar y mostrar: sin botones, en orden cronologico, sin
+    lo anulado, y el periodo se elige de un toque.
+  - Los anulados quedan AFUERA, pero el reporte dice cuantos son.
 
 CAMBIOS DEL 17/09 - SERVICIOS (HU-47):
   - Servicios ya NO es un boton muerto: tiene su catalogo propio,
@@ -325,6 +334,28 @@ CAMBIOS DEL 16/09 POR LA AUDITORIA DE QA:
        encontrarlos.
      - Como Marta (modulo de servicios apagado): no le aparece ni
        el campo ni el filtro, y sus movimientos andan igual.
+
+ --- REPORTES ---
+
+   Como Osvaldo o como Daniel (tesorero) -> "Reportes" en el menu.
+
+   Que conviene probar:
+     - Los tres atajos de periodo: Este mes, El mes pasado, Este
+       ano. Los numeros cambian y el reporte dice de que periodo
+       esta hablando.
+     - "Otras fechas": pide las dos. Si falta una, o si la de
+       inicio es posterior a la de cierre, avisa.
+     - LOS TOTALES TIENEN QUE CERRAR con la lista que esta abajo.
+       Es lo unico que puede verificar quien recibe el reporte:
+       sumar la columna de montos a mano y comparar.
+     - Anular un movimiento del periodo (desde Movimientos) y
+       volver al reporte: desaparece de la lista, deja de sumar, y
+       aparece un aviso diciendo cuantos anulados quedaron afuera.
+     - Como Fabian (operador): la pantalla le dice que no tiene
+       acceso. Reportes es plata.
+     - Apagando el modulo de Reportes (Configuracion -> Modulos):
+       la misma pantalla le dice otra cosa distinta, que el modulo
+       no esta activo. Son dos problemas distintos.
 
  --- CUANTO DEJA CADA SERVICIO ---
 

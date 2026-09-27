@@ -199,6 +199,8 @@ VALUES
 --   · Huerta Norte              -> nada: todavia esta pendiente de aprobacion
 --
 -- Lo que no figura aca queda con el valor por defecto del catalogo de modulos.
+-- Movimientos y Reportes vienen prendidos de fabrica, asi que las tres
+-- empresas activas los tienen sin que este archivo les cargue nada.
 
 INSERT INTO empresa_modulos (id_empresa, id_modulo, activo)
 SELECT e.id_empresa, m.id_modulo, 1

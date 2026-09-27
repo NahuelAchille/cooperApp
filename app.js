@@ -13,6 +13,7 @@ const motivoStockRoutes = require('./src/routes/motivo-stock.routes')
 const stockRoutes = require('./src/routes/stock.routes')
 const servicioRoutes = require('./src/routes/servicio.routes')
 const categoriaServicioRoutes = require('./src/routes/categoria-servicio.routes')
+const reporteRoutes = require('./src/routes/reporte.routes')
 
 app.use(express.urlencoded({ extended: true }))
 app.use(express.json())
@@ -48,6 +49,8 @@ app.use('/productos', productoRoutes)
 // servicio es un producto sin stock -- y por eso NO hay rutas de stock aca.
 app.use('/servicios/categorias', categoriaServicioRoutes)
 app.use('/servicios', servicioRoutes)
+
+app.use('/reportes', reporteRoutes)
 
 // Ultimo de todos: recoge lo que ningun controlador atajo.
 //

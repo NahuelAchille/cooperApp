@@ -1,0 +1,315 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css">
+  <link rel="stylesheet" href="/styles/header.css">
+  <link rel="stylesheet" href="/styles/reportes.css">
+  <link rel="stylesheet" href="/styles/tabla-mobile.css">
+  <title>Reportes - CooperApp</title>
+</head>
+<body>
+
+  <div id="header"></div>
+
+  <script src="/components/header.js"></script>
+
+  <div class="page-header">
+    <div>
+      <h4 class="mb-0 fw-bold"><i class="fa-solid fa-chart-column me-2"></i>Reportes</h4>
+      <small id="nombre-empresa"></small>
+    </div>
+  </div>
+
+  <div class="content">
+
+    <!-- Se muestra si el rol no llega a finanzas -->
+    <div class="aviso-permiso d-none" id="aviso-permiso">
+      <i class="fa-solid fa-lock fa-2x mb-3"></i>
+      <p class="mb-0">Tu usuario no tiene acceso a los reportes de la empresa.</p>
+    </div>
+
+    <!-- Se muestra si la empresa tiene el módulo apagado -->
+    <div class="aviso-permiso d-none" id="aviso-modulo">
+      <i class="fa-solid fa-plug-circle-xmark fa-2x mb-3"></i>
+      <p class="mb-1">El módulo de <strong>Reportes</strong> no está activo en tu empresa.</p>
+      <p class="mb-0 small">El administrador puede activarlo desde <em>Módulos del sistema</em>.</p>
+    </div>
+
+    <div id="panel-reporte" class="d-none">
+
+      <!-- El período, en un toque.
+           Las tres preguntas que se hacen siempre ("¿cómo venimos este mes?",
+           "¿cómo cerró el mes pasado?", "¿cómo va el año?") se contestan con
+           un botón. Armar dos fechas a mano queda para el caso raro, que es
+           el único que las necesita de verdad. -->
+      <div class="selector-periodo">
+        <label class="form-label mb-2">¿De qué período?</label>
+        <div class="botones-periodo" role="group">
+          <button type="button" class="btn-periodo elegido" data-periodo="mes-actual">Este mes</button>
+          <button type="button" class="btn-periodo" data-periodo="mes-anterior">El mes pasado</button>
+          <button type="button" class="btn-periodo" data-periodo="anio-actual">Este año</button>
+          <button type="button" class="btn-periodo" data-periodo="personalizado">Otras fechas</button>
+        </div>
+
+        <div class="fechas-personalizadas d-none" id="fechas-personalizadas">
+          <div>
+            <label class="form-label">Desde</label>
+            <input type="date" class="form-control form-control-sm" id="campo-desde" min="2000-01-01">
+          </div>
+          <div>
+            <label class="form-label">Hasta</label>
+            <input type="date" class="form-control form-control-sm" id="campo-hasta" min="2000-01-01">
+          </div>
+          <button class="btn btn-ver" id="btn-ver">
+            <i class="fa-solid fa-magnifying-glass me-1"></i>Ver
+          </button>
+        </div>
+
+        <div class="text-danger small mt-2 d-none" id="error-periodo"></div>
+      </div>
+
+      <!-- El encabezado del reporte: de qué empresa y de qué período habla.
+           Va acá arriba y no escondido, porque es lo primero que necesita
+           saber quien lo recibe impreso o en una captura. -->
+      <div class="hoja-reporte" id="hoja-reporte">
+
+        <div class="hoja-encabezado">
+          <div>
+            <h5 class="mb-1" id="hoja-titulo">Movimientos del período</h5>
+            <p class="mb-0" id="hoja-periodo"></p>
+          </div>
+          <div class="hoja-empresa" id="hoja-empresa"></div>
+        </div>
+
+        <div class="totales">
+          <div class="total-card ingresos">
+            <h6><i class="fa-solid fa-arrow-down me-1"></i>Entró</h6>
+            <div class="valor" id="total-ingresos">$0</div>
+            <div class="detalle" id="detalle-ingresos"></div>
+          </div>
+          <div class="total-card egresos">
+            <h6><i class="fa-solid fa-arrow-up me-1"></i>Salió</h6>
+            <div class="valor" id="total-egresos">$0</div>
+            <div class="detalle" id="detalle-egresos"></div>
+          </div>
+          <div class="total-card resultado">
+            <h6><i class="fa-solid fa-scale-balanced me-1"></i>Resultado</h6>
+            <div class="valor" id="total-resultado">$0</div>
+            <div class="detalle" id="detalle-resultado"></div>
+          </div>
+        </div>
+
+        <!-- Los anulados quedan afuera del reporte, pero se dice cuántos son.
+             Un total que no cierra con lo que la persona recuerda haber
+             cargado necesita una explicación: sin esto, la única lectura
+             posible es que el sistema perdió algo. -->
+        <p class="aviso-anulados d-none" id="aviso-anulados"></p>
+
+        <div class="card-tabla tabla-tarjetas">
+          <div class="table-responsive">
+            <table class="table mb-0">
+              <thead>
+                <tr>
+                  <th>Fecha</th>
+                  <th>Descripción</th>
+                  <th>Categoría</th>
+                  <th>Tipo</th>
+                  <th class="text-end">Monto</th>
+                </tr>
+              </thead>
+              <tbody id="tabla-reporte">
+                <tr class="fila-aviso"><td colspan="5" class="text-center py-4 text-muted">
+                  <i class="fa-solid fa-spinner fa-spin me-2"></i>Armando el reporte...
+                </td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <p class="pie-reporte" id="pie-reporte"></p>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+
+  <script>
+
+    let usuarioActual = null
+    let periodoElegido = 'mes-actual'
+
+    const formatoMoneda = new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'ARS', minimumFractionDigits: 2 })
+    const formatMoneda = (n) => formatoMoneda.format(Number(n) || 0)
+
+    // Neutraliza el HTML que pueda venir en un texto cargado por el usuario.
+    function esc(texto) {
+      return String(texto).replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+    }
+
+    function fechaDeHoy() {
+      const hoy = new Date()
+      return `${hoy.getFullYear()}-${String(hoy.getMonth() + 1).padStart(2, '0')}-${String(hoy.getDate()).padStart(2, '0')}`
+    }
+
+    async function iniciar() {
+      usuarioActual = await cargarHeader()
+
+      if (!usuarioActual || usuarioActual.error) {
+        window.location.href = '/pages/login.html'
+        return
+      }
+
+      document.getElementById('nombre-empresa').textContent = usuarioActual.empresa?.nombre || ''
+      document.getElementById('hoja-empresa').textContent = usuarioActual.empresa?.nombre || ''
+
+      const esFinanzas = usuarioActual.rol === 'admin_empresa' || usuarioActual.rol === 'tesorero'
+      if (!esFinanzas) {
+        document.getElementById('aviso-permiso').classList.remove('d-none')
+        return
+      }
+
+      // El rol alcanza, pero la empresa puede tener el módulo apagado. Son dos
+      // problemas distintos y se resuelven de maneras distintas.
+      if (!moduloActivo('reportes')) {
+        document.getElementById('aviso-modulo').classList.remove('d-none')
+        return
+      }
+
+      document.getElementById('panel-reporte').classList.remove('d-none')
+
+      // No se puede pedir un reporte del futuro: todavía no pasó.
+      document.getElementById('campo-desde').max = fechaDeHoy()
+      document.getElementById('campo-hasta').max = fechaDeHoy()
+
+      cargarReporte()
+    }
+
+    async function cargarReporte() {
+      const errorDiv = document.getElementById('error-periodo')
+      errorDiv.classList.add('d-none')
+
+      const params = new URLSearchParams({ periodo: periodoElegido })
+
+      if (periodoElegido === 'personalizado') {
+        const desde = document.getElementById('campo-desde').value
+        const hasta = document.getElementById('campo-hasta').value
+        if (!desde || !hasta) {
+          errorDiv.textContent = 'Elegí las dos fechas y apretá Ver.'
+          errorDiv.classList.remove('d-none')
+          return
+        }
+        params.set('desde', desde)
+        params.set('hasta', hasta)
+      }
+
+      const res = await fetch('/reportes/periodo?' + params.toString())
+      const datos = await res.json()
+
+      if (!res.ok) {
+        errorDiv.textContent = datos.error
+        errorDiv.classList.remove('d-none')
+        return
+      }
+
+      pintar(datos)
+    }
+
+    function pintar(datos) {
+      const t = datos.totales
+
+      document.getElementById('hoja-periodo').textContent = 'Período: ' + datos.periodo.etiqueta
+
+      document.getElementById('total-ingresos').textContent = formatMoneda(t.ingresos)
+      document.getElementById('total-egresos').textContent = formatMoneda(t.egresos)
+
+      const resultado = document.getElementById('total-resultado')
+      resultado.textContent = formatMoneda(t.resultado)
+      resultado.className = 'valor ' + (t.resultado > 0 ? 'positivo' : t.resultado < 0 ? 'negativo' : '')
+
+      const plural = (n, singular, pluralTexto) => `${n} ${n === 1 ? singular : pluralTexto}`
+      document.getElementById('detalle-ingresos').textContent = plural(t.cantidad_ingresos, 'movimiento', 'movimientos')
+      document.getElementById('detalle-egresos').textContent = plural(t.cantidad_egresos, 'movimiento', 'movimientos')
+      document.getElementById('detalle-resultado').textContent =
+        t.resultado > 0 ? 'Quedó a favor' : t.resultado < 0 ? 'Quedó en contra' : 'Quedó igual'
+
+      // Los anulados
+      const avisoAnulados = document.getElementById('aviso-anulados')
+      if (t.anulados_fuera > 0) {
+        avisoAnulados.innerHTML = `<i class="fa-solid fa-circle-info me-1"></i>` +
+          `${t.anulados_fuera === 1
+            ? 'Hay 1 movimiento anulado en este período y no entra en el reporte'
+            : `Hay ${t.anulados_fuera} movimientos anulados en este período y no entran en el reporte`}` +
+          `: un movimiento anulado es uno que no pasó.`
+        avisoAnulados.classList.remove('d-none')
+      } else {
+        avisoAnulados.classList.add('d-none')
+      }
+
+      // La tabla
+      const tbody = document.getElementById('tabla-reporte')
+
+      if (!datos.movimientos.length) {
+        tbody.innerHTML = `<tr class="fila-aviso"><td colspan="5"><div class="tabla-vacia">
+          No hubo movimientos en este período. Probá con otro.
+        </div></td></tr>`
+        document.getElementById('pie-reporte').textContent = ''
+        return
+      }
+
+      tbody.innerHTML = datos.movimientos.map(m => {
+        const esIngreso = m.naturaleza === 'ingreso'
+        return `
+          <tr>
+            <td data-label="Fecha">${new Date(m.fecha).toLocaleDateString('es-AR')}</td>
+            <td class="td-principal" data-label="Descripción">
+              ${m.descripcion ? esc(m.descripcion) : '<span class="text-muted">—</span>'}
+              ${m.servicio_nombre ? `<div class="origen-servicio"><i class="fa-solid fa-screwdriver-wrench"></i>${esc(m.servicio_nombre)}</div>` : ''}
+            </td>
+            <td data-label="Categoría"><span class="badge-cat">${esc(m.categoria_nombre)}</span></td>
+            <td class="td-oculto-movil" data-label="Tipo">${esc(m.tipo_nombre)}</td>
+            <td class="monto td-destacado ${esIngreso ? 'positivo' : 'negativo'}" data-label="Monto">${esIngreso ? '+' : '-'}${formatMoneda(m.monto)}</td>
+          </tr>`
+      }).join('')
+
+      document.getElementById('pie-reporte').textContent =
+        `${plural(t.cantidad, 'movimiento', 'movimientos')} en el período. Reporte generado el ${new Date().toLocaleDateString('es-AR')}.`
+    }
+
+    // --- El selector de período ---
+    document.querySelectorAll('.btn-periodo').forEach(boton => {
+      boton.addEventListener('click', () => {
+        periodoElegido = boton.dataset.periodo
+
+        document.querySelectorAll('.btn-periodo')
+          .forEach(b => b.classList.toggle('elegido', b === boton))
+
+        const caja = document.getElementById('fechas-personalizadas')
+        caja.classList.toggle('d-none', periodoElegido !== 'personalizado')
+
+        // Con los atajos el reporte sale solo: es un toque y listo. Con fechas
+        // a mano hay que esperar a que estén las dos, si no se pediría un
+        // reporte a medio escribir con cada tecla.
+        if (periodoElegido !== 'personalizado') cargarReporte()
+      })
+    })
+
+    document.getElementById('btn-ver').addEventListener('click', cargarReporte)
+
+    // Evita que quede un rango imposible: cada fecha le pone el límite a la otra.
+    function sincronizarRango() {
+      const desde = document.getElementById('campo-desde')
+      const hasta = document.getElementById('campo-hasta')
+      hasta.min = desde.value || '2000-01-01'
+      desde.max = hasta.value || fechaDeHoy()
+    }
+
+    document.getElementById('campo-desde').addEventListener('change', sincronizarRango)
+    document.getElementById('campo-hasta').addEventListener('change', sincronizarRango)
+
+    iniciar()
+  </script>
+</body>
+</html>
