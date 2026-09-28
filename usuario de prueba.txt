@@ -375,6 +375,36 @@ CAMBIOS DEL 16/09 POR LA AUDITORIA DE QA:
      - Como Marta (La Esperanza no tiene el modulo de Servicios):
        el boton "Por servicio" no le aparece.
 
+ --- LO QUE SE PERDIO (reporte de perdidas) ---
+
+   En "Reportes", el boton "Lo que se perdio". Probalo como Marta,
+   que es la empresa con mas movimientos de stock.
+
+   Que cuenta como perdida: todo motivo que SACA mercaderia y NO
+   mueve plata (rotura, robo, consumo interno, ajuste negativo).
+
+   Que conviene probar:
+     - El total da $ 22.850 y se desglosa en dos tablas: por que
+       se fue (Perdida $ 19.250, Consumo interno $ 3.600) y que se
+       fue (queso, arroz, fideos, pan).
+     - LO MAS IMPORTANTE: esa plata NO esta en los egresos del
+       balance. Al entrar a esta vista los tres casilleros de
+       arriba desaparecen a proposito, y hay un aviso que explica
+       por que: esa mercaderia ya se pago cuando se compro, asi que
+       sumarla seria contarla dos veces.
+     - "Bolsa de pan" aparece con "No se sabe" en vez de $ 0,
+       porque no tiene cargado cuanto cuesta. Y arriba hay un aviso
+       amarillo que dice que lo perdido es ese numero Y ALGO MAS.
+       Un producto sin costo no vale cero: no se sabe cuanto vale.
+     - En Productos, editar el "Queso cremoso": hay un campo nuevo,
+       "Cuanto te cuesta perder uno?". Es OPCIONAL y es un COSTO,
+       no un precio de venta. Abajo dice desde cuando esta cargado.
+     - Poner 0 en ese campo: lo rechaza y te dice que lo dejes
+       vacio. Son cosas distintas.
+     - Cambiarle SOLO el nombre a un producto: la fecha del costo
+       NO se mueve. Cambiarle el costo: si. Con inflacion, un costo
+       viejo es un costo malo, y la fecha esta para delatarlo.
+
  --- CUANTO DEJA CADA SERVICIO ---
 
    En "Movimientos", el boton "Cuanto deja cada servicio", abajo de

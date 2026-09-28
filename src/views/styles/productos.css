@@ -215,3 +215,8 @@ body {
   /* La búsqueda se lleva el doble de ancho que cada desplegable. */
   .filtros-grid { grid-template-columns: 2fr 1fr 1fr 1fr; }
 }
+
+/* Un costo cargado hace mucho, con inflación, ya no es el costo. No se
+   bloquea ni se avisa con un error: sólo se marca, porque puede estar bien
+   igual y quien decide es el administrador. */
+.costo-viejo { color: #8a6d1f; font-weight: 600; }

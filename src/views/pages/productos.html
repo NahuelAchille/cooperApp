@@ -146,6 +146,22 @@
                 <input type="number" class="form-control" name="stock_minimo" min="0" step="0.01" placeholder="0">
                 <div class="form-text" id="ayuda-stock">Cuando baje de acá, el sistema avisa. En 0 no avisa.</div>
               </div>
+              <!-- Lo que cuesta perder una unidad (HU-53). Es un COSTO, no un
+                   precio de venta: lo que te costó a vos, no lo que ibas a
+                   ganar. Opcional a propósito: vacío significa "no lo sé", y el
+                   reporte de pérdidas lo cuenta aparte en vez de tomarlo por
+                   cero. Un cero diría que perder eso no cuesta nada. -->
+              <div class="col-12">
+                <label class="form-label">¿Cuánto te cuesta perder uno? <span class="text-muted fw-normal">(opcional)</span></label>
+                <div class="input-group">
+                  <span class="input-group-text">$</span>
+                  <input type="number" class="form-control" name="costo_referencia" min="0.01" step="0.01" placeholder="Dejalo vacío si no lo sabés">
+                </div>
+                <div class="form-text" id="ayuda-costo">
+                  Lo que te costó a vos una unidad, no lo que la vendés. Sirve para saber cuánta plata
+                  te llevan las roturas y los faltantes. Si no lo sabés, dejalo vacío.
+                </div>
+              </div>
             </div>
 
             <div class="mb-3">
@@ -351,6 +367,25 @@
       window.productosCargados = productos
     }
 
+    // Con inflación, un costo de hace meses es un costo malo. En vez de
+    // explicarlo, se muestra desde cuándo no se toca: el número habla solo.
+    function mostrarAntiguedadDelCosto(producto) {
+      const ayuda = document.getElementById('ayuda-costo')
+      const base = 'Lo que te costó a vos una unidad, no lo que la vendés. Sirve para saber cuánta plata te llevan las roturas y los faltantes. Si no lo sabés, dejalo vacío.'
+
+      if (!producto?.costo_actualizado_en) {
+        ayuda.textContent = base
+        return
+      }
+
+      const cargado = new Date(producto.costo_actualizado_en)
+      const meses = Math.floor((Date.now() - cargado.getTime()) / (1000 * 60 * 60 * 24 * 30))
+
+      ayuda.innerHTML = esc(base) +
+        `<br><span class="${meses >= 6 ? 'costo-viejo' : ''}">Cargado el ${cargado.toLocaleDateString('es-AR')}` +
+        `${meses >= 6 ? ' — hace más de medio año, puede haber quedado corto' : ''}.</span>`
+    }
+
     // ================= FORMULARIO =================
 
     // Pide el árbol una sola vez y guarda las dos listas que hacen falta.
@@ -498,6 +533,9 @@
         form.descripcion.value = producto.descripcion || ''
         form.unidad_medida.value = producto.unidad_medida
         form.stock_minimo.value = Number(producto.stock_minimo) > 0 ? Number(producto.stock_minimo) : ''
+        // null es "no lo sé": el campo queda vacío, nunca en 0.
+        form.costo_referencia.value = producto.costo_referencia !== null ? Number(producto.costo_referencia) : ''
+        mostrarAntiguedadDelCosto(producto)
         form.id_categoria_producto.value = producto.id_categoria_producto
 
         // Si la clasificación del producto fue desactivada después de haberlo
@@ -512,6 +550,9 @@
           await cargarSubcategorias(producto.id_categoria_producto, producto.id_subcategoria_producto)
         }
       } else {
+        // Producto nuevo: la ayuda del costo vuelve a su texto base, si no
+        // quedaría la fecha del producto que se miró antes.
+        mostrarAntiguedadDelCosto(null)
         await cargarSubcategorias('')
       }
 
@@ -554,6 +595,8 @@
           descripcion: datos.descripcion,
           unidad_medida: datos.unidad_medida,
           stock_minimo: datos.stock_minimo,
+          // Vacío viaja como null, no como 0: son cosas distintas.
+          costo_referencia: datos.costo_referencia || null,
           id_categoria_producto: datos.id_categoria_producto,
           id_subcategoria_producto: datos.id_subcategoria_producto || null
         })

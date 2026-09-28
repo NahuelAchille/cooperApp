@@ -132,6 +132,63 @@ body {
 .tabla-agrupada .positivo { color: var(--verde-oscuro); }
 .tabla-agrupada .negativo { color: var(--danger); }
 
+/* ===== LO QUE SE PERDIÓ (HU-53) =====
+   Va en su propio bloque, no en la tabla agrupada, porque esta plata NO está
+   en los totales del período: es mercadería que se fue, no plata que salió de
+   la caja. El aviso de arriba existe para que nadie las sume. */
+.aviso-perdidas {
+  background: #eef4fb;
+  border: 1px solid #cfdff0;
+  border-radius: 10px;
+  padding: 11px 14px;
+  font-size: 0.83rem;
+  color: #3a5573;
+  margin-bottom: 14px;
+}
+
+.total-perdido {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  justify-content: space-between;
+  align-items: flex-end;
+  background: #fdf3f3;
+  border-left: 4px solid var(--danger);
+  border-radius: 10px;
+  padding: 14px 16px;
+  margin-bottom: 12px;
+}
+.total-perdido h6 {
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: #6c7a72;
+  margin-bottom: 6px;
+  font-weight: 700;
+}
+.total-perdido .valor { font-size: 1.6rem; font-weight: 700; color: var(--danger); }
+
+/* No es un error del sistema, es una advertencia sobre el número: por eso va
+   en ámbar y no en rojo. */
+.aviso-sin-costo {
+  background: #fdf6e3;
+  border: 1px solid #f0e2bd;
+  border-radius: 8px;
+  padding: 9px 12px;
+  font-size: 0.83rem;
+  color: #6b5a2a;
+  margin-bottom: 14px;
+}
+
+.titulo-bloque {
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  color: var(--verde-primario);
+  font-weight: 700;
+  margin: 16px 0 8px;
+}
+
 /* ===== LA HOJA DEL REPORTE =====
    Se llama "hoja" porque es lo que alguien le muestra a otro: un bloque
    blanco con encabezado, totales y detalle. Por eso no lleva botones de

@@ -21,4 +21,10 @@ router.get('/periodo', ...finanzas, reporteController.getReportePeriodo)
 // necesita cada uno lo hace el controlador, porque depende del criterio.
 router.get('/agrupado', ...finanzas, reporteController.getReporteAgrupado)
 
+// Las perdidas valorizadas. Es el PRIMER reporte que lee stock, asi que
+// necesita tambien el modulo de productos -- el control lo hace el controlador
+// y devuelve vacio en vez de un 403, porque una empresa sin productos no tiene
+// nada que perder, no es un pedido invalido.
+router.get('/perdidas', ...finanzas, reporteController.getReportePerdidas)
+
 module.exports = router

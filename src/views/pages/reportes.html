@@ -81,6 +81,7 @@
             <button type="button" class="btn-vista" data-vista="categoria">Por categoría</button>
             <button type="button" class="btn-vista d-none" data-vista="producto" id="vista-producto">Por producto</button>
             <button type="button" class="btn-vista d-none" data-vista="servicio" id="vista-servicio">Por servicio</button>
+            <button type="button" class="btn-vista d-none" data-vista="perdidas" id="vista-perdidas">Lo que se perdió</button>
           </div>
         </div>
       </div>
@@ -98,7 +99,7 @@
           <div class="hoja-empresa" id="hoja-empresa"></div>
         </div>
 
-        <div class="totales">
+        <div class="totales" id="bloque-totales">
           <div class="total-card ingresos">
             <h6><i class="fa-solid fa-arrow-down me-1"></i>Entró</h6>
             <div class="valor" id="total-ingresos">$0</div>
@@ -164,6 +165,63 @@
           </div>
         </div>
 
+        <!-- Vista de pérdidas: mercadería que salió sin venderse, valuada a
+             lo que costó. Va en su propio bloque y no en la tabla agrupada
+             porque NO es plata del balance, y mezclarlas sería contar dos
+             veces lo mismo. -->
+        <div class="d-none" id="caja-perdidas">
+
+          <div class="aviso-perdidas">
+            <i class="fa-solid fa-circle-info me-1"></i>
+            <strong>Esta plata no está en los totales de arriba.</strong>
+            Los egresos son plata que salió de la caja; esto es mercadería que se fue sin
+            venderse, valuada a lo que te costó. Sumarlas sería contar dos veces lo mismo,
+            porque esa mercadería ya se pagó cuando se compró.
+          </div>
+
+          <div class="total-perdido">
+            <div>
+              <h6>Se fue en mercadería</h6>
+              <div class="valor" id="perdidas-total">$0</div>
+            </div>
+            <div class="chico-gris text-end" id="perdidas-detalle"></div>
+          </div>
+
+          <!-- Lo que no se pudo valorizar. Nunca se suma como $0: un producto
+               sin costo cargado no vale cero, no se sabe cuánto vale. -->
+          <p class="aviso-sin-costo d-none" id="perdidas-sin-costo"></p>
+
+          <h6 class="titulo-bloque">¿Por qué se fue?</h6>
+          <div class="card-tabla mb-3">
+            <div class="table-responsive">
+              <table class="table mb-0 tabla-agrupada">
+                <thead>
+                  <tr>
+                    <th>Motivo</th>
+                    <th class="text-end">Cuánto costó</th>
+                  </tr>
+                </thead>
+                <tbody id="tabla-perdidas-motivo"></tbody>
+              </table>
+            </div>
+          </div>
+
+          <h6 class="titulo-bloque">¿Qué se fue?</h6>
+          <div class="card-tabla">
+            <div class="table-responsive">
+              <table class="table mb-0 tabla-agrupada">
+                <thead>
+                  <tr>
+                    <th>Producto</th>
+                    <th class="text-end">Cuánto costó</th>
+                  </tr>
+                </thead>
+                <tbody id="tabla-perdidas-producto"></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
         <p class="pie-reporte" id="pie-reporte"></p>
       </div>
     </div>
@@ -179,6 +237,9 @@
 
     // Cómo se llama la columna del agrupador en cada vista.
     const AGRUPADOR = { categoria: 'Categoría', producto: 'Producto', servicio: 'Servicio' }
+
+    // Las vistas que muestran la tabla agrupada común.
+    const VISTAS_AGRUPADAS = ['categoria', 'producto', 'servicio']
 
     const formatoMoneda = new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'ARS', minimumFractionDigits: 2 })
     const formatMoneda = (n) => formatoMoneda.format(Number(n) || 0)
@@ -222,7 +283,11 @@
       // Las vistas por producto y por servicio sólo se ofrecen si la empresa
       // tiene ese módulo. Mostrar un botón que va a devolver una tabla vacía
       // es peor que no mostrarlo: parece que no hubo movimientos.
-      if (moduloActivo('productos')) document.getElementById('vista-producto').classList.remove('d-none')
+      if (moduloActivo('productos')) {
+        document.getElementById('vista-producto').classList.remove('d-none')
+        // Las pérdidas salen del stock: sin productos no hay mercadería que perder.
+        document.getElementById('vista-perdidas').classList.remove('d-none')
+      }
       if (moduloActivo('servicios')) document.getElementById('vista-servicio').classList.remove('d-none')
 
       // No se puede pedir un reporte del futuro: todavía no pasó.
@@ -274,7 +339,92 @@
 
       pintar(datos)
 
-      if (vistaElegida !== 'movimientos') await cargarAgrupado(params)
+      if (VISTAS_AGRUPADAS.includes(vistaElegida)) await cargarAgrupado(params)
+      if (vistaElegida === 'perdidas') await cargarPerdidas(params)
+    }
+
+    // Lo que se fue en mercadería, valuado a lo que costó (HU-53).
+    //
+    // Va en su propio bloque y NO suma a los totales de arriba: los egresos
+    // son plata que salió de la caja; esto es mercadería que se fue. Sumarlas
+    // sería contar dos veces lo mismo, porque ya se pagó al comprarla. El
+    // aviso de arriba del bloque lo dice, porque es lo primero que alguien se
+    // pregunta al ver dos números grandes en la misma pantalla.
+    async function cargarPerdidas(params) {
+      const res = await fetch('/reportes/perdidas?' + params.toString())
+      const datos = await res.json()
+      if (!res.ok) return
+
+      const porMotivo = document.getElementById('tabla-perdidas-motivo')
+      const porProducto = document.getElementById('tabla-perdidas-producto')
+
+      if (datos.modulo_apagado) {
+        document.getElementById('perdidas-total').textContent = formatMoneda(0)
+        porMotivo.innerHTML = `<tr><td colspan="2"><div class="tabla-vacia">
+          El módulo de <strong>${esc(datos.modulo_apagado)}</strong> no está activo en tu empresa.
+        </div></td></tr>`
+        porProducto.innerHTML = ''
+        return
+      }
+
+      const t = datos.totales
+      document.getElementById('perdidas-total').textContent = formatMoneda(t.valorizado)
+      document.getElementById('perdidas-detalle').textContent =
+        t.movimientos === 0 ? 'No salió mercadería sin venderse en el período'
+        : `${t.movimientos} ${t.movimientos === 1 ? 'salida' : 'salidas'} sin venta`
+
+      // Lo que no se pudo valorizar. Nunca entra al total como $0: un producto
+      // sin costo cargado no vale cero, no se sabe cuánto vale.
+      const avisoSinCosto = document.getElementById('perdidas-sin-costo')
+      if (t.sin_costo > 0) {
+        avisoSinCosto.innerHTML = `<i class="fa-solid fa-triangle-exclamation me-1"></i>` +
+          `${t.sin_costo === 1
+            ? 'Hay 1 salida que no se pudo valorizar'
+            : `Hay ${t.sin_costo} salidas que no se pudieron valorizar`}` +
+          `, porque esos productos no tienen cargado cuánto cuestan. <strong>No están en el total</strong>: ` +
+          `lo perdido es ese número <em>y algo más</em>. Cargales el costo desde Productos.`
+        avisoSinCosto.classList.remove('d-none')
+      } else {
+        avisoSinCosto.classList.add('d-none')
+      }
+
+      if (!datos.motivos.length) {
+        porMotivo.innerHTML = `<tr><td colspan="2"><div class="tabla-vacia">
+          No se perdió nada en este período. Buena noticia.
+        </div></td></tr>`
+        porProducto.innerHTML = `<tr><td colspan="2"><div class="tabla-vacia">—</div></td></tr>`
+        return
+      }
+
+      porMotivo.innerHTML = datos.motivos.map(m => `
+        <tr class="${m.activo ? '' : 'fila-inactiva'}">
+          <td>
+            <div class="agr-nombre">${esc(m.nombre)}${m.activo ? '' : ' <span class="chico-gris">(de baja)</span>'}</div>
+            <div class="chico-gris">${m.movimientos} ${m.movimientos === 1 ? 'salida' : 'salidas'}${
+              m.sin_costo > 0 ? ` · ${m.sin_costo} sin poder valorizar` : ''}</div>
+          </td>
+          <td class="text-end fw-bold negativo">${formatMoneda(m.valorizado)}</td>
+        </tr>`).join('')
+
+      porProducto.innerHTML = datos.productos.map(p => `
+        <tr>
+          <td>
+            <div class="agr-nombre">${esc(p.nombre)}</div>
+            <div class="chico-gris">${formatearCantidad(p.cantidad)}${p.unidad_medida ? ' ' + esc(p.unidad_medida) : ''}${
+              p.costo_referencia === null
+                ? ' · <strong>sin costo cargado</strong>'
+                : ` · a ${formatMoneda(p.costo_referencia)} cada uno`}</div>
+          </td>
+          <td class="text-end fw-bold ${p.costo_referencia === null ? 'text-muted' : 'negativo'}">${
+            p.costo_referencia === null ? 'No se sabe' : formatMoneda(p.valorizado)}</td>
+        </tr>`).join('')
+    }
+
+    // Las cantidades se guardan con 2 decimales, pero "5,00 kg" cuando son 5
+    // es ruido. Mismo criterio que el catálogo de productos.
+    function formatearCantidad(valor) {
+      const numero = Number(valor)
+      return Number.isInteger(numero) ? String(numero) : numero.toFixed(2).replace('.', ',')
     }
 
     // La tabla agrupada, para las vistas por categoría, producto y servicio.
@@ -337,9 +487,10 @@
       document.getElementById('detalle-resultado').textContent =
         t.resultado > 0 ? 'Quedó a favor' : t.resultado < 0 ? 'Quedó en contra' : 'Quedó igual'
 
-      // Los anulados
+      // Los anulados. En la vista de pérdidas no se muestran: hablan de los
+      // movimientos de dinero y ahí no viene al caso.
       const avisoAnulados = document.getElementById('aviso-anulados')
-      if (t.anulados_fuera > 0) {
+      if (t.anulados_fuera > 0 && vistaElegida !== 'perdidas') {
         avisoAnulados.innerHTML = `<i class="fa-solid fa-circle-info me-1"></i>` +
           `${t.anulados_fuera === 1
             ? 'Hay 1 movimiento anulado en este período y no entra en el reporte'
@@ -409,13 +560,26 @@
           .forEach(b => b.classList.toggle('elegido', b === boton))
 
         const esListado = vistaElegida === 'movimientos'
+        const esAgrupado = VISTAS_AGRUPADAS.includes(vistaElegida)
+        const esPerdidas = vistaElegida === 'perdidas'
+
         document.getElementById('caja-movimientos').classList.toggle('d-none', !esListado)
-        document.getElementById('caja-agrupado').classList.toggle('d-none', esListado)
+        document.getElementById('caja-agrupado').classList.toggle('d-none', !esAgrupado)
+        document.getElementById('caja-perdidas').classList.toggle('d-none', !esPerdidas)
+
+        // Los tres casilleros del período no aplican a las pérdidas: esa plata
+        // no está ahí adentro, y dejarlos arriba invitaría a restarlos. Por lo
+        // mismo se esconden el aviso de anulados y el pie, que hablan de los
+        // movimientos de dinero y acá no vienen al caso.
+        document.getElementById('bloque-totales').classList.toggle('d-none', esPerdidas)
+        document.getElementById('pie-reporte').classList.toggle('d-none', esPerdidas)
+        if (esPerdidas) document.getElementById('aviso-anulados').classList.add('d-none')
 
         // El título de la hoja dice qué se está mirando: es lo que queda en
         // la captura o en la impresión, donde los botones no se ven.
-        document.getElementById('hoja-titulo').textContent = esListado
-          ? 'Movimientos del período'
+        document.getElementById('hoja-titulo').textContent =
+            esListado  ? 'Movimientos del período'
+          : esPerdidas ? 'Lo que se perdió en el período'
           : `Totales por ${AGRUPADOR[vistaElegida].toLowerCase()}`
 
         cargarReporte()

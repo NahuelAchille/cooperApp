@@ -416,15 +416,19 @@ SET @sub_no_perec    := (SELECT id_subcategoria_producto FROM subcategorias_prod
 SET @sub_congelados  := (SELECT id_subcategoria_producto FROM subcategorias_producto WHERE id_categoria_producto = @cat_alimentos AND nombre = 'Congelados');
 SET @sub_sin_alcohol := (SELECT id_subcategoria_producto FROM subcategorias_producto WHERE id_categoria_producto = @cat_bebidas AND nombre = 'Sin alcohol');
 
-INSERT INTO productos (nombre, descripcion, unidad_medida, stock_minimo, id_categoria_producto, id_subcategoria_producto, id_empresa, activo) VALUES
-  ('Queso cremoso',      'Horma entera',            'kg',      5.50, @cat_alimentos, @sub_perecederos, @empresa, 1),
-  ('Jamón cocido',       NULL,                      'kg',      3.00, @cat_alimentos, @sub_perecederos, @empresa, 1),
-  ('Fideos secos 500g',  'Paquete de medio kilo',   'paquete', 24,   @cat_alimentos, @sub_no_perec,    @empresa, 1),
-  ('Arroz largo fino',   NULL,                      'kg',      15,   @cat_alimentos, @sub_no_perec,    @empresa, 1),
-  ('Milanesas de soja',  'Caja x 12 unidades',      'caja',    4,    @cat_alimentos, @sub_congelados,  @empresa, 1),
-  ('Bolsa de pan',       'Sin subcategoría',        'bolsa',   0,    @cat_alimentos, NULL,             @empresa, 1),
-  ('Agua mineral 2L',    NULL,                      'unidad',  36,   @cat_bebidas,   @sub_sin_alcohol, @empresa, 1),
-  ('Gaseosa cola 2,25L', 'Producto discontinuado',  'unidad',  0,    @cat_bebidas,   @sub_sin_alcohol, @empresa, 0);
+-- El costo_referencia es lo que cuesta perder UNA unidad (HU-53). Es opcional,
+-- y "Bolsa de pan" y "Gaseosa cola" van SIN costo a proposito: asi el reporte
+-- de perdidas muestra tambien el caso de lo que NO se puede valorizar. NULL
+-- significa "no lo se", que no es lo mismo que cero.
+INSERT INTO productos (nombre, descripcion, unidad_medida, stock_minimo, id_categoria_producto, id_subcategoria_producto, id_empresa, activo, costo_referencia, costo_actualizado_en) VALUES
+  ('Queso cremoso',      'Horma entera',            'kg',      5.50, @cat_alimentos, @sub_perecederos, @empresa, 1,  8200.00, NOW()),
+  ('Jamón cocido',       NULL,                      'kg',      3.00, @cat_alimentos, @sub_perecederos, @empresa, 1, 11500.00, NOW()),
+  ('Fideos secos 500g',  'Paquete de medio kilo',   'paquete', 24,   @cat_alimentos, @sub_no_perec,    @empresa, 1,   950.00, NOW()),
+  ('Arroz largo fino',   NULL,                      'kg',      15,   @cat_alimentos, @sub_no_perec,    @empresa, 1,  1800.00, NOW()),
+  ('Milanesas de soja',  'Caja x 12 unidades',      'caja',    4,    @cat_alimentos, @sub_congelados,  @empresa, 1,  6400.00, NOW()),
+  ('Bolsa de pan',       'Sin subcategoría',        'bolsa',   0,    @cat_alimentos, NULL,             @empresa, 1,     NULL, NULL),
+  ('Agua mineral 2L',    NULL,                      'unidad',  36,   @cat_bebidas,   @sub_sin_alcohol, @empresa, 1,  1200.00, NOW()),
+  ('Gaseosa cola 2,25L', 'Producto discontinuado',  'unidad',  0,    @cat_bebidas,   @sub_sin_alcohol, @empresa, 0,     NULL, NULL);
 
 -- ------------------------------------------------------- 2 · El Amanecer --
 SET @empresa := (SELECT id_empresa FROM empresas WHERE email = 'contacto@elamanecer.com.ar');
@@ -454,12 +458,13 @@ SET @sub_cano       := (SELECT id_subcategoria_producto FROM subcategorias_produ
 SET @sub_electrodos := (SELECT id_subcategoria_producto FROM subcategorias_producto WHERE id_categoria_producto = @cat_materia AND nombre = 'Electrodos');
 SET @sub_electricas := (SELECT id_subcategoria_producto FROM subcategorias_producto WHERE id_categoria_producto = @cat_herramientas AND nombre = 'Eléctricas');
 
-INSERT INTO productos (nombre, descripcion, unidad_medida, stock_minimo, id_categoria_producto, id_subcategoria_producto, id_empresa, activo) VALUES
-  ('Chapa galvanizada N°20', 'Hoja de 1 x 2 m',      'unidad', 10,  @cat_materia,      @sub_chapa,      @empresa, 1),
-  ('Caño estructural 40x40', 'Barra de 6 m',         'metro',  120, @cat_materia,      @sub_cano,       @empresa, 1),
-  ('Electrodo 2,5 mm',       'Caja de 5 kg',         'caja',   2,   @cat_materia,      @sub_electrodos, @empresa, 1),
-  ('Amoladora angular',      NULL,                   'unidad', 0,   @cat_herramientas, @sub_electricas, @empresa, 1),
-  ('Pintura antióxido',      'Balde de 4 litros',    'litro',  8,   @cat_materia,      NULL,            @empresa, 1);
+-- "Amoladora angular" va sin costo a proposito (ver La Esperanza, mas arriba).
+INSERT INTO productos (nombre, descripcion, unidad_medida, stock_minimo, id_categoria_producto, id_subcategoria_producto, id_empresa, activo, costo_referencia, costo_actualizado_en) VALUES
+  ('Chapa galvanizada N°20', 'Hoja de 1 x 2 m',      'unidad', 10,  @cat_materia,      @sub_chapa,      @empresa, 1, 24000.00, NOW()),
+  ('Caño estructural 40x40', 'Barra de 6 m',         'metro',  120, @cat_materia,      @sub_cano,       @empresa, 1,  3100.00, NOW()),
+  ('Electrodo 2,5 mm',       'Caja de 5 kg',         'caja',   2,   @cat_materia,      @sub_electrodos, @empresa, 1, 18500.00, NOW()),
+  ('Amoladora angular',      NULL,                   'unidad', 0,   @cat_herramientas, @sub_electricas, @empresa, 1,     NULL, NULL),
+  ('Pintura antióxido',      'Balde de 4 litros',    'litro',  8,   @cat_materia,      NULL,            @empresa, 1, 15900.00, NOW());
 
 -- =============================================================================
 -- CATÁLOGO DE SERVICIOS
@@ -599,12 +604,21 @@ SET @p_fideos   := (SELECT id_producto FROM productos WHERE id_empresa = @empres
 SET @p_arroz    := (SELECT id_producto FROM productos WHERE id_empresa = @empresa AND nombre = 'Arroz largo fino');
 SET @p_milanesa := (SELECT id_producto FROM productos WHERE id_empresa = @empresa AND nombre = 'Milanesas de soja');
 SET @p_agua     := (SELECT id_producto FROM productos WHERE id_empresa = @empresa AND nombre = 'Agua mineral 2L');
+SET @p_pan      := (SELECT id_producto FROM productos WHERE id_empresa = @empresa AND nombre = 'Bolsa de pan');
+SET @m_consumo_esp := (SELECT id_motivo_stock FROM motivos_stock WHERE id_empresa = @empresa AND nombre = 'Consumo interno');
 
 INSERT INTO movimientos_stock (id_producto, id_motivo_stock, cantidad, descripcion, fecha, id_empresa, id_usuario) VALUES
   -- Queso cremoso (mínimo 5,5): 20 - 12,5 - 2 = 5,5, justo en el mínimo
   (@p_queso,    @m_compra,  20,   'Compra semanal',              CURDATE() - INTERVAL 12 DAY, @empresa, @operador),
   (@p_queso,    @m_venta,   12.5, 'Venta mostrador',             CURDATE() - INTERVAL 6  DAY, @empresa, @operador),
   (@p_queso,    @m_perdida, 2,    'Se cortó la cadena de frío',  CURDATE() - INTERVAL 4  DAY, @empresa, @operador),
+  -- Dos pérdidas más, para que el reporte de HU-53 muestre sus dos casos:
+  -- una de un producto CON costo cargado (se valoriza) y otra de uno SIN
+  -- ("Bolsa de pan"), que el reporte cuenta aparte en vez de sumar como $0.
+  -- Y un consumo interno, que también sale sin mover plata pero es normal:
+  -- por eso el reporte agrupa por motivo y no da un número solo.
+  (@p_fideos,   @m_perdida, 3,    'Paquetes rotos en el depósito', CURDATE() - INTERVAL 5 DAY, @empresa, @operador),
+  (@p_pan,      @m_perdida, 4,    'Pan del día anterior',        CURDATE() - INTERVAL 2  DAY, @empresa, @operador),
   -- Jamón cocido (mínimo 3): 15 - 6 = 9, holgado
   (@p_jamon,    @m_compra,  15,   'Compra semanal',              CURDATE() - INTERVAL 12 DAY, @empresa, @operador),
   (@p_jamon,    @m_venta,    6,   'Venta mostrador',             CURDATE() - INTERVAL 3  DAY, @empresa, @operador),
@@ -618,7 +632,11 @@ INSERT INTO movimientos_stock (id_producto, id_motivo_stock, cantidad, descripci
   (@p_milanesa, @m_venta,   10,   'Se vendió todo',              CURDATE() - INTERVAL 1  DAY, @empresa, @operador),
   -- Agua mineral (mínimo 36): 72 - 12 = 60, holgado
   (@p_agua,     @m_compra,  72,   'Compra a distribuidora',      CURDATE() - INTERVAL 10 DAY, @empresa, @operador),
-  (@p_agua,     @m_venta,   12,   'Ventas de la semana',         CURDATE() - INTERVAL 2  DAY, @empresa, @operador);
+  (@p_agua,     @m_venta,   12,   'Ventas de la semana',         CURDATE() - INTERVAL 2  DAY, @empresa, @operador),
+  -- Consumo interno: sale mercadería, no hay plata, pero no es una pérdida
+  -- en el sentido de "algo salió mal". Entra al mismo reporte y se distingue
+  -- por el motivo.
+  (@p_arroz,    @m_consumo_esp, 2, 'Para el comedor del personal', CURDATE() - INTERVAL 3 DAY, @empresa, @operador);
 
 -- ------------------------------------------------------- 3 · Metal Oeste --
 SET @empresa  := (SELECT id_empresa FROM empresas WHERE email = 'contacto@metaloeste.com.ar');

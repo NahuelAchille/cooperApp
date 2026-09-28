@@ -54,6 +54,49 @@ const limpiarStockMinimo = (valor) => {
   return { valor: redondeado }
 }
 
+// Cuanto cuesta perder una unidad (HU-53). Devuelve { valor } o { error }.
+//
+// VACIO NO ES CERO. Vacio significa "no lo se" y se guarda NULL; cero
+// significaria que perder eso no cuesta nada, que es otra cosa y casi nunca es
+// verdad. El reporte de perdidas cuenta aparte lo que no pudo valorizar en vez
+// de sumarlo como $0, asi que la distincion tiene que llegar hasta la base.
+//
+// Un servicio no lleva costo: no se pierde mercaderia de algo que no se guarda.
+const limpiarCosto = (valor, es_servicio) => {
+
+  if (es_servicio) return { valor: null }
+
+  if (valor === undefined || valor === null || valor === '') return { valor: null }
+
+  // Un booleano se convierte en 1 o en 0: hay que descartarlo antes.
+  if (typeof valor === 'boolean') {
+    return { error: 'El costo tiene que ser un número' }
+  }
+
+  const numero = Number(valor)
+  if (!Number.isFinite(numero)) {
+    return { error: 'El costo tiene que ser un número' }
+  }
+
+  // Se redondea ANTES de comparar, igual que el monto y el stock minimo: si no,
+  // un 0,004 pasaba el control y despues se guardaba como 0,00.
+  const redondeado = Math.round(numero * 100) / 100
+
+  if (redondeado < 0) {
+    return { error: 'El costo no puede ser negativo' }
+  }
+  // Un costo de 0 escrito a mano se rechaza: si no se sabe, el campo va vacio.
+  // Guardar 0 diria que perder eso no cuesta nada, y el reporte lo sumaria.
+  if (redondeado === 0) {
+    return { error: 'Si no sabés cuánto cuesta, dejá el campo vacío en vez de poner 0' }
+  }
+  if (redondeado > 9999999999.99) {  // no entra en DECIMAL(12,2)
+    return { error: 'El costo es demasiado grande' }
+  }
+
+  return { valor: redondeado }
+}
+
 // Como se mide lo que se esta cargando. Es lo unico que separa de verdad a un
 // producto de un servicio, y por eso esta escrito en un solo lugar.
 //
@@ -194,6 +237,11 @@ exports.crearProducto = async (req, res) => {
       return res.status(400).json({ error: 'La descripción no puede pasar de 255 caracteres' })
     }
 
+    const costo = limpiarCosto(req.body.costo_referencia, es_servicio)
+    if (costo.error) {
+      return res.status(400).json({ error: costo.error })
+    }
+
     const clasificacion = await validarClasificacion(req.body, id_empresa, es_servicio)
     if (clasificacion.error) {
       return res.status(400).json({ error: clasificacion.error })
@@ -205,7 +253,8 @@ exports.crearProducto = async (req, res) => {
       ...medida,
       ...clasificacion,
       id_empresa,
-      es_servicio
+      es_servicio,
+      costo_referencia: costo.valor
     })
 
     res.status(201).json({ id_producto, message: `${r.Uno} creado correctamente` })
@@ -247,16 +296,29 @@ exports.actualizarProducto = async (req, res) => {
       return res.status(400).json({ error: 'La descripción no puede pasar de 255 caracteres' })
     }
 
+    const costo = limpiarCosto(req.body.costo_referencia, es_servicio)
+    if (costo.error) {
+      return res.status(400).json({ error: costo.error })
+    }
+
     const clasificacion = await validarClasificacion(req.body, id_empresa, es_servicio)
     if (clasificacion.error) {
       return res.status(400).json({ error: clasificacion.error })
     }
 
+    // La fecha del costo sólo se mueve si el valor cambió de verdad. Corregir
+    // una falta de ortografía en el nombre no tiene por qué rejuvenecer un
+    // costo de hace ocho meses, que es justo lo que la fecha delata.
+    const costoAnterior = producto.costo_referencia === null ? null : Number(producto.costo_referencia)
+    const costoCambio = costoAnterior !== costo.valor
+
     await productoModel.updateProducto(id, id_empresa, {
       nombre,
       descripcion,
       ...medida,
-      ...clasificacion
+      ...clasificacion,
+      costo_referencia: costo.valor,
+      costoCambio
     })
 
     res.json({ message: `${r.Uno} actualizado correctamente` })

@@ -282,6 +282,26 @@ CREATE TABLE productos (
   id_subcategoria_producto INT NULL,
   id_empresa               INT NOT NULL,
   es_servicio              TINYINT(1) NOT NULL DEFAULT 0,
+  -- Cuanto cuesta perder una unidad de esto (HU-53).
+  --
+  -- Es un COSTO, no un precio de venta: lo que perder esa unidad te costo, no
+  -- lo que ibas a ganar. Sirve para poner un numero a las roturas, los robos y
+  -- lo que se consume sin venderse.
+  --
+  -- Es OPCIONAL y NULL significa "no lo se", no cero. La diferencia importa: un
+  -- cero diria que perder eso no cuesta nada, y el reporte cuenta aparte lo que
+  -- no pudo valorizar en vez de sumarlo como $0.
+  --
+  -- Por que este camino y no deducirlo de las compras: la cobertura seria a
+  -- parches (solo los productos comprados por el sistema y con el movimiento de
+  -- dinero aceptado), y un reporte donde la mitad valoriza y la otra mitad no
+  -- tiene un total que no significa nada. Y preguntarlo al cargar la perdida le
+  -- hace la pregunta al operador, parado en el deposito, que no sabe los precios.
+  --
+  -- costo_actualizado_en existe por la inflacion: un costo de hace ocho meses
+  -- es un costo malo, y la fecha lo deja a la vista sin tener que explicarlo.
+  costo_referencia         DECIMAL(12,2) NULL,
+  costo_actualizado_en     DATETIME NULL,
   activo                   TINYINT(1) DEFAULT 1,
   creado_en                DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
   FOREIGN KEY (id_categoria_producto)    REFERENCES categorias_producto(id_categoria_producto),

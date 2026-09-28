@@ -213,3 +213,83 @@ function formatearCantidad(valor) {
   const numero = Number(valor)
   return Number.isInteger(numero) ? String(numero) : numero.toFixed(2).replace('.', ',')
 }
+
+// =====================================================================
+// PERDIDAS VALORIZADAS (HU-53)
+// =====================================================================
+//
+// Cuanto se fue en mercaderia que salio sin venderse, valuada a lo que costo.
+//
+// ESTA PLATA NO ESTA EN EL BALANCE y el reporte lo dice en pantalla. Los
+// egresos del balance son plata que salio de la caja; esto es mercaderia que
+// se fue. Sumarlos seria contar dos veces lo mismo, porque esa mercaderia ya
+// se pago cuando se compro. Por eso este reporte va aparte y no toca los
+// totales del periodo.
+//
+// Pide los DOS modulos: productos (de donde sale la mercaderia) y reportes
+// (que ya lo pide la ruta). Es el primer reporte que lee stock, que era
+// justamente lo que quedaba anotado en HU-51.
+exports.getReportePerdidas = async (req, res) => {
+
+  try {
+    const id_empresa = req.session.user.empresa.id
+
+    if (!await moduloModel.estaActivo(id_empresa, 'productos')) {
+      return res.json({
+        modulo_apagado: 'productos',
+        periodo: null, totales: null, motivos: [], productos: []
+      })
+    }
+
+    const periodo = resolver(req.query)
+    if (periodo.error) {
+      return res.status(400).json({ error: periodo.error })
+    }
+
+    const [motivos, productos] = await Promise.all([
+      reporteModel.perdidasPorMotivo(id_empresa, periodo),
+      reporteModel.perdidasPorProducto(id_empresa, periodo)
+    ])
+
+    // El total sale de las mismas filas que se listan, igual que en HU-51.
+    const valorizado = sumarEnCentavos(motivos.map(m => m.valorizado))
+    const movimientos = motivos.reduce((s, m) => s + Number(m.movimientos), 0)
+    const sinCosto = motivos.reduce((s, m) => s + Number(m.sin_costo), 0)
+
+    res.json({
+      modulo_apagado: null,
+      periodo: { desde: periodo.desde, hasta: periodo.hasta, etiqueta: periodo.etiqueta },
+      totales: {
+        valorizado,
+        movimientos,
+        // Cuantas salidas no se pudieron valorizar porque el producto no tiene
+        // costo cargado. Se informa SIEMPRE, aunque sea cero: es lo que separa
+        // "perdimos $12.000" de "perdimos $12.000 y algo mas que no sabemos".
+        sin_costo: sinCosto
+      },
+      motivos: motivos.map(m => ({
+        id: m.id_motivo_stock,
+        nombre: m.nombre,
+        activo: m.activo,
+        valorizado: Number(m.valorizado),
+        movimientos: Number(m.movimientos),
+        sin_costo: Number(m.sin_costo)
+      })),
+      productos: productos.map(p => ({
+        id: p.id_producto,
+        nombre: p.nombre,
+        unidad_medida: p.unidad_medida,
+        cantidad: Number(p.cantidad),
+        movimientos: Number(p.movimientos),
+        valorizado: Number(p.valorizado),
+        // null = "no lo se". La pantalla lo muestra como tal, nunca como $0.
+        costo_referencia: p.costo_referencia === null ? null : Number(p.costo_referencia),
+        costo_actualizado_en: p.costo_actualizado_en
+      }))
+    })
+
+  } catch (error) {
+    console.error(error)
+    res.status(500).json({ error: 'Error al armar el reporte de pérdidas' })
+  }
+}

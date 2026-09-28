@@ -53,6 +53,7 @@ const findProductos = async (id_empresa, filtros = {}) => {
   const [rows] = await db.query(`
     SELECT p.id_producto, p.nombre, p.descripcion, p.unidad_medida, p.stock_minimo, p.activo,
            p.es_servicio, p.id_categoria_producto, p.id_subcategoria_producto,
+           p.costo_referencia, p.costo_actualizado_en,
            c.nombre AS categoria_nombre,
            s.nombre AS subcategoria_nombre
     FROM productos p
@@ -75,7 +76,8 @@ const findProductoById = async (id_producto, id_empresa) => {
 
   const [rows] = await db.query(`
     SELECT p.id_producto, p.nombre, p.descripcion, p.unidad_medida, p.stock_minimo, p.activo,
-           p.es_servicio, p.id_categoria_producto, p.id_subcategoria_producto
+           p.es_servicio, p.id_categoria_producto, p.id_subcategoria_producto,
+           p.costo_referencia, p.costo_actualizado_en
     FROM productos p
     WHERE p.id_producto = ? AND p.id_empresa = ?
   `, [id_producto, id_empresa])
@@ -85,30 +87,42 @@ const findProductoById = async (id_producto, id_empresa) => {
 
 const createProducto = async ({ nombre, descripcion, unidad_medida, stock_minimo,
                                 id_categoria_producto, id_subcategoria_producto,
-                                id_empresa, es_servicio = 0 }) => {
+                                id_empresa, es_servicio = 0, costo_referencia = null }) => {
 
+  // La fecha del costo se pone sola cuando hay costo: es un dato del sistema,
+  // no algo que la persona tenga que contestar.
   const [result] = await db.query(`
     INSERT INTO productos
       (nombre, descripcion, unidad_medida, stock_minimo,
-       id_categoria_producto, id_subcategoria_producto, id_empresa, es_servicio)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+       id_categoria_producto, id_subcategoria_producto, id_empresa, es_servicio,
+       costo_referencia, costo_actualizado_en)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ${costo_referencia === null ? 'NULL' : 'NOW()'})
   `, [nombre, descripcion, unidad_medida, stock_minimo,
-      id_categoria_producto, id_subcategoria_producto, id_empresa, es_servicio])
+      id_categoria_producto, id_subcategoria_producto, id_empresa, es_servicio,
+      costo_referencia])
 
   return result.insertId
 }
 
+// El costo se toca aparte del resto: la fecha SOLO se mueve si el valor
+// cambio. Si se pisara en cada edicion, corregir una falta de ortografia en el
+// nombre rejuvenecería un costo de hace ocho meses, que es justo lo que la
+// fecha esta para delatar.
 const updateProducto = async (id_producto, id_empresa,
                               { nombre, descripcion, unidad_medida, stock_minimo,
-                                id_categoria_producto, id_subcategoria_producto }) => {
+                                id_categoria_producto, id_subcategoria_producto,
+                                costo_referencia = null, costoCambio = false }) => {
 
   await db.query(`
     UPDATE productos
     SET nombre = ?, descripcion = ?, unidad_medida = ?, stock_minimo = ?,
-        id_categoria_producto = ?, id_subcategoria_producto = ?
+        id_categoria_producto = ?, id_subcategoria_producto = ?,
+        costo_referencia = ?
+        ${costoCambio ? (costo_referencia === null ? ', costo_actualizado_en = NULL' : ', costo_actualizado_en = NOW()') : ''}
     WHERE id_producto = ? AND id_empresa = ?
   `, [nombre, descripcion, unidad_medida, stock_minimo,
-      id_categoria_producto, id_subcategoria_producto, id_producto, id_empresa])
+      id_categoria_producto, id_subcategoria_producto, costo_referencia,
+      id_producto, id_empresa])
 }
 
 const setActivoProducto = async (id_producto, id_empresa, activo) => {

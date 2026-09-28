@@ -175,4 +175,90 @@ const porProducto = async (id_empresa, { desde, hasta } = {}) => {
   return rows
 }
 
-module.exports = { movimientosDelPeriodo, contarAnulados, porCategoria, porProducto }
+// =====================================================================
+// PERDIDAS VALORIZADAS (HU-53)
+// =====================================================================
+//
+// Que cuenta como perdida: **un motivo que SACA mercaderia y NO mueve plata**
+// (efecto_stock = salida, efecto_dinero = ninguno). Es la definicion
+// estructural, no una lista de nombres: los motivos los arma cada empresa, asi
+// que "Perdida" y "Robo" pueden llamarse de cualquier manera o no existir.
+//
+// Entran ahi la rotura, el robo, el consumo interno, el recorte de produccion
+// y el ajuste negativo: todo lo que salio del deposito sin que entrara un peso.
+//
+// ESTA PLATA NO ESTA EN EL BALANCE, y eso es lo mas importante de entender.
+// Los egresos del balance son plata que salio de la caja; esto es mercaderia
+// que se fue sin venderse, valuada a lo que costo. Sumarlos seria contar dos
+// veces lo mismo (ya se pago cuando se compro). Por eso vive en su propio
+// reporte y el controlador no lo mezcla con nada.
+//
+// Se agrupa por MOTIVO y no en un solo total porque no es lo mismo: el consumo
+// interno es normal y el robo es un problema. Un numero unico esconde cual de
+// los dos crecio.
+const perdidasPorMotivo = async (id_empresa, { desde, hasta } = {}) => {
+
+  const condiciones = ['ms.id_empresa = ?', 'ms.anulado = 0',
+                       "mo.efecto_stock = 'salida'", "mo.efecto_dinero = 'ninguno'"]
+  const params = [id_empresa]
+
+  if (desde) { condiciones.push('ms.fecha >= ?'); params.push(desde) }
+  if (hasta) { condiciones.push('ms.fecha <= ?'); params.push(hasta) }
+
+  const [rows] = await db.query(`
+    SELECT mo.id_motivo_stock, mo.nombre, mo.activo,
+           COUNT(*) AS movimientos,
+           -- Lo que SI se pudo valorizar: cantidad por costo, solo donde hay
+           -- costo cargado.
+           COALESCE(SUM(CASE WHEN p.costo_referencia IS NOT NULL
+                             THEN ms.cantidad * p.costo_referencia ELSE 0 END), 0) AS valorizado,
+           -- Y lo que NO. Se cuenta aparte a proposito: un producto sin costo
+           -- NO vale cero, no se sabe cuanto vale. Sumarlo como 0 daria un
+           -- total que parece el total y es una parte.
+           SUM(CASE WHEN p.costo_referencia IS NULL THEN 1 ELSE 0 END) AS sin_costo
+    FROM movimientos_stock ms
+    JOIN motivos_stock mo ON mo.id_motivo_stock = ms.id_motivo_stock
+    JOIN productos p      ON p.id_producto = ms.id_producto
+    WHERE ${condiciones.join(' AND ')}
+    GROUP BY mo.id_motivo_stock
+    ORDER BY valorizado DESC, mo.nombre
+  `, params)
+
+  return rows
+}
+
+// El detalle: que productos se perdieron, para saber donde mirar.
+//
+// Mismo universo de filas que la consulta de arriba -- misma definicion de
+// perdida, mismo periodo -- asi que los dos totales cierran entre si. Si cada
+// una definiera "perdida" a su manera, el detalle no sumaria el resumen.
+const perdidasPorProducto = async (id_empresa, { desde, hasta } = {}) => {
+
+  const condiciones = ['ms.id_empresa = ?', 'ms.anulado = 0',
+                       "mo.efecto_stock = 'salida'", "mo.efecto_dinero = 'ninguno'"]
+  const params = [id_empresa]
+
+  if (desde) { condiciones.push('ms.fecha >= ?'); params.push(desde) }
+  if (hasta) { condiciones.push('ms.fecha <= ?'); params.push(hasta) }
+
+  const [rows] = await db.query(`
+    SELECT p.id_producto, p.nombre, p.unidad_medida, p.costo_referencia, p.costo_actualizado_en,
+           SUM(ms.cantidad) AS cantidad,
+           COUNT(*) AS movimientos,
+           COALESCE(SUM(CASE WHEN p.costo_referencia IS NOT NULL
+                             THEN ms.cantidad * p.costo_referencia ELSE 0 END), 0) AS valorizado
+    FROM movimientos_stock ms
+    JOIN motivos_stock mo ON mo.id_motivo_stock = ms.id_motivo_stock
+    JOIN productos p      ON p.id_producto = ms.id_producto
+    WHERE ${condiciones.join(' AND ')}
+    GROUP BY p.id_producto
+    ORDER BY valorizado DESC, cantidad DESC, p.nombre
+  `, params)
+
+  return rows
+}
+
+module.exports = {
+  movimientosDelPeriodo, contarAnulados, porCategoria, porProducto,
+  perdidasPorMotivo, perdidasPorProducto
+}
