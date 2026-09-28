@@ -128,6 +128,8 @@
             .map(p => ({
                 ...p,
                 sinStock: Number(p.existencia) <= 0,
+                // En negativo no es "sin stock": es un dato para revisar.
+                negativo: Number(p.existencia) < 0,
                 bajoMinimo: Number(p.stock_minimo) > 0 && Number(p.existencia) <= Number(p.stock_minimo)
             }))
             .filter(p => p.sinStock || p.bajoMinimo)
@@ -161,7 +163,7 @@
                 <td class="text-end">${formatCantidad(p.existencia)} ${esc(p.unidad_medida)}</td>
                 <td class="text-end">
                     <span class="badge-stock ${p.sinStock ? 'sin' : 'bajo'}">
-                        ${p.sinStock ? 'Sin stock' : 'Reponer'}
+                        ${p.negativo ? 'Revisar' : p.sinStock ? 'Sin stock' : 'Reponer'}
                     </span>
                 </td>
             </tr>`).join('') +

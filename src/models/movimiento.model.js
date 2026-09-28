@@ -157,6 +157,14 @@ const resumen = async (id_empresa, filtros = {}) => {
 // un resultado mentiroso -- con "Solo lo que entro" mostraria egresos en cero
 // y cada servicio pareceria pura ganancia. Un resultado necesita los dos
 // lados o no es un resultado.
+//
+// Y sale AGRUPADO POR LA CATEGORIA DEL SERVICIO, no en un ranking unico. La
+// empresa presta unos servicios y contrata otros, y en un solo orden el flete
+// que se contrata quedaba ultimo y en rojo, como si fuera el servicio que
+// anduvo peor: justo la respuesta equivocada a "cual conviene sostener"
+// (auditoria de UX del 28/09, H-03). Lo que separa unos de otros es la
+// categoria que arma cada empresa ("Los que ofrecemos", "Los que
+// contratamos"), asi que se agrupa por ahi sin inventar un campo nuevo.
 const resumenPorServicio = async (id_empresa, { desde, hasta } = {}) => {
 
   const condicionesMov = ['m.id_servicio = p.id_producto', 'm.id_empresa = ?', 'm.anulado = 0']
@@ -169,15 +177,17 @@ const resumenPorServicio = async (id_empresa, { desde, hasta } = {}) => {
 
   const [rows] = await db.query(`
     SELECT p.id_producto AS id_servicio, p.nombre, p.activo,
+           cp.id_categoria_producto AS id_categoria, cp.nombre AS categoria,
            COALESCE(SUM(CASE WHEN c.naturaleza = 'ingreso' THEN m.monto ELSE 0 END), 0) AS total_ingresos,
            COALESCE(SUM(CASE WHEN c.naturaleza = 'egreso'  THEN m.monto ELSE 0 END), 0) AS total_egresos,
            COUNT(m.id_movimiento) AS cantidad
     FROM productos p
+    JOIN categorias_producto cp       ON cp.id_categoria_producto = p.id_categoria_producto
     LEFT JOIN movimientos m           ON ${condicionesMov.join(' AND ')}
     LEFT JOIN tipos_movimiento t      ON t.id_tipo = m.id_tipo
     LEFT JOIN categorias_movimiento c ON c.id_categoria = t.id_categoria
     WHERE p.id_empresa = ? AND p.es_servicio = 1
-    GROUP BY p.id_producto
+    GROUP BY p.id_producto, cp.id_categoria_producto, cp.nombre
     -- Un servicio dado de baja solo aparece si en el periodo movio algo: su
     -- plata es real y tiene que estar en la comparacion. Si no movio nada, es
     -- ruido -- ya no se presta.
@@ -188,19 +198,37 @@ const resumenPorServicio = async (id_empresa, { desde, hasta } = {}) => {
              p.nombre
   `, params)
 
-  return rows.map(fila => {
+  const servicios = rows.map(fila => {
     const ingresos = Number(fila.total_ingresos)
     const egresos = Number(fila.total_egresos)
     return {
       id_servicio: fila.id_servicio,
       nombre: fila.nombre,
       activo: fila.activo,
+      id_categoria: fila.id_categoria,
+      categoria: fila.categoria,
       cantidad: Number(fila.cantidad),
       total_ingresos: ingresos,
       total_egresos: egresos,
       resultado: ingresos - egresos
     }
   })
+
+  // Los bloques: primero el que mas deja, y adentro de cada uno el orden que
+  // ya trae la consulta. Cada fila lleva lo que deja su bloque, para que la
+  // pantalla pueda escribir el subtotal sin volver a sumar.
+  // La suma va en centavos, como en los reportes: con el + comun sobre
+  // decimales, 0.1 + 0.2 no da 0.3.
+  const centavosPorBloque = {}
+  servicios.forEach(sv => {
+    centavosPorBloque[sv.id_categoria] = (centavosPorBloque[sv.id_categoria] || 0) + Math.round(sv.resultado * 100)
+  })
+  const ordenBloque = [...new Set(servicios.map(sv => sv.id_categoria))]
+    .sort((a, b) => centavosPorBloque[b] - centavosPorBloque[a])
+
+  return ordenBloque.flatMap(id => servicios
+    .filter(sv => sv.id_categoria === id)
+    .map(sv => ({ ...sv, deja_categoria: centavosPorBloque[id] / 100 })))
 }
 
 module.exports = { findByEmpresa, findById, create, anular, resumen, resumenPorServicio }

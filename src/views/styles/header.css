@@ -205,6 +205,20 @@
   }
 }
 
+/* ===== Pantallas medianas =====
+   Con Servicios y Reportes prendidos el admin tiene ocho opciones más
+   Configuración, y a 1024 px el menú se partía en dos renglones: Reportes y
+   Configuración caían abajo (UX 28/09, H-15). Hasta 1439 px (cubre las notebooks de 1366) se esconden los
+   dos textos que se repiten en otro lado -- el nombre de la app al lado del
+   logo, y el nombre del usuario, que sigue adentro de su menú -- y las
+   opciones se aprietan un poco. Queda lugar para Articulación, la novena. */
+@media (min-width: 768px) and (max-width: 1439px) {
+  #logo h1 { display: none; }
+  #user-nombre { display: none; }
+  #main-nav > ul { gap: 2px; }
+  #main-nav > ul > li > a { padding: 6px 8px; font-size: 0.86rem; }
+}
+
 /* ===== Desktop ===== */
 @media (min-width: 1024px) {
   #logo h1 {

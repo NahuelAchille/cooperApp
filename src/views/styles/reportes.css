@@ -144,6 +144,16 @@ body {
 .agr-nombre { font-weight: 600; }
 .chico-gris { font-size: 0.76rem; color: #9aa8a1; font-weight: 400; }
 .tabla-agrupada .fila-inactiva { opacity: 0.6; }
+
+/* El título de cada bloque, en la vista por servicio (UX 28/09, H-03) */
+.tabla-agrupada .fila-bloque td {
+  background: #f4faf7;
+  font-weight: 700;
+  font-size: 0.82rem;
+  color: var(--verde-primario);
+  border-bottom: 1px solid #d8e6de;
+}
+.deja-bloque { float: right; font-weight: 600; }
 .tabla-agrupada .positivo { color: var(--verde-oscuro); }
 .tabla-agrupada .negativo { color: var(--danger); }
 
@@ -357,6 +367,13 @@ body {
   .tabla-agrupada .col-detalle { display: none; }
   .tabla-agrupada th, .tabla-agrupada td { padding: 9px 6px; font-size: 0.85rem; }
   .botones-vista .btn-vista { flex: 1 1 45%; }
+
+  /* En el celular, las descargas van al final de la hoja: uno entra a
+     Reportes a MIRAR, y la decisión de mandar el archivo viene después de
+     ver el número. Arriba empujaban el primer casillero al píxel 723
+     (UX 28/09, H-06). En escritorio entran todos a la vista y no molestan. */
+  .hoja-reporte { display: flex; flex-direction: column; }
+  .hoja-reporte > .descargas { order: 1; margin: 16px 0 0; }
 }
 
 /* ===== ESCRITORIO ===== */

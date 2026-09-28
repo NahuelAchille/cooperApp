@@ -117,8 +117,8 @@ exports.actualizarMotivo = async (req, res) => {
       const usos = await stockModel.contarMovimientosDeMotivo(id)
       if (usos > 0) {
         return res.status(400).json({
-          error: `No se puede cambiar el efecto de "${motivo.nombre}": ya tiene ${usos} ${usos === 1 ? 'movimiento registrado' : 'movimientos registrados'} y cambiarlo daría vuelta el historial. ` +
-                 'Podés renombrarlo, o darlo de baja y crear uno nuevo con el efecto que necesitás.'
+          error: `No se puede cambiar lo que hace "${motivo.nombre}": ya tiene ${usos} ${usos === 1 ? 'movimiento registrado' : 'movimientos registrados'} y cambiarlo daría vuelta el historial. ` +
+                 'Podés renombrarlo, o darlo de baja y crear uno nuevo que haga lo que necesitás.'
         })
       }
     }

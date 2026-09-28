@@ -107,6 +107,38 @@ body {
   margin-bottom: 2px;
 }
 
+/* Los atajos de período, iguales a los de Reportes (UX 28/09, H-04) */
+.atajos-periodo { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 12px; }
+.btn-atajo {
+  flex: 1 1 auto;
+  background: white;
+  border: 1px solid #d8e6de;
+  border-radius: 20px;
+  padding: 5px 14px;
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: #45564d;
+}
+.btn-atajo:hover { border-color: var(--verde-secundario); }
+.btn-atajo.elegido {
+  background: #e4f2eb;
+  border-color: var(--verde-primario);
+  color: var(--verde-primario);
+}
+@media (min-width: 768px) { .btn-atajo { flex: 0 0 auto; } }
+
+/* El mismo botón de limpiar que el resto de las pantallas */
+.btn-limpiar {
+  background: none;
+  border: 1.5px solid #c8e6d5;
+  color: var(--verde-primario);
+  border-radius: 8px;
+  font-size: 0.82rem;
+  font-weight: 600;
+  padding: 6px 14px;
+}
+.btn-limpiar:hover { background-color: #e4f2eb; }
+
 /* ===== TABLA ===== */
 .card-tabla {
   background: var(--card-bg);
@@ -181,6 +213,16 @@ body {
 .tabla-servicios .positivo { color: var(--verde-oscuro); }
 .tabla-servicios .negativo { color: var(--danger); }
 .chico-gris { font-size: 0.76rem; color: #9aa8a1; font-weight: 400; }
+
+/* El título de cada bloque de servicios (UX 28/09, H-03) */
+.tabla-servicios .fila-bloque td {
+  background: #f4faf7;
+  font-weight: 700;
+  font-size: 0.82rem;
+  color: var(--verde-primario);
+  border-bottom: 1px solid #d8e6de;
+}
+.deja-bloque { float: right; font-weight: 600; }
 
 /* En el celular quedan dos columnas: el servicio y lo que deja.
    Con las cuatro, la tabla medía 480 px en 375 y "DEJA" -- que es la única

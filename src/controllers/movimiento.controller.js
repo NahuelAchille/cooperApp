@@ -3,6 +3,7 @@ const categoriaModel = require('../models/categoria.model')
 const productoModel = require('../models/producto.model')
 const moduloModel = require('../models/modulo.model')
 const { parsearFecha, validarFechaDeCarga } = require('../services/fecha.service')
+const { resolver: resolverPeriodo } = require('../services/periodo.service')
 
 const NATURALEZAS = ['ingreso', 'egreso']
 
@@ -132,6 +133,16 @@ exports.getResumen = async (req, res) => {
 // naturaleza puesto en "ingreso", todos los servicios mostrarian egresos en
 // cero y el resultado seria pura ganancia inventada. La pantalla dice de que
 // periodo esta hablando para que no haya duda.
+// Las fechas de un atajo de periodo ("este mes", "el mes pasado", "este
+// año"), para los filtros de la pantalla (UX 28/09, H-04). Las calcula el
+// mismo servicio que usan los reportes: si la pantalla las armara por su
+// cuenta, "el mes pasado" podria no ser el mismo en Movimientos y en Reportes.
+exports.getPeriodo = (req, res) => {
+  const periodo = resolverPeriodo({ periodo: req.query.periodo })
+  if (periodo.error) return res.status(400).json({ error: periodo.error })
+  res.json(periodo)
+}
+
 exports.getResumenPorServicio = async (req, res) => {
 
   try {

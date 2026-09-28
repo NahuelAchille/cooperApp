@@ -12,6 +12,8 @@ const finanzas = [requireLogin, requireRol('admin_empresa', 'tesorero'), require
 
 router.get('/',            ...finanzas, movimientoController.getMovimientos)
 router.get('/resumen',     ...finanzas, movimientoController.getResumen)
+// Las fechas de los atajos de periodo de los filtros
+router.get('/periodo',     ...finanzas, movimientoController.getPeriodo)
 // Cuanto deja cada servicio. Va en /movimientos y no en /servicios porque lo
 // que suma son movimientos de dinero: el permiso que hace falta es el de
 // finanzas, no el del catalogo.

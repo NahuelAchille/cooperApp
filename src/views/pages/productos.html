@@ -8,6 +8,7 @@
   <link rel="stylesheet" href="/styles/header.css">
   <link rel="stylesheet" href="/styles/productos.css">
   <link rel="stylesheet" href="/styles/tabla-mobile.css">
+  <link rel="stylesheet" href="/styles/filtros-plegables.css">
   <title>Productos - CooperApp</title>
 </head>
 <body>
@@ -50,7 +51,7 @@
     </div>
 
     <!-- Filtros del catálogo -->
-    <div class="card-filtros d-none" id="card-filtros">
+    <div class="card-filtros filtros-plegables d-none" id="card-filtros">
       <div class="filtros-grid">
         <div>
           <label class="form-label">Buscar</label>
@@ -152,7 +153,10 @@
                    reporte de pérdidas lo cuenta aparte en vez de tomarlo por
                    cero. Un cero diría que perder eso no cuesta nada. -->
               <div class="col-12">
-                <label class="form-label">¿Cuánto te cuesta perder uno? <span class="text-muted fw-normal">(opcional)</span></label>
+                <!-- La pregunta dice la unidad del producto: el queso se mide en
+                     kilos, y quien leía "uno" podía cargar el precio de la horma
+                     entera y dejar mal todo el reporte de pérdidas (UX 28/09, H-14). -->
+                <label class="form-label"><span id="pregunta-costo">¿Cuánto te cuesta perder uno?</span> <span class="text-muted fw-normal">(opcional)</span></label>
                 <div class="input-group">
                   <span class="input-group-text">$</span>
                   <input type="number" class="form-control" name="costo_referencia" min="0.01" step="0.01" placeholder="Dejalo vacío si no lo sabés">
@@ -214,6 +218,8 @@
   </div>
 
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+  <!-- Los filtros, plegados en el celular (UX 28/09, H-05) -->
+  <script src="/components/filtros-plegables.js"></script>
 
   <script>
 
@@ -369,9 +375,29 @@
 
     // Con inflación, un costo de hace meses es un costo malo. En vez de
     // explicarlo, se muestra desde cuándo no se toca: el número habla solo.
+    //
+    // Recuerda el último producto para poder rearmar el texto cuando cambia
+    // la unidad elegida, sin perder la fecha del costo.
+    let productoDelCosto = null
+
+    // "un kilo", "una caja"... para la pregunta y la ayuda del costo.
+    const UNA_UNIDAD = {
+      unidad: 'una unidad', kg: 'un kilo', g: 'un gramo', litro: 'un litro', ml: 'un mililitro',
+      metro: 'un metro', caja: 'una caja', paquete: 'un paquete', bolsa: 'una bolsa'
+    }
+
     function mostrarAntiguedadDelCosto(producto) {
+      productoDelCosto = producto
       const ayuda = document.getElementById('ayuda-costo')
-      const base = 'Lo que te costó a vos una unidad, no lo que la vendés. Sirve para saber cuánta plata te llevan las roturas y los faltantes. Si no lo sabés, dejalo vacío.'
+      const una = UNA_UNIDAD[document.getElementById('select-unidad').value]
+
+      document.getElementById('pregunta-costo').textContent = una
+        ? `¿Cuánto te cuesta perder ${una}?`
+        : '¿Cuánto te cuesta perder uno?'
+
+      const base = una
+        ? `Lo que te costó a vos ${una}, no lo que la vendés. Sirve para saber cuánta plata te llevan las roturas y los faltantes. Si no lo sabés, dejalo vacío.`
+        : 'Elegí primero la unidad de medida: el costo es por esa unidad. Lo que te costó a vos, no lo que la vendés. Si no lo sabés, dejalo vacío.'
 
       if (!producto?.costo_actualizado_en) {
         ayuda.textContent = base
@@ -385,6 +411,9 @@
         `<br><span class="${meses >= 6 ? 'costo-viejo' : ''}">Cargado el ${cargado.toLocaleDateString('es-AR')}` +
         `${meses >= 6 ? ' — hace más de medio año, puede haber quedado corto' : ''}.</span>`
     }
+
+    // Al cambiar la unidad, la pregunta del costo cambia con ella.
+    document.getElementById('select-unidad').addEventListener('change', () => mostrarAntiguedadDelCosto(productoDelCosto))
 
     // ================= FORMULARIO =================
 

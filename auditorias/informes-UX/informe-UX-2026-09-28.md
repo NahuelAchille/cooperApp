@@ -386,3 +386,111 @@ patrones). Los cuatro primeros son todos "chico" y son los que más daño evitan
 - El CSV escribe `'-180000,00` con el apóstrofe visible (ver H-11): funcionalmente es la
   protección contra inyección de fórmulas haciendo su trabajo sobre un campo donde no hace falta.
 - Los botones de descarga quedan habilitados en un reporte vacío: bajan un archivo con cero filas.
+
+---
+
+# Resultado de las correcciones (28/09/2026)
+
+Se aplicó **el plan entero**, incluida la parte que el informe dejaba para el Sprint 13, en tres
+commits: los archivos y la pantalla de Reportes (`02f2a40`), las categorías de los datos de
+prueba (`2b22fa5`) y todo lo demás. **H-16 quedó sin tocar a propósito** (ver abajo).
+
+## Lo que se corrigió
+
+**Los archivos que salen (H-01, H-02, H-10, H-11).** El PDF por producto lleva el detalle
+abajo de cada nombre y, si todo da $0, un aviso que dice por qué y dónde se carga el cobro. El
+CSV de pérdidas va en dos bloques con su encabezado y su total, y seleccionar la columna ya no
+da el doble. *"No se sabe"* también en el CSV. H-11 ya estaba cerrado por la auditoría de QA
+(A1): los números del sistema salen sin apóstrofe.
+
+**La pantalla de Reportes (H-07, H-08, H-12, H-13, H-06).**
+- Bajo las vistas dice *"Son la misma plata del período, ordenada de distinta manera"*, y
+  *Lo que se perdió* va aparte, con el rótulo *"Además:"*.
+- El aviso de pérdidas usa la frase de los archivos: *"NO está en los egresos del balance"*.
+- Una empresa que nunca cargó nada ve *"Todavía no cargaste ningún movimiento…"* con un botón
+  *"Registrar el primero"*, en vez de *"Probá con otro"*.
+- Al operador se le dice a quién pedirle el reporte.
+- En el celular las descargas van al final de la hoja. **Ojo con la medida**: el primer
+  casillero sigue cerca del píxel 727, porque la nota y el bloque *"Además:"* de H-07 ocupan casi
+  lo que liberaron los botones. Lo que cambió es el orden: ya no hay que pasar por las descargas
+  para llegar al número.
+- Encontrado al corregir: las descargas **se apagan** con la tabla vacía o con todas las filas
+  en cero, y mientras se arma un reporte nuevo (si no, bajaban el reporte anterior sin avisar).
+
+**Las categorías que chocaban (paso 4).** Hallazgo que el informe no vio: el choque **no era
+sólo de la demo**. La siembra de toda empresa nueva (`datos-iniciales.js`) traía una categoría de
+dinero *"Servicios"*. Ahora es *"Gastos fijos"* ahí y en las tres empresas de prueba. En
+Metalúrgica, *"Trabajos a terceros"* (dinero) pasó a *"Ventas de servicios"*, el flete fue a una
+categoría propia (*"Pagos a terceros"*: no es un gasto fijo) y el árbol de servicios a *"Los que
+ofrecemos"* / *"Los que contratamos"*. De paso, *"Trabajo para automotriz"* tenía tipo Torneado
+y estaba atado a *Corte de chapa*: ahora su tipo es *Corte y plegado*.
+
+**Vocabulario.** *"¿Este movimiento es de algún servicio?"* · *"Qué le hace al stock / al
+dinero"* en Motivos (el formulario ya lo decía; faltaban las columnas y un mensaje del servidor)
+· *"Volver a stock"* · *"Sin registrar el cobro"* / *"Sin registrar el pago"* en Stock, **y el
+operador ya no la ve** · *"Cobramos / Pagamos"* en el panel de servicios · la unidad en el
+detalle por producto (*"salieron 14,50 kg"*) · *"Revisar"* en vez de *"Sin stock"* para una
+existencia negativa, en Stock y en el tablero.
+
+**H-03 · El ranking de servicios, partido en bloques.** Un bloque por **categoría del servicio**,
+con lo que deja cada bloque en su título (*"Los que ofrecemos · deja $282.000"*, *"Los que
+contratamos · se lleva $18.000"*). Se agrupa por la categoría que arma la empresa, sin inventar
+un campo nuevo. Se hace **en el modelo**, así el panel de Movimientos y el reporte *Por servicio*
+salen iguales. En el CSV y el PDF la categoría va en la columna *Detalle*, **no** como fila de
+subtotal: un subtotal en la misma columna la haría sumar de más, que es H-02 otra vez.
+
+**H-04 · Los atajos de período en Movimientos.** *Este mes / El mes pasado / Este año*, arriba de
+los filtros. Las fechas las da el servidor (`GET /movimientos/periodo`) con el mismo
+`periodo.service.js` que Reportes, así *"el mes pasado"* es el mismo en las dos pantallas.
+Completan *Desde* y *Hasta*, que quedan a la vista.
+
+**H-05 · Los filtros plegables en el celular.** Patrón compartido, igual que `tabla-mobile.css`:
+`styles/filtros-plegables.css` + `components/filtros-plegables.js`, con las instrucciones
+adentro. Se aplica con una clase. Está en las cinco cajas: Movimientos, Productos, Servicios y
+las dos pestañas de Stock. El botón dice cuántos filtros hay puestos (*"Filtros · 2 puestos"*):
+plegados, una lista corta se leería como *"hay pocos"* en vez de *"estoy filtrando"*.
+
+| Pantalla (375 px) | Primer dato antes | Ahora |
+|---|---|---|
+| Stock | 653 px | **404 px** |
+| Servicios | 716 px | **393 px** |
+
+**H-09, H-14, H-15, H-17.**
+- Dar de baja un servicio avisa que sus movimientos siguen mostrándolo y contando en los reportes.
+- El costo del producto pregunta por la unidad: *"¿Cuánto te cuesta perder un kilo?"*, y cambia
+  al cambiar la unidad.
+- El menú entra en **un renglón** de 1024 a 1440 px, incluso con Articulación prendida (nueve
+  opciones). En pantallas medianas se esconden el nombre de la app al lado del logo y el nombre
+  del usuario, que sigue adentro de su menú. Los botones del encabezado de Servicios y Productos
+  tampoco se parten ahora: el que cede lugar es el subtítulo.
+- *Limpiar filtros* con texto en Movimientos · sin columna *Acciones* para el tesorero en
+  Servicios · el desplegable de servicios del alta agrupado bajo su categoría.
+
+## Lo que NO se tocó
+
+- **H-16** (el panel de servicios y el reporte *Por servicio* repiten la misma tabla): el propio
+  informe lo marca *a validar con usuarios*. Es una decisión de producto, no un arreglo.
+- **Lo que quedó del informe anterior (HU-87 y HU-88)**: sigue en el backlog del Sprint 13,
+  como estaba previsto.
+- **El backlog**: la tarea *"Colapsar los filtros…"* de **HU-65** quedó hecha. La historia
+  sigue *Pendiente* porque le quedan otras tres tareas, y el estado se lleva por historia.
+
+## Cómo se probó
+
+Base recreada desde cero y **restaurada al terminar**.
+- **Base**: las categorías y sus tipos en las tres empresas; los 28 movimientos con tipo; la
+  siembra de una empresa recién aprobada (Huerta Norte) arranca con *"Gastos fijos"*.
+- **API**: los bloques del resumen por servicio y sus subtotales; los cuatro atajos de período
+  (incluido uno inventado, que cae en *este mes*); `/movimientos/periodo` rebota al operador
+  (403) y sin sesión (401); el CSV por servicio; el reporte de la empresa sin movimientos contra
+  uno de Metalúrgica en un período vacío.
+- **Navegador**: el panel partido en bloques y los atajos (con el panel recalculándose); el
+  optgroup del alta; Stock con el admin (*"Sin registrar el cobro / pago"*) y con el operador
+  (ninguna marca); el tesorero en Servicios (4 columnas); el aviso de baja; el costo que cambia
+  con la unidad; Motivos; la empresa nueva en Reportes; una existencia negativa forzada por SQL
+  (*"Revisar"* en Stock y en el tablero); el menú medido a 1024, 1280 y 1440; los filtros
+  plegados a 375. Sin errores de consola en ninguna pantalla.
+
+**Ojo al actualizar**: cambió `datos_de_prueba.sql` (el esquema no), así que **todo el grupo
+tiene que recrear la base**. Las empresas ya aprobadas conservan su categoría *"Servicios"*: la
+siembra corre sólo al aprobar.

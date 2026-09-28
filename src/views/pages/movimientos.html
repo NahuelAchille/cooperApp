@@ -8,6 +8,7 @@
   <link rel="stylesheet" href="/styles/header.css">
   <link rel="stylesheet" href="/styles/movimientos.css">
   <link rel="stylesheet" href="/styles/tabla-mobile.css">
+  <link rel="stylesheet" href="/styles/filtros-plegables.css">
   <title>Movimientos - CooperApp</title>
 </head>
 <body>
@@ -83,9 +84,12 @@
             <table class="table mb-0 tabla-servicios">
               <thead>
                 <tr>
+                  <!-- "Cobramos / Pagamos" y no "Entró / Salió": en esta misma
+                       pantalla, Entró / Salió es la columna de la dirección de
+                       cada movimiento, y acá son importes (UX 28/09). -->
                   <th>Servicio</th>
-                  <th class="text-end">Entró</th>
-                  <th class="text-end">Salió</th>
+                  <th class="text-end">Cobramos</th>
+                  <th class="text-end">Pagamos</th>
                   <th class="text-end">Deja</th>
                 </tr>
               </thead>
@@ -95,8 +99,17 @@
         </div>
       </div>
 
-      <!-- Filtros -->
-      <div class="filtros">
+      <!-- Filtros. En el celular van plegados detrás de un botón (H-05). -->
+      <div class="filtros filtros-plegables">
+        <!-- Los mismos atajos que Reportes. "¿Cuánto nos dejó la soldadura el
+             mes pasado?" se contesta acá, y armar dos fechas para eso es mucho
+             pedir (UX 28/09, H-04). Completan Desde y Hasta, que quedan a la
+             vista: así se ve de qué fechas se está hablando. -->
+        <div class="atajos-periodo" role="group">
+          <button type="button" class="btn-atajo" data-periodo="mes-actual">Este mes</button>
+          <button type="button" class="btn-atajo" data-periodo="mes-anterior">El mes pasado</button>
+          <button type="button" class="btn-atajo" data-periodo="anio-actual">Este año</button>
+        </div>
         <div class="row g-2 align-items-end">
           <div class="col-6 col-md-2">
             <label class="form-label">Mostrar</label>
@@ -133,9 +146,11 @@
               <label class="form-check-label small" for="filtro-anulados">Ver anulados</label>
             </div>
           </div>
-          <div class="col-6 col-md-1">
-            <button class="btn btn-sm w-100" style="background-color:var(--verde-primario);color:white;" id="btn-limpiar" title="Limpiar filtros">
-              <i class="fa-solid fa-eraser"></i>
+          <!-- Con texto, como en Stock, Productos, Servicios y Reportes: un
+               ícono verde solo no dice qué hace (UX 28/09, H-17). -->
+          <div class="col-12 col-md-auto ms-md-auto">
+            <button class="btn btn-sm btn-limpiar w-100" id="btn-limpiar">
+              <i class="fa-solid fa-eraser me-1"></i>Limpiar filtros
             </button>
           </div>
         </div>
@@ -231,7 +246,10 @@
                    siempre se deja vacío, así que no puede quedar en el medio
                    del camino de lo que sí hay que contestar. -->
               <div class="col-12 d-none" id="campo-servicio">
-                <label class="form-label">¿Salió de un servicio? <span class="text-muted fw-normal">(opcional)</span></label>
+                <!-- No "¿Salió de un servicio?": ocho renglones más arriba
+                     "Salió" quiere decir que la plata se fue, y para un ingreso
+                     la pregunta contradecía el botón recién apretado (UX 28/09). -->
+                <label class="form-label">¿Este movimiento es de algún servicio? <span class="text-muted fw-normal">(opcional)</span></label>
                 <select class="form-select" name="id_servicio" id="mov-servicio">
                   <option value="">No, ninguno</option>
                 </select>
@@ -279,6 +297,7 @@
   </div>
 
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+  <script src="/components/filtros-plegables.js"></script>
 
   <script>
 
@@ -421,18 +440,29 @@
       document.getElementById('campo-servicio').classList.remove('d-none')
       document.getElementById('filtro-servicio-caja').classList.remove('d-none')
 
+      // Agrupados bajo su categoría. Ya vienen ordenados por categoría, y sin
+      // el rótulo el orden parecía un desorden (UX 28/09, H-17).
+      const agrupar = (lista, opcion) => {
+        const grupos = []
+        lista.forEach(s => {
+          const ultimo = grupos[grupos.length - 1]
+          if (ultimo && ultimo.nombre === s.categoria_nombre) ultimo.items.push(s)
+          else grupos.push({ nombre: s.categoria_nombre, items: [s] })
+        })
+        return grupos.map(g => `<optgroup label="${esc(g.nombre)}">${g.items.map(opcion).join('')}</optgroup>`).join('')
+      }
+
       // En el ALTA sólo los activos: se está clasificando algo nuevo.
       document.getElementById('mov-servicio').innerHTML =
         '<option value="">No, ninguno</option>' +
-        servicios.filter(s => s.activo)
-          .map(s => `<option value="${s.id_producto}">${esc(s.nombre)}</option>`).join('')
+        agrupar(servicios.filter(s => s.activo), s => `<option value="${s.id_producto}">${esc(s.nombre)}</option>`)
 
       // En el FILTRO van todos, también los dados de baja: sus movimientos
       // siguen existiendo y hay que poder encontrarlos. Es el mismo criterio
       // que el filtro de categorías del catálogo de productos.
       document.getElementById('filtro-servicio').innerHTML =
         '<option value="">Todos</option>' +
-        servicios.map(s => `<option value="${s.id_producto}">${esc(s.nombre)}${s.activo ? '' : ' (de baja)'}</option>`).join('')
+        agrupar(servicios, s => `<option value="${s.id_producto}">${esc(s.nombre)}${s.activo ? '' : ' (de baja)'}</option>`)
 
       document.getElementById('zona-por-servicio').classList.remove('d-none')
     }
@@ -482,7 +512,12 @@
         return
       }
 
-      tbody.innerHTML = filas.map(s => `
+      // Un bloque por categoría del servicio, con lo que deja arriba. Los que
+      // se ofrecen y los que se contratan no se comparan entre sí: en un solo
+      // ranking, el flete contratado quedaba último y en rojo, como si fuera
+      // el servicio que anduvo peor (UX 28/09, H-03).
+      tbody.innerHTML = filas.map((s, i) => `
+        ${i === 0 || filas[i - 1].id_categoria !== s.id_categoria ? filaDeBloque(s, 4) : ''}
         <tr class="${s.activo ? '' : 'fila-inactiva'}">
           <td>${esc(s.nombre)}${s.activo ? '' : ' <span class="chico-gris">(de baja)</span>'}
             ${s.cantidad === 0 ? '<div class="chico-gris">Sin movimientos en el período</div>' : ''}</td>
@@ -490,6 +525,15 @@
           <td class="text-end">${s.total_egresos ? formatMoneda(s.total_egresos) : '<span class="chico-gris">—</span>'}</td>
           <td class="text-end fw-bold ${s.resultado > 0 ? 'positivo' : s.resultado < 0 ? 'negativo' : 'text-muted'}">${formatMoneda(s.resultado)}</td>
         </tr>`).join('')
+    }
+
+    // El título de un bloque de servicios: la categoría y lo que deja entera.
+    function filaDeBloque(s, columnas) {
+      const clase = s.deja_categoria > 0 ? 'positivo' : s.deja_categoria < 0 ? 'negativo' : 'text-muted'
+      return `<tr class="fila-bloque"><td colspan="${columnas}">
+        ${esc(s.categoria)}
+        <span class="deja-bloque ${clase}">${s.deja_categoria < 0 ? 'se lleva' : 'deja'} ${formatMoneda(Math.abs(s.deja_categoria))}</span>
+      </td></tr>`
     }
 
     document.getElementById('btn-por-servicio').addEventListener('click', () => {
@@ -754,7 +798,34 @@
     document.getElementById('filtro-desde').addEventListener('change', sincronizarRango)
     document.getElementById('filtro-hasta').addEventListener('change', sincronizarRango)
 
+    // --- Los atajos de período ---
+    // Las fechas las da el servidor, con el mismo cálculo que Reportes.
+    function marcarAtajo(clave) {
+      document.querySelectorAll('.btn-atajo')
+        .forEach(b => b.classList.toggle('elegido', b.dataset.periodo === clave))
+    }
+
+    document.querySelectorAll('.btn-atajo').forEach(boton => {
+      boton.addEventListener('click', async () => {
+        const res = await fetch('/movimientos/periodo?periodo=' + boton.dataset.periodo)
+        if (!res.ok) return
+        const periodo = await res.json()
+
+        document.getElementById('filtro-desde').value = periodo.desde
+        document.getElementById('filtro-hasta').value = periodo.hasta
+        sincronizarRango()
+        marcarAtajo(boton.dataset.periodo)
+        window.actualizarFiltrosPlegables?.()
+        cargarMovimientos()
+      })
+    })
+
+    // Si la persona toca una fecha a mano, el atajo deja de ser verdad.
+    ;['filtro-desde', 'filtro-hasta'].forEach(id =>
+      document.getElementById(id).addEventListener('input', () => marcarAtajo(null)))
+
     document.getElementById('btn-limpiar').addEventListener('click', () => {
+      marcarAtajo(null)
       document.getElementById('filtro-naturaleza').value = ''
       document.getElementById('filtro-desde').value = ''
       document.getElementById('filtro-hasta').value = ''

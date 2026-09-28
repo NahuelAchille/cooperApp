@@ -1,0 +1,33 @@
+/* Los filtros, plegados detrás de un botón en el celular (UX 28/09, H-05).
+   Cómo se usa está escrito arriba de components/filtros-plegables.js. */
+
+.btn-filtros { display: none; }
+
+@media (max-width: 767px) {
+  .btn-filtros {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    width: 100%;
+    background: white;
+    border: 1px solid #d8e6de;
+    border-radius: 10px;
+    padding: 10px 14px;
+    margin-bottom: 12px;
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: #2d7a4f;
+  }
+  .btn-filtros[aria-expanded="true"] { margin-bottom: 8px; }
+
+  .filtros-puestos {
+    background: #e4f2eb;
+    color: #1f5c3a;
+    border-radius: 12px;
+    padding: 2px 9px;
+    margin-left: 6px;
+    font-size: 0.76rem;
+  }
+
+  .filtros-plegables:not(.abierto) { display: none !important; }
+}

@@ -258,7 +258,22 @@ const perdidasPorProducto = async (id_empresa, { desde, hasta } = {}) => {
   return rows
 }
 
+// Si la empresa cargo ALGUNA VEZ un movimiento, en cualquier fecha.
+//
+// Un reporte vacio de una empresa recien aprobada no es "no hubo nada en
+// este periodo, proba con otro": no hay ningun periodo con algo, y la persona
+// iba a probar los tres botones para volver al mismo cartel (UX 28/09, H-12).
+// Es la misma distincion que Stock hace entre "Sin cargar" y "Sin stock".
+const tieneMovimientosCargados = async (id_empresa) => {
+  const [rows] = await db.query(
+    'SELECT 1 FROM movimientos WHERE id_empresa = ? AND anulado = 0 LIMIT 1',
+    [id_empresa]
+  )
+  return rows.length > 0
+}
+
 module.exports = {
+  tieneMovimientosCargados,
   movimientosDelPeriodo, contarAnulados, porCategoria, porProducto,
   perdidasPorMotivo, perdidasPorProducto
 }

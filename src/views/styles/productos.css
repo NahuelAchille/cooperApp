@@ -205,7 +205,13 @@ body {
     justify-content: space-between;
     align-items: center;
     padding: 20px 32px;
+    gap: 20px;
   }
+  /* Los botones en una fila; el que cede lugar es el subtítulo, que puede
+     bajar de renglón sin perder nada. Antes era al revés y en Servicios, a
+     1024 px, "Nuevo servicio" caía abajo solo (UX 28/09, H-15). */
+  .page-header > div:first-child { flex: 1 1 auto; min-width: 0; }
+  .acciones-header { flex-wrap: nowrap; flex-shrink: 0; }
   .content { padding: 24px; }
   .filtros-grid { grid-template-columns: 1fr 1fr; }
 }

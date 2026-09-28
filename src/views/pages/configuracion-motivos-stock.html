@@ -21,8 +21,11 @@
       <small>Por qué entra o sale mercadería, y qué pasa con el dinero en cada caso</small>
     </div>
     <div class="acciones-header d-none" id="acciones-header">
-      <a class="btn btn-secundario" href="/pages/productos.html">
-        <i class="fa-solid fa-arrow-left me-2"></i>Volver a productos
+      <!-- A Stock y no a Productos: el atajo a esta pantalla está en Stock,
+           que es donde se usan los motivos. Se entraba por una puerta y se
+           salía por otra (UX 28/09). -->
+      <a class="btn btn-secundario" href="/pages/stock.html">
+        <i class="fa-solid fa-arrow-left me-2"></i>Volver a stock
       </a>
       <button class="btn btn-nuevo" id="btn-nuevo">
         <i class="fa-solid fa-plus me-2"></i>Nuevo motivo
@@ -64,8 +67,9 @@
             <thead>
               <tr>
                 <th>Motivo</th>
-                <th>Efecto en el stock</th>
-                <th>Efecto en el dinero</th>
+                <!-- Lo mismo que pregunta el formulario: "efecto" es jerga -->
+                <th>Qué le hace al stock</th>
+                <th>Qué le hace al dinero</th>
                 <th>Estado</th>
                 <th class="text-end">Acciones</th>
               </tr>

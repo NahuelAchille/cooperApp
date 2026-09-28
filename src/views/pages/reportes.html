@@ -546,7 +546,18 @@
         return false
       }
 
-      tbody.innerHTML = datos.filas.map(f => `
+      // Por servicio, un bloque por categoría: los que se ofrecen y los que
+      // se contratan no se comparan entre sí (UX 28/09, H-03). Las filas ya
+      // vienen ordenadas por bloque desde el servidor.
+      const titulo = (f, i) => {
+        if (vistaElegida !== 'servicio' || !f.categoria) return ''
+        if (i > 0 && datos.filas[i - 1].categoria === f.categoria) return ''
+        const clase = f.deja_categoria > 0 ? 'positivo' : f.deja_categoria < 0 ? 'negativo' : 'text-muted'
+        return `<tr class="fila-bloque"><td colspan="4">${esc(f.categoria)}
+          <span class="deja-bloque ${clase}">${f.deja_categoria < 0 ? 'se lleva' : 'deja'} ${formatMoneda(Math.abs(f.deja_categoria))}</span></td></tr>`
+      }
+
+      tbody.innerHTML = datos.filas.map((f, i) => `${titulo(f, i)}
         <tr class="${f.activo ? '' : 'fila-inactiva'}">
           <td>
             <div class="agr-nombre">${esc(f.nombre)}${f.activo ? '' : ' <span class="chico-gris">(de baja)</span>'}</div>
@@ -598,9 +609,19 @@
       const tbody = document.getElementById('tabla-reporte')
 
       if (!datos.movimientos.length) {
-        tbody.innerHTML = `<tr class="fila-aviso"><td colspan="5"><div class="tabla-vacia">
-          No hubo movimientos en este período. Probá con otro.
-        </div></td></tr>`
+        // Una empresa que nunca cargó nada no tiene "otro período" que probar:
+        // mandarla a probar la hace dar vueltas por los tres botones hasta
+        // volver al mismo cartel (UX 28/09, H-12).
+        tbody.innerHTML = datos.empresa_sin_movimientos
+          ? `<tr class="fila-aviso"><td colspan="5"><div class="tabla-vacia">
+              Todavía no cargaste ningún movimiento. Cuando registres el primero vas a poder ver acá cómo te fue en el mes.
+              <div class="mt-3"><a class="btn-descargar d-inline-block" href="/pages/movimientos.html">
+                <i class="fa-solid fa-plus me-1"></i>Registrar el primero
+              </a></div>
+            </div></td></tr>`
+          : `<tr class="fila-aviso"><td colspan="5"><div class="tabla-vacia">
+              No hubo movimientos en este período. Probá con otro.
+            </div></td></tr>`
         document.getElementById('pie-reporte').textContent = ''
         return
       }

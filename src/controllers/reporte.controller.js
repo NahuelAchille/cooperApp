@@ -75,7 +75,11 @@ exports.getReportePeriodo = async (req, res) => {
       return res.status(400).json({ error: periodo.error })
     }
 
-    res.json(await datosDelPeriodo(id_empresa, periodo))
+    const datos = await datosDelPeriodo(id_empresa, periodo)
+    // Sólo hace falta preguntarlo cuando el período vino vacío.
+    datos.empresa_sin_movimientos = datos.movimientos.length === 0 &&
+      !(await reporteModel.tieneMovimientosCargados(id_empresa))
+    res.json(datos)
 
   } catch (error) {
     console.error(error)
@@ -159,6 +163,11 @@ const armarFilas = async (criterio, id_empresa, periodo) => {
       ingresos: s.total_ingresos,
       egresos: s.total_egresos,
       resultado: s.resultado,
+      // El bloque al que pertenece: los que se ofrecen y los que se contratan
+      // no se comparan entre si (UX 28/09, H-03). Ya vienen ordenados por
+      // bloque desde el modelo.
+      categoria: s.categoria,
+      deja_categoria: s.deja_categoria,
       movio: s.cantidad > 0,
       detalle: s.cantidad === 0
         ? 'Sin movimientos en el período'
@@ -185,8 +194,8 @@ const armarFilas = async (criterio, id_empresa, periodo) => {
       if (!partes.length) partes.push('Sin movimientos en el período')
       if (sinValorizar > 0) {
         partes.push(sinValorizar === 1
-          ? '1 movimiento sin el $ cargado'
-          : `${sinValorizar} movimientos sin el $ cargado`)
+          ? '1 movimiento sin la plata registrada'
+          : `${sinValorizar} movimientos sin la plata registrada`)
       }
 
       return {
@@ -498,13 +507,18 @@ const armarDescargaAgrupada = async (vista, id_empresa, periodo) => {
   const sinPlata = vista === 'producto' ? avisoDeProductosSinPlata(filas) : null
   if (sinPlata) avisos.push(sinPlata)
 
+  // Por servicio, la categoria va adelante del detalle y NO como una fila de
+  // subtotal: un subtotal metido en la misma columna la hace sumar de mas al
+  // seleccionarla en Excel, que es lo que paso con las perdidas (H-02).
+  const detalle = (f) => vista === 'servicio' && f.categoria ? `${f.categoria} · ${f.detalle}` : f.detalle
+
   return {
     avisos,
     ...totalesDelPeriodo(periodoCompleto.totales),
     encabezadoCSV: [agrupador, 'Detalle', 'Entró', 'Salió', 'Resultado'],
     filasCSV: filas.map(f => [
       f.nombre + (f.activo ? '' : ' (de baja)'),
-      f.detalle, numero(f.ingresos), numero(f.egresos), numero(f.resultado)
+      detalle(f), numero(f.ingresos), numero(f.egresos), numero(f.resultado)
     ]),
     bloques: [{
       columnas: [
@@ -517,7 +531,7 @@ const armarDescargaAgrupada = async (vista, id_empresa, periodo) => {
       // por producto era una hoja de ceros sin una palabra de por que
       // (UX 28/09, H-01).
       filas: filas.map(f => [
-        f.nombre + (f.activo ? '' : ' (de baja)') + (f.detalle ? `\n${f.detalle}` : ''),
+        f.nombre + (f.activo ? '' : ' (de baja)') + (f.detalle ? `\n${detalle(f)}` : ''),
         f.ingresos ? plata(f.ingresos) : '—',
         f.egresos ? plata(f.egresos) : '—',
         { texto: plata(f.resultado), color: f.resultado < 0 ? ROJO : (f.resultado > 0 ? VERDE : GRIS) }
