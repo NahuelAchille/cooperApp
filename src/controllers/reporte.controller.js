@@ -371,7 +371,7 @@ exports.descargarReporte = async (req, res) => {
     if (formato === 'csv') {
       res.setHeader('Content-Type', 'text/csv; charset=utf-8')
       return res.send(armarCSV({
-        titulo: TITULO_DE[vista], empresa, periodo,
+        titulo: TITULO_DE[vista], empresa, periodo, totales: armado.totalesCSV,
         avisos: armado.avisos, encabezado: armado.encabezadoCSV, filas: armado.filasCSV
       }))
     }
@@ -403,24 +403,35 @@ exports.descargarReporte = async (req, res) => {
   }
 }
 
+// Los tres casilleros del periodo, para los dos formatos. La pantalla los
+// muestra arriba de TODAS las vistas menos la de perdidas, asi que el archivo
+// tambien: el que lo recibe no tiene la pantalla al lado para mirarlos.
+const totalesDelPeriodo = (t) => ({
+  casilleros: [
+    { etiqueta: 'Entró', valor: plata(t.ingresos), color: VERDE },
+    { etiqueta: 'Salió', valor: plata(t.egresos), color: ROJO },
+    { etiqueta: 'Resultado', valor: plata(t.resultado), color: t.resultado < 0 ? ROJO : VERDE }
+  ],
+  totalesCSV: [
+    ['Entró en el período', numero(t.ingresos)],
+    ['Salió en el período', numero(t.egresos)],
+    ['Resultado del período', numero(t.resultado)]
+  ]
+})
+
+// El aviso de los anulados, que acompaña a los casilleros donde vayan.
+const avisosDelPeriodo = (t) => t.anulados_fuera > 0
+  ? [`${t.anulados_fuera} ${t.anulados_fuera === 1 ? 'movimiento anulado no entra' : 'movimientos anulados no entran'} en este reporte: un movimiento anulado es uno que no pasó.`]
+  : []
+
 // --- Los movimientos del periodo ---
 const armarDescargaDeMovimientos = async (id_empresa, periodo) => {
 
   const datos = await datosDelPeriodo(id_empresa, periodo)
-  const t = datos.totales
-
-  const avisos = []
-  if (t.anulados_fuera > 0) {
-    avisos.push(`${t.anulados_fuera} ${t.anulados_fuera === 1 ? 'movimiento anulado no entra' : 'movimientos anulados no entran'} en este reporte: un movimiento anulado es uno que no pasó.`)
-  }
 
   return {
-    avisos,
-    casilleros: [
-      { etiqueta: 'Entró', valor: plata(t.ingresos), color: VERDE },
-      { etiqueta: 'Salió', valor: plata(t.egresos), color: ROJO },
-      { etiqueta: 'Resultado', valor: plata(t.resultado), color: t.resultado < 0 ? ROJO : VERDE }
-    ],
+    avisos: avisosDelPeriodo(datos.totales),
+    ...totalesDelPeriodo(datos.totales),
     encabezadoCSV: ['Fecha', 'Descripción', 'Categoría', 'Tipo', 'Entró / Salió', 'Monto', 'Servicio'],
     filasCSV: datos.movimientos.map(m => [
       fecha(m.fecha), m.descripcion, m.categoria_nombre, m.tipo_nombre,
@@ -451,12 +462,17 @@ const armarDescargaDeMovimientos = async (id_empresa, periodo) => {
 // --- Los agrupados: por categoria, producto o servicio ---
 const armarDescargaAgrupada = async (vista, id_empresa, periodo) => {
 
-  const filas = await armarFilas(vista, id_empresa, periodo)
+  // Los totales salen del reporte del periodo, igual que en la pantalla: en
+  // producto y servicio la tabla es un pedazo del periodo, no el periodo.
+  const [filas, periodoCompleto] = await Promise.all([
+    armarFilas(vista, id_empresa, periodo),
+    datosDelPeriodo(id_empresa, periodo)
+  ])
   const agrupador = { categoria: 'Categoría', producto: 'Producto', servicio: 'Servicio' }[vista]
 
   return {
-    avisos: [],
-    casilleros: [],
+    avisos: avisosDelPeriodo(periodoCompleto.totales),
+    ...totalesDelPeriodo(periodoCompleto.totales),
     encabezadoCSV: [agrupador, 'Detalle', 'Entró', 'Salió', 'Resultado'],
     filasCSV: filas.map(f => [
       f.nombre + (f.activo ? '' : ' (de baja)'),
@@ -501,6 +517,7 @@ const armarDescargaDePerdidas = async (id_empresa, periodo) => {
     casilleros: [
       { etiqueta: 'Se fue en mercadería', valor: plata(t.valorizado), color: ROJO }
     ],
+    totalesCSV: [['Se fue en mercadería', numero(t.valorizado)]],
     encabezadoCSV: ['Bloque', 'Nombre', 'Detalle', 'Cuánto costó'],
     filasCSV: [
       ...datos.motivos.map(m => ['Por qué se fue', m.nombre,

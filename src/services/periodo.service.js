@@ -81,8 +81,19 @@ const resolver = ({ periodo, desde, hasta } = {}) => {
   const inicio = parsearFecha(desde)
   const fin = parsearFecha(hasta)
 
-  if (!inicio || !fin) {
+  // "Falta una fecha" y "la fecha no existe" son dos cosas distintas: pedirle
+  // a la persona que elija las fechas cuando ya las eligio no le dice que
+  // corregir (QA Sprints 09-10, B2).
+  const falta = (valor) => valor === undefined || valor === null || String(valor).trim() === ''
+
+  if (falta(desde) || falta(hasta)) {
     return { error: 'Elegí las dos fechas del período' }
+  }
+  if (!inicio) {
+    return { error: 'La fecha de inicio no es válida' }
+  }
+  if (!fin) {
+    return { error: 'La fecha de cierre no es válida' }
   }
   if (inicio > fin) {
     return { error: 'La fecha de inicio es posterior a la de cierre' }

@@ -64,6 +64,13 @@ const ARRANQUE_DE_FORMULA = ['=', '+', '-', '@', '\t', '\r']
 const celda = (valor) => {
   if (valor === null || valor === undefined) return ''
 
+  // Un numero armado por el sistema (ver `numero`) sale tal cual. El escape de
+  // formulas es para el texto que escribe la gente: si le pegara tambien a un
+  // resultado negativo ("-300000,00"), Excel lo leeria como texto, lo saltearia
+  // al sumar la columna y el total saldria inflado justo en las perdidas.
+  // Encontrado en la auditoria de QA de los Sprints 09-10 (A1).
+  if (valor instanceof NumeroCSV) return valor.texto
+
   let texto = String(valor)
 
   if (ARRANQUE_DE_FORMULA.includes(texto.charAt(0))) {
@@ -81,9 +88,17 @@ const celda = (valor) => {
 // Un numero como lo espera Excel en español: coma decimal y sin separador de
 // miles (el de miles lo pone Excel al mostrarlo, y si viene en el archivo lo
 // lee como texto).
+//
+// Va envuelto para que `celda` lo reconozca y NO le ponga el apostrofe aunque
+// empiece con "-". No hay riesgo: lo arma toFixed, asi que nunca puede traer
+// otra cosa que digitos, un signo y la coma.
+class NumeroCSV {
+  constructor (texto) { this.texto = texto }
+}
+
 const numero = (valor) => {
   if (valor === null || valor === undefined) return ''
-  return Number(valor).toFixed(2).replace('.', ',')
+  return new NumeroCSV(Number(valor).toFixed(2).replace('.', ','))
 }
 
 // Una fecha como AAAA-MM-DD. Excel la reconoce y ademas ordena bien como
@@ -97,7 +112,7 @@ const fecha = (valor) => {
 // Arma el CSV a partir de un encabezado y las filas ya resueltas.
 //
 // Las lineas van con \r\n, que es lo que espera Excel en Windows.
-const armarCSV = ({ titulo, empresa, periodo, avisos = [], encabezado, filas }) => {
+const armarCSV = ({ titulo, empresa, periodo, totales = [], avisos = [], encabezado, filas }) => {
 
   const lineas = []
 
@@ -107,6 +122,12 @@ const armarCSV = ({ titulo, empresa, periodo, avisos = [], encabezado, filas }) 
   lineas.push(celda(empresa))
   lineas.push(celda(titulo))
   lineas.push(celda('Período: ' + periodo.etiqueta))
+
+  // Los mismos casilleros que la pantalla muestra arriba: el numero grande es,
+  // justamente, EL numero, y quien recibe el archivo no deberia tener que
+  // calcularlo. Van como rotulo;numero, asi que se pueden usar en una formula.
+  // (QA Sprints 09-10, M1.)
+  totales.forEach(([rotulo, valor]) => lineas.push([celda(rotulo), celda(valor)].join(SEPARADOR)))
 
   // Los avisos que la pantalla muestra tambien van al archivo: si en pantalla
   // dice "hay 3 anulados que no entran" y el archivo no, el que recibe el

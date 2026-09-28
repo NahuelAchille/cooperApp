@@ -224,7 +224,11 @@ exports.anularMovimiento = async (req, res) => {
       return res.status(400).json({ error: 'El movimiento ya estaba anulado' })
     }
 
-    await movimientoModel.anular(id, id_empresa)
+    // El control de arriba sirve para el caso comun; el que manda es este.
+    // Si otro pedido lo anulo en el medio, la base no cambia nada y se avisa.
+    if (!await movimientoModel.anular(id, id_empresa)) {
+      return res.status(400).json({ error: 'El movimiento ya estaba anulado' })
+    }
     res.json({ message: 'Movimiento anulado correctamente' })
 
   } catch (error) {

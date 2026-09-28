@@ -98,11 +98,18 @@ const create = async ({ id_tipo, monto, descripcion, fecha, id_empresa, id_usuar
 }
 
 // Los movimientos no se borran: se marcan como anulados (baja logica).
+//
+// Devuelve si ESTE pedido lo anulo. El "AND anulado = 0" hace que la base
+// decida en un solo paso: con dos pedidos al mismo tiempo, uno cambia la fila
+// y el otro encuentra que ya no hay nada que cambiar. Mirarlo antes desde
+// JavaScript no alcanza, porque los dos leen "no anulado" y los dos contestan
+// que lo anularon ellos (QA Sprints 09-10, B1).
 const anular = async (id_movimiento, id_empresa) => {
-  await db.query(
-    'UPDATE movimientos SET anulado = 1 WHERE id_movimiento = ? AND id_empresa = ?',
+  const [result] = await db.query(
+    'UPDATE movimientos SET anulado = 1 WHERE id_movimiento = ? AND id_empresa = ? AND anulado = 0',
     [id_movimiento, id_empresa]
   )
+  return result.affectedRows === 1
 }
 
 // Totales de ingresos, egresos y balance, respetando los mismos filtros que

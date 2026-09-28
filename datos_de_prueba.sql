@@ -618,6 +618,9 @@ INSERT INTO movimientos_stock (id_producto, id_motivo_stock, cantidad, descripci
   -- Y un consumo interno, que también sale sin mover plata pero es normal:
   -- por eso el reporte agrupa por motivo y no da un número solo.
   (@p_fideos,   @m_perdida, 3,    'Paquetes rotos en el depósito', CURDATE() - INTERVAL 5 DAY, @empresa, @operador),
+  -- Bolsa de pan: 10 - 4 = 6. La compra va ANTES de la pérdida: sin ella el
+  -- pan arrancaba en -4, un estado que la app no deja cargar (QA 09-10, M2).
+  (@p_pan,      @m_compra,  10,   'Entrega de la panadería',     CURDATE() - INTERVAL 3  DAY, @empresa, @operador),
   (@p_pan,      @m_perdida, 4,    'Pan del día anterior',        CURDATE() - INTERVAL 2  DAY, @empresa, @operador),
   -- Jamón cocido (mínimo 3): 15 - 6 = 9, holgado
   (@p_jamon,    @m_compra,  15,   'Compra semanal',              CURDATE() - INTERVAL 12 DAY, @empresa, @operador),
