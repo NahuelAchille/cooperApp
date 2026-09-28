@@ -27,4 +27,9 @@ router.get('/agrupado', ...finanzas, reporteController.getReporteAgrupado)
 // nada que perder, no es un pedido invalido.
 router.get('/perdidas', ...finanzas, reporteController.getReportePerdidas)
 
+// La descarga (HU-54): ?formato=csv|pdf y ?vista=... Una sola ruta para las
+// dos formas y las cinco vistas, porque los datos son los mismos que ya
+// alimentan la pantalla y lo unico que cambia es como se escriben.
+router.get('/descargar', ...finanzas, reporteController.descargarReporte)
+
 module.exports = router

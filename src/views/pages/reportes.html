@@ -99,6 +99,20 @@
           <div class="hoja-empresa" id="hoja-empresa"></div>
         </div>
 
+        <!-- Las dos descargas. Van acá arriba, adentro de la hoja, porque son
+             de ESTE reporte: el que se está mirando, con este período. Abajo
+             de una tabla larga habría que buscarlas.
+             El archivo se arma en el servidor con los mismos datos que se ven
+             acá, así que no puede decir otra cosa. -->
+        <div class="descargas">
+          <a class="btn-descargar" id="btn-csv" download>
+            <i class="fa-solid fa-file-csv me-1"></i>Descargar para Excel
+          </a>
+          <a class="btn-descargar" id="btn-pdf" download>
+            <i class="fa-solid fa-file-pdf me-1"></i>Descargar en PDF
+          </a>
+        </div>
+
         <div class="totales" id="bloque-totales">
           <div class="total-card ingresos">
             <h6><i class="fa-solid fa-arrow-down me-1"></i>Entró</h6>
@@ -338,9 +352,27 @@
       }
 
       pintar(datos)
+      actualizarDescargas(params)
 
       if (VISTAS_AGRUPADAS.includes(vistaElegida)) await cargarAgrupado(params)
       if (vistaElegida === 'perdidas') await cargarPerdidas(params)
+    }
+
+    // Los dos botones apuntan al reporte que se está mirando, con su período.
+    // Se rearman cada vez que cambia algo: si quedaran fijos, se bajaría el
+    // reporte de antes sin que se note, que es la peor forma de fallar.
+    function actualizarDescargas(params) {
+      const base = new URLSearchParams(params)
+      base.set('vista', vistaElegida)
+
+      const armar = (formato) => {
+        const p = new URLSearchParams(base)
+        p.set('formato', formato)
+        return '/reportes/descargar?' + p.toString()
+      }
+
+      document.getElementById('btn-csv').href = armar('csv')
+      document.getElementById('btn-pdf').href = armar('pdf')
     }
 
     // Lo que se fue en mercadería, valuado a lo que costó (HU-53).

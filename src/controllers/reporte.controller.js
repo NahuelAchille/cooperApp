@@ -2,6 +2,8 @@ const reporteModel = require('../models/reporte.model')
 const movimientoModel = require('../models/movimiento.model')
 const moduloModel = require('../models/modulo.model')
 const { resolver } = require('../services/periodo.service')
+const { armarCSV, nombreDeArchivo, numero, fecha } = require('../services/exportar.service')
+const { armarPDF, plata, fechaCorta, VERDE, ROJO, GRIS } = require('../services/pdf.service')
 
 // Suma montos sin que la coma se corra.
 //
@@ -29,6 +31,40 @@ const sumarEnCentavos = (montos) => {
 // no, el reporte muestra una lista que no suma lo que dice su propio total, y
 // nadie se entera hasta que alguien saca la calculadora. Es la misma razon
 // por la que el calculo del stock esta escrito una sola vez.
+// Arma el reporte del periodo. Esta aparte del endpoint porque la DESCARGA
+// (HU-54) tiene que salir exactamente de aca: si el archivo se armara con su
+// propia consulta, el dia que una cambie el PDF diria un numero y la pantalla
+// otro. Es la misma regla que ordena todo el modulo.
+const datosDelPeriodo = async (id_empresa, periodo) => {
+
+  const movimientos = await reporteModel.movimientosDelPeriodo(id_empresa, periodo)
+
+  const ingresos = movimientos.filter(m => m.naturaleza === 'ingreso')
+  const egresos  = movimientos.filter(m => m.naturaleza === 'egreso')
+
+  const total_ingresos = sumarEnCentavos(ingresos.map(m => m.monto))
+  const total_egresos  = sumarEnCentavos(egresos.map(m => m.monto))
+
+  // Cuantos quedaron afuera por estar anulados. Se informa a proposito: un
+  // total que no cierra con lo que la persona recuerda haber cargado
+  // necesita una explicacion, y "no aparecen" es distinto de "los escondi".
+  const anulados = await reporteModel.contarAnulados(id_empresa, periodo)
+
+  return {
+    periodo: { desde: periodo.desde, hasta: periodo.hasta, etiqueta: periodo.etiqueta },
+    totales: {
+      ingresos: total_ingresos,
+      egresos: total_egresos,
+      resultado: total_ingresos - total_egresos,
+      cantidad: movimientos.length,
+      cantidad_ingresos: ingresos.length,
+      cantidad_egresos: egresos.length,
+      anulados_fuera: anulados
+    },
+    movimientos
+  }
+}
+
 exports.getReportePeriodo = async (req, res) => {
 
   try {
@@ -39,32 +75,7 @@ exports.getReportePeriodo = async (req, res) => {
       return res.status(400).json({ error: periodo.error })
     }
 
-    const movimientos = await reporteModel.movimientosDelPeriodo(id_empresa, periodo)
-
-    const ingresos = movimientos.filter(m => m.naturaleza === 'ingreso')
-    const egresos  = movimientos.filter(m => m.naturaleza === 'egreso')
-
-    const total_ingresos = sumarEnCentavos(ingresos.map(m => m.monto))
-    const total_egresos  = sumarEnCentavos(egresos.map(m => m.monto))
-
-    // Cuantos quedaron afuera por estar anulados. Se informa a proposito: un
-    // total que no cierra con lo que la persona recuerda haber cargado
-    // necesita una explicacion, y "no aparecen" es distinto de "los escondi".
-    const anulados = await reporteModel.contarAnulados(id_empresa, periodo)
-
-    res.json({
-      periodo: { desde: periodo.desde, hasta: periodo.hasta, etiqueta: periodo.etiqueta },
-      totales: {
-        ingresos: total_ingresos,
-        egresos: total_egresos,
-        resultado: total_ingresos - total_egresos,
-        cantidad: movimientos.length,
-        cantidad_ingresos: ingresos.length,
-        cantidad_egresos: egresos.length,
-        anulados_fuera: anulados
-      },
-      movimientos
-    })
+    res.json(await datosDelPeriodo(id_empresa, periodo))
 
   } catch (error) {
     console.error(error)
@@ -229,22 +240,9 @@ function formatearCantidad(valor) {
 // Pide los DOS modulos: productos (de donde sale la mercaderia) y reportes
 // (que ya lo pide la ruta). Es el primer reporte que lee stock, que era
 // justamente lo que quedaba anotado en HU-51.
-exports.getReportePerdidas = async (req, res) => {
-
-  try {
-    const id_empresa = req.session.user.empresa.id
-
-    if (!await moduloModel.estaActivo(id_empresa, 'productos')) {
-      return res.json({
-        modulo_apagado: 'productos',
-        periodo: null, totales: null, motivos: [], productos: []
-      })
-    }
-
-    const periodo = resolver(req.query)
-    if (periodo.error) {
-      return res.status(400).json({ error: periodo.error })
-    }
+// Aparte del endpoint por lo mismo que datosDelPeriodo: la descarga sale de
+// aca, no de una consulta propia.
+const datosDePerdidas = async (id_empresa, periodo) => {
 
     const [motivos, productos] = await Promise.all([
       reporteModel.perdidasPorMotivo(id_empresa, periodo),
@@ -256,7 +254,7 @@ exports.getReportePerdidas = async (req, res) => {
     const movimientos = motivos.reduce((s, m) => s + Number(m.movimientos), 0)
     const sinCosto = motivos.reduce((s, m) => s + Number(m.sin_costo), 0)
 
-    res.json({
+    return {
       modulo_apagado: null,
       periodo: { desde: periodo.desde, hasta: periodo.hasta, etiqueta: periodo.etiqueta },
       totales: {
@@ -286,10 +284,265 @@ exports.getReportePerdidas = async (req, res) => {
         costo_referencia: p.costo_referencia === null ? null : Number(p.costo_referencia),
         costo_actualizado_en: p.costo_actualizado_en
       }))
-    })
+  }
+}
+
+exports.getReportePerdidas = async (req, res) => {
+
+  try {
+    const id_empresa = req.session.user.empresa.id
+
+    if (!await moduloModel.estaActivo(id_empresa, 'productos')) {
+      return res.json({
+        modulo_apagado: 'productos',
+        periodo: null, totales: null, motivos: [], productos: []
+      })
+    }
+
+    const periodo = resolver(req.query)
+    if (periodo.error) {
+      return res.status(400).json({ error: periodo.error })
+    }
+
+    res.json(await datosDePerdidas(id_empresa, periodo))
 
   } catch (error) {
     console.error(error)
     res.status(500).json({ error: 'Error al armar el reporte de pérdidas' })
+  }
+}
+
+// =====================================================================
+// DESCARGAR (HU-54)
+// =====================================================================
+//
+// Un solo endpoint para las dos formas y las cinco vistas. Los datos salen de
+// las MISMAS funciones que alimentan la pantalla (datosDelPeriodo, armarFilas,
+// datosDePerdidas): si el archivo consultara por su cuenta, el dia que una
+// cambie el PDF diria un numero y la pantalla otro.
+
+const FORMATOS = ['csv', 'pdf']
+
+// Como se llama cada vista en el titulo del reporte y en el nombre del
+// archivo. Escrito una sola vez para que no se separen.
+const TITULO_DE = {
+  movimientos: 'Movimientos del período',
+  categoria:   'Totales por categoría',
+  producto:    'Totales por producto',
+  servicio:    'Totales por servicio',
+  perdidas:    'Lo que se perdió en el período'
+}
+
+exports.descargarReporte = async (req, res) => {
+
+  try {
+    const id_empresa = req.session.user.empresa.id
+    const empresa = req.session.user.empresa.nombre || 'Empresa'
+
+    const formato = FORMATOS.includes(req.query.formato) ? req.query.formato : 'csv'
+    const vista = TITULO_DE[req.query.vista] ? req.query.vista : 'movimientos'
+
+    const periodo = resolver(req.query)
+    if (periodo.error) {
+      return res.status(400).json({ error: periodo.error })
+    }
+
+    // El modulo que necesita cada vista, igual que en la pantalla. Aca se
+    // devuelve 403 y no una lista vacia: pedir un ARCHIVO de algo que la
+    // empresa no tiene si es un pedido invalido, y un archivo vacio que se
+    // baja igual es peor que un error, porque no se nota.
+    const moduloNecesario = vista === 'perdidas' ? 'productos' : MODULO_DE[vista]
+    if (moduloNecesario && !await moduloModel.estaActivo(id_empresa, moduloNecesario)) {
+      return res.status(403).json({ error: `El módulo de ${moduloNecesario} no está activo en tu empresa` })
+    }
+
+    const armado = vista === 'perdidas'
+      ? await armarDescargaDePerdidas(id_empresa, periodo)
+      : vista === 'movimientos'
+        ? await armarDescargaDeMovimientos(id_empresa, periodo)
+        : await armarDescargaAgrupada(vista, id_empresa, periodo)
+
+    const nombre = nombreDeArchivo({ empresa, vista, periodo, extension: formato })
+
+    // Content-Disposition: attachment es lo que hace que el navegador lo baje
+    // en vez de mostrarlo, y lo que le da el nombre al archivo.
+    res.setHeader('Content-Disposition', `attachment; filename="${nombre}"`)
+
+    if (formato === 'csv') {
+      res.setHeader('Content-Type', 'text/csv; charset=utf-8')
+      return res.send(armarCSV({
+        titulo: TITULO_DE[vista], empresa, periodo,
+        avisos: armado.avisos, encabezado: armado.encabezadoCSV, filas: armado.filasCSV
+      }))
+    }
+
+    res.setHeader('Content-Type', 'application/pdf')
+    armarPDF(res, {
+      empresa, titulo: TITULO_DE[vista], periodo,
+      avisos: armado.avisos, casilleros: armado.casilleros, bloques: armado.bloques
+    })
+
+  } catch (error) {
+    // Si el PDF ya empezo a escribirse no se puede mandar un JSON encima: los
+    // encabezados ya salieron. Se corta ahi y el navegador muestra su propio
+    // error de descarga incompleta, que es lo unico honesto que queda.
+    if (res.headersSent) return res.end()
+
+    // La libreria del PDF no viaja en el pull (node_modules esta en el
+    // .gitignore). En vez de un "Error del servidor" que no dice nada, se
+    // explica que falta y como se arregla. El CSV sigue andando igual.
+    if (error.codigo === 'FALTA_PDFKIT') {
+      console.error('Falta pdfkit: correr "npm install" en la carpeta cooperApp')
+      return res.status(500).json({
+        error: 'Falta instalar la librería del PDF. Corré "npm install" en la carpeta cooperApp y volvé a intentar. Mientras tanto podés descargar el CSV.'
+      })
+    }
+
+    console.error(error)
+    res.status(500).json({ error: 'Error al armar el archivo' })
+  }
+}
+
+// --- Los movimientos del periodo ---
+const armarDescargaDeMovimientos = async (id_empresa, periodo) => {
+
+  const datos = await datosDelPeriodo(id_empresa, periodo)
+  const t = datos.totales
+
+  const avisos = []
+  if (t.anulados_fuera > 0) {
+    avisos.push(`${t.anulados_fuera} ${t.anulados_fuera === 1 ? 'movimiento anulado no entra' : 'movimientos anulados no entran'} en este reporte: un movimiento anulado es uno que no pasó.`)
+  }
+
+  return {
+    avisos,
+    casilleros: [
+      { etiqueta: 'Entró', valor: plata(t.ingresos), color: VERDE },
+      { etiqueta: 'Salió', valor: plata(t.egresos), color: ROJO },
+      { etiqueta: 'Resultado', valor: plata(t.resultado), color: t.resultado < 0 ? ROJO : VERDE }
+    ],
+    encabezadoCSV: ['Fecha', 'Descripción', 'Categoría', 'Tipo', 'Entró / Salió', 'Monto', 'Servicio'],
+    filasCSV: datos.movimientos.map(m => [
+      fecha(m.fecha), m.descripcion, m.categoria_nombre, m.tipo_nombre,
+      m.naturaleza === 'ingreso' ? 'Entró' : 'Salió',
+      numero(m.monto), m.servicio_nombre
+    ]),
+    bloques: [{
+      columnas: [
+        { titulo: 'Fecha', ancho: 0.13 },
+        { titulo: 'Descripción', ancho: 0.34 },
+        { titulo: 'Categoría', ancho: 0.20 },
+        { titulo: 'Tipo', ancho: 0.18 },
+        { titulo: 'Monto', ancho: 0.15, align: 'right' }
+      ],
+      filas: datos.movimientos.map(m => [
+        fechaCorta(m.fecha),
+        m.servicio_nombre ? `${m.descripcion || '—'}\n(${m.servicio_nombre})` : (m.descripcion || '—'),
+        m.categoria_nombre,
+        m.tipo_nombre,
+        { texto: (m.naturaleza === 'ingreso' ? '+' : '-') + plata(m.monto),
+          color: m.naturaleza === 'ingreso' ? VERDE : ROJO }
+      ]),
+      vacio: 'No hubo movimientos en este período.'
+    }]
+  }
+}
+
+// --- Los agrupados: por categoria, producto o servicio ---
+const armarDescargaAgrupada = async (vista, id_empresa, periodo) => {
+
+  const filas = await armarFilas(vista, id_empresa, periodo)
+  const agrupador = { categoria: 'Categoría', producto: 'Producto', servicio: 'Servicio' }[vista]
+
+  return {
+    avisos: [],
+    casilleros: [],
+    encabezadoCSV: [agrupador, 'Detalle', 'Entró', 'Salió', 'Resultado'],
+    filasCSV: filas.map(f => [
+      f.nombre + (f.activo ? '' : ' (de baja)'),
+      f.detalle, numero(f.ingresos), numero(f.egresos), numero(f.resultado)
+    ]),
+    bloques: [{
+      columnas: [
+        { titulo: agrupador, ancho: 0.46 },
+        { titulo: 'Entró', ancho: 0.18, align: 'right' },
+        { titulo: 'Salió', ancho: 0.18, align: 'right' },
+        { titulo: 'Resultado', ancho: 0.18, align: 'right' }
+      ],
+      filas: filas.map(f => [
+        f.nombre + (f.activo ? '' : ' (de baja)'),
+        f.ingresos ? plata(f.ingresos) : '—',
+        f.egresos ? plata(f.egresos) : '—',
+        { texto: plata(f.resultado), color: f.resultado < 0 ? ROJO : (f.resultado > 0 ? VERDE : GRIS) }
+      ]),
+      vacio: 'No hay nada para agrupar en este período.'
+    }]
+  }
+}
+
+// --- Lo que se perdio ---
+const armarDescargaDePerdidas = async (id_empresa, periodo) => {
+
+  const datos = await datosDePerdidas(id_empresa, periodo)
+  const t = datos.totales
+
+  // Los dos avisos de la pantalla van tambien al archivo. El primero es el que
+  // MAS importa: sin el, alguien que recibe el PDF suelto puede restar este
+  // numero del balance y contar dos veces la misma mercaderia.
+  const avisos = [
+    'Esta plata NO está en los egresos del balance: es mercadería que se fue sin venderse, valuada a lo que costó. Esa mercadería ya se pagó cuando se compró, así que sumarlas sería contar dos veces lo mismo.'
+  ]
+  if (t.sin_costo > 0) {
+    avisos.push(`${t.sin_costo} ${t.sin_costo === 1 ? 'salida no se pudo valorizar' : 'salidas no se pudieron valorizar'} porque esos productos no tienen cargado cuánto cuestan. NO están en el total: lo perdido es ese número y algo más.`)
+  }
+
+  return {
+    avisos,
+    casilleros: [
+      { etiqueta: 'Se fue en mercadería', valor: plata(t.valorizado), color: ROJO }
+    ],
+    encabezadoCSV: ['Bloque', 'Nombre', 'Detalle', 'Cuánto costó'],
+    filasCSV: [
+      ...datos.motivos.map(m => ['Por qué se fue', m.nombre,
+        `${m.movimientos} ${m.movimientos === 1 ? 'salida' : 'salidas'}` +
+        (m.sin_costo > 0 ? ` · ${m.sin_costo} sin poder valorizar` : ''),
+        numero(m.valorizado)]),
+      ...datos.productos.map(p => ['Qué se fue', p.nombre,
+        `${p.cantidad}${p.unidad_medida ? ' ' + p.unidad_medida : ''}` +
+        (p.costo_referencia === null ? ' · sin costo cargado' : ` · a ${p.costo_referencia} cada uno`),
+        p.costo_referencia === null ? '' : numero(p.valorizado)])
+    ],
+    bloques: [
+      {
+        titulo: '¿Por qué se fue?',
+        columnas: [
+          { titulo: 'Motivo', ancho: 0.52 },
+          { titulo: 'Salidas', ancho: 0.20, align: 'right' },
+          { titulo: 'Cuánto costó', ancho: 0.28, align: 'right' }
+        ],
+        filas: datos.motivos.map(m => [
+          m.nombre + (m.activo ? '' : ' (de baja)'),
+          String(m.movimientos) + (m.sin_costo > 0 ? ` (${m.sin_costo} sin valorizar)` : ''),
+          { texto: plata(m.valorizado), color: ROJO }
+        ]),
+        vacio: 'No se perdió nada en este período.'
+      },
+      {
+        titulo: '¿Qué se fue?',
+        columnas: [
+          { titulo: 'Producto', ancho: 0.46 },
+          { titulo: 'Cantidad', ancho: 0.26, align: 'right' },
+          { titulo: 'Cuánto costó', ancho: 0.28, align: 'right' }
+        ],
+        filas: datos.productos.map(p => [
+          p.nombre,
+          `${p.cantidad}${p.unidad_medida ? ' ' + p.unidad_medida : ''}`,
+          p.costo_referencia === null
+            ? { texto: 'No se sabe', color: GRIS }
+            : { texto: plata(p.valorizado), color: ROJO }
+        ]),
+        vacio: '—'
+      }
+    ]
   }
 }

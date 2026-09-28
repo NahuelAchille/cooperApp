@@ -215,6 +215,33 @@ body {
 .hoja-encabezado p { font-size: 0.88rem; color: #6c7a72; }
 .hoja-empresa { font-weight: 600; color: #45564d; font-size: 0.9rem; }
 
+/* ===== LAS DOS DESCARGAS (HU-54) =====
+   Van adentro de la hoja y arriba: son de ESTE reporte, el que se está
+   mirando. Abajo de una tabla larga habría que ir a buscarlas. */
+.descargas {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+.btn-descargar {
+  flex: 1 1 auto;
+  text-align: center;
+  background: white;
+  border: 1px solid #d8e6de;
+  border-radius: 8px;
+  padding: 8px 14px;
+  font-size: 0.86rem;
+  font-weight: 600;
+  color: var(--verde-primario);
+  text-decoration: none;
+}
+.btn-descargar:hover {
+  background: #f4faf7;
+  border-color: var(--verde-secundario);
+  color: var(--verde-oscuro);
+}
+
 /* ===== LOS TOTALES ===== */
 .totales {
   display: grid;

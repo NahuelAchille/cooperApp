@@ -405,6 +405,50 @@ CAMBIOS DEL 16/09 POR LA AUDITORIA DE QA:
        NO se mueve. Cambiarle el costo: si. Con inflacion, un costo
        viejo es un costo malo, y la fecha esta para delatarlo.
 
+ --- DESCARGAR EL REPORTE ---
+
+   OJO, LO PRIMERO: despues del pull hay que correr UNA VEZ
+
+       cd cooperApp
+       npm install
+
+   Hay una libreria nueva para el PDF (pdfkit) y no viaja en el
+   repo: el .gitignore tiene node_modules, asi que lo que ya estaba
+   commiteado sigue llegando, pero lo nuevo no.
+
+   Si no lo corres, NO se rompe nada: la app arranca igual, el CSV
+   anda, y el unico que avisa es el boton del PDF, diciendote esto
+   mismo.
+
+
+   Adentro de la hoja del reporte, arriba: "Descargar para Excel" y
+   "Descargar en PDF". Bajan LO QUE SE ESTA MIRANDO, con el periodo
+   y la vista que estan elegidos.
+
+   Que conviene probar:
+     - El nombre del archivo lleva la empresa Y EL PERIODO, por
+       ejemplo:
+         alimentos-la-esperanza-s-r-l-movimientos-2026-09-01-a-2026-09-27.csv
+       Sin eso, tres descargas quedan como "reporte", "reporte(1)"
+       y "reporte(2)" y despues no se sabe cual es cual.
+     - Cambiar de periodo o de vista y volver a bajar: el archivo
+       sigue lo que se esta viendo.
+     - ABRIR EL CSV CON EXCEL. Tiene que verse en columnas, con los
+       numeros como numeros (se pueden sumar) y los acentos bien.
+       Esta armado para Excel en espanol: separador punto y coma y
+       coma decimal. Si se abre con LibreOffice o Google Sheets hay
+       que elegir ";" como separador.
+     - El archivo trae arriba la empresa, el reporte y el periodo, y
+       TAMBIEN LOS AVISOS que se ven en pantalla (los anulados que
+       no entran, las perdidas que no estan en el balance). Si el
+       archivo no los dijera, el que lo recibe sacaria otra
+       conclusion del mismo numero.
+     - El PDF de un reporte largo se corta en varias hojas y REPITE
+       el encabezado de la tabla en cada una, con "hoja 1 de N"
+       abajo.
+     - Como Silvia (operador): no puede descargar nada. Reportes es
+       plata.
+
  --- CUANTO DEJA CADA SERVICIO ---
 
    En "Movimientos", el boton "Cuanto deja cada servicio", abajo de
