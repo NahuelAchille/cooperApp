@@ -55,6 +55,26 @@ discutió. Eso pasó una vez, entre el Sprint 06 y el 08, y se notó.
   sprint y arreglaban justo lo que el módulo siguiente iba a copiar. Se adelantaron.
   **Lo que se va a duplicar se arregla antes de duplicarlo.**
 
+## Lo que falta auditar (al 28/09/2026)
+
+**Los Sprints 09 y 10 no pasaron por ninguna de las dos.** Es lo más grande que quedó
+sin mirar desde que esto arrancó: el módulo de Servicios entero y el de Reportes entero.
+
+Los dos prompts ya están actualizados con sus secciones. Lo que conviene atacar:
+
+- **Sprint 09**: Servicios comparte tablas con Productos (se distinguen por una
+  columna), así que el ángulo es **el cruce entre los dos catálogos**: todo lugar donde
+  un id de producto pueda pasar por uno de servicio.
+- **Sprint 10**: Reportes es **puro cálculo**. No hay ABM que romper: todo lo que hace
+  es sumar, y **un error no se ve como un error, se ve como un número**. Es el módulo
+  donde más conviene traer la calculadora y el `SELECT` hecho a mano — y donde comparar
+  una pantalla contra otra no sirve, porque las dos pueden estar mal igual.
+
+En UX, la pregunta más difícil del sistema hoy está ahí: las **pérdidas valorizadas no
+están en el balance**, a propósito. Son dos números grandes de plata en la misma app que
+no suman entre sí y **está bien que no sumen**. Hay un aviso que lo explica; si alcanza o
+no, eso se ve con alguien real adelante.
+
 ## Lo que esto NO reemplaza
 
 Sentar a una persona de una empresa real adelante de la app y mirarla sin ayudarla.

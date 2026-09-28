@@ -33,7 +33,7 @@ Y ni una ni otra reemplazan la validación real: que una persona que no es de si
 entienda la pantalla se prueba sentándola adelante y mirándola sin ayudarla.
 
 **Mantenimiento** (esto se olvidó entre el Sprint 06 y el 08, y se notó): cuando se sume
-un módulo nuevo (Reportes, Articulación), **agregalo a la sección "Qué probar"**.
+un módulo nuevo (Articulación), **agregalo a la sección "Qué probar"**.
 Si no, el testeo siguiente prueba a fondo lo viejo y pasa por arriba lo recién escrito, que
 es justo lo que menos se miró. Lo mismo con la lista de "lo que ya está decidido": cada
 hallazgo que se manda al backlog se agrega ahí, para que el informe siguiente no lo repita.
@@ -121,6 +121,20 @@ Reportarlo otra vez gasta lugar en el informe sin agregar nada:
 - El servicio de un movimiento es su **origen, no su clasificación**. La
   categoría y el tipo siguen siendo obligatorios. Que un movimiento no tenga
   servicio es el caso normal.
+- **Los reportes NO incluyen los movimientos anulados**, y dicen cuántos
+  quedaron afuera. Es a propósito: un movimiento anulado es uno que no pasó.
+- **Las pérdidas valorizadas NO se suman al balance.** Son dos números
+  separados y la pantalla lo explica: los egresos son plata que salió de la
+  caja, esto es mercadería que ya se pagó al comprarla. Que no cierren entre sí
+  es lo correcto. Lo que sí hay que verificar es que **ninguna de las dos se
+  filtre a la otra**.
+- **El costo de referencia de un producto es opcional, y vacío es `NULL`, no
+  cero.** Un producto sin costo aparece como *"No se sabe"* y se cuenta aparte:
+  eso es lo buscado, no un dato faltante.
+- **`node_modules` está a mitad de camino**: hay 66 paquetes commiteados (los
+  de antes del `.gitignore`) y lo nuevo no viaja. Por eso **pdfkit se carga
+  recién cuando se pide un PDF** y la app arranca igual sin él. Está hecho a
+  propósito. Si el PDF te da "Falta instalar la librería", corré `npm install`.
 
 Si encontrás una forma NUEVA de explotar alguna de estas, eso sí reportalo.
 
@@ -173,7 +187,7 @@ PRODUCTOS (Sprint 07)
 - Búsqueda: probá con "%" y con "_", que son comodines del LIKE.
 - Los 11 filtros del catálogo, solos y combinados.
 
-STOCK (Sprint 08) — es el módulo con más cálculo, miralo con lupa
+STOCK (Sprint 08) — acá la existencia se calcula, no se guarda: miralo con lupa
 - LA EXISTENCIA NO ESTÁ GUARDADA, se calcula sumando los movimientos no
   anulados. Compará la existencia que muestra la app contra un SELECT que la
   sume a mano, producto por producto. Si dan distinto, es CRÍTICO.
@@ -195,7 +209,7 @@ STOCK (Sprint 08) — es el módulo con más cálculo, miralo con lupa
 - El operador NO tiene acceso a finanzas: probá que no pueda crear el movimiento
   de dinero armando el pedido a mano.
 
-SERVICIOS (Sprint 09) — el módulo más nuevo, y el que comparte tablas con otro
+SERVICIOS (Sprint 09) — el que comparte tablas con otro módulo
 Un servicio es un producto sin stock: viven en las MISMAS tablas (`productos` y
 `categorias_producto`), separados por la columna `es_servicio`. Eso es lo que hay
 que atacar: todo lugar donde un id de producto pueda pasar por uno de servicio.
@@ -230,6 +244,71 @@ EL SERVICIO DE UN MOVIMIENTO DE DINERO (HU-48 y HU-49)
 - Un servicio dado de baja aparece en el panel sólo si en el período movió algo.
 - Fechas del período: el borde exacto (un movimiento del mismo día que "desde"
   o que "hasta") tiene que entrar.
+
+REPORTES (Sprint 10) — el más nuevo, y el que es PURO CÁLCULO
+Acá no hay ABM que romper: todo lo que hace es sumar. Un error no se ve como
+un error, se ve como un número. Es el módulo donde más conviene traer la
+calculadora y el `SELECT` hecho a mano.
+
+- **LA REGLA DEL MÓDULO: los totales tienen que cerrar con lo que se lista.**
+  Sumá a mano la columna de montos del reporte por período y comparala contra
+  sus tres casilleros. Si no dan, es CRÍTICO.
+- Lo mismo entre vistas: la suma del agrupado **por categoría** tiene que dar
+  **exactamente igual** que los totales del período. Producto y servicio son
+  subconjuntos: nunca pueden pasarse del total.
+- **Los tres atajos de período** (este mes, el mes pasado, este año) contra un
+  `SELECT` con las fechas puestas a mano. Ojo con los bordes: un movimiento
+  fechado el primer o el último día del período tiene que entrar.
+- El **período personalizado**: sin fechas, con una sola, invertido, con una
+  fecha que no existe (30 de febrero), con texto.
+- **Decimales.** Cargá diez movimientos de $0,10 y fijate que el total dé
+  exactamente $1,00. Se suma en centavos justamente por esto; si alguien lo
+  cambia, el síntoma es un centavo de más o de menos.
+- **Anular un movimiento del período** y volver al reporte: tiene que
+  desaparecer, dejar de sumar, y aparecer el aviso de cuántos quedaron afuera.
+- Una **categoría sin tipos** y una **con tipos pero sin movimientos** tienen
+  que aparecer las dos, en cero. Si una desaparece, es un `JOIN` mal puesto.
+- El reporte **por producto** llega a la plata subiendo por el movimiento de
+  stock. Verificá que un movimiento de dinero **anulado** deje de contar aunque
+  el de stock siga vivo, y que los motivos que NO mueven plata (una pérdida) no
+  se cuenten como "falta el $".
+
+LAS PÉRDIDAS VALORIZADAS (HU-53) — mirá con lupa que no se mezclen con el balance
+- **Que esta plata NO entre en los egresos.** Es la condición de la historia.
+  Cargá una pérdida grande y verificá que el balance del período no se mueva.
+- Los dos cortes del reporte (por motivo y por producto) tienen que **cerrar
+  entre sí**: salen del mismo universo de filas.
+- Qué cuenta como pérdida es **estructural**: motivo con `efecto_stock =
+  'salida'` y `efecto_dinero = 'ninguno'`. Creá un motivo nuevo con esa
+  combinación y con un nombre cualquiera: tiene que entrar al reporte.
+- Un producto **sin costo cargado** tiene que aparecer como "No se sabe" y
+  contarse aparte, **nunca como $0** ni sumarse al total.
+- El **costo de referencia**: 0, negativo, 0,004, texto, `true`, un número
+  enorme. Y que un servicio no pueda llevar costo.
+- **La fecha del costo sólo se mueve si el costo cambió.** Renombrá un producto
+  sin tocar el costo: la fecha tiene que quedar igual. Verificalo EN LA TABLA.
+
+LA DESCARGA (HU-54)
+- **Que el archivo diga lo mismo que la pantalla.** Bajá el CSV, sumá la
+  columna de montos y comparala contra los casilleros. Es lo único que puede
+  verificar quien recibe el archivo.
+- El **nombre del archivo** tiene que llevar el período, y cambiar cuando
+  cambia el período o la vista. Bajá dos seguidos con períodos distintos.
+- **Inyección de fórmulas**: cargá un movimiento con la descripción `=1+1`,
+  otro con `+HYPERLINK("http://x")`, otro con `-1` y otro con `@SUM(A1)`. En el
+  CSV tienen que salir con un apóstrofe adelante. Si salen tal cual, Excel los
+  **ejecuta** al abrir el archivo, y eso es CRÍTICO: es el mismo camino que el
+  XSS del Sprint 06 en otra salida.
+- El CSV tiene que abrir **en columnas en Excel**, con los números sumables y
+  los acentos bien. Si no, mirá que tenga BOM, separador `;` y coma decimal.
+- El **PDF de un reporte largo**: cargá 60 movimientos y bajalo. Tiene que
+  cortar en varias hojas, **repetir el encabezado de la tabla** en cada una y
+  numerarlas bien ("hoja 2 de 3"). Contá las hojas: no puede haber ninguna en
+  blanco.
+- Pedir una **vista de un módulo apagado**: tiene que rechazar, no bajar un
+  archivo vacío. Un archivo vacío que se baja igual es peor que un error,
+  porque no se nota.
+- Formato y vista inventados en la dirección.
 
 FLUJOS COMPLETOS
 - Registro de empresa → aprobación → alta de usuarios → carga de movimientos.
@@ -314,8 +393,18 @@ Ser honesto sobre lo que no probaste vale más que inflar la lista.
   guardara como 0000-00-00 sin que se viera nada raro en la app. Si probás algo
   que guarda una fecha, andá a mirar qué quedó con mysql.exe.
 
+- LOS NÚMEROS DE UN REPORTE SE VERIFICAN CONTRA UN SELECT, NUNCA CONTRA OTRA
+  PANTALLA. Si dos pantallas del sistema están mal de la misma manera, compararlas
+  entre sí no lo muestra. La calculadora y mysql.exe son el único árbitro.
+
 Arrancá levantando MariaDB de XAMPP, recreando la base desde cero con los dos
 .sql, y poniendo la app a andar.
+
+Para probar la descarga en PDF hace falta correr UNA VEZ `npm install` en la
+carpeta cooperApp: pdfkit no viaja en el repo. Sin eso la app anda igual y el
+CSV también; sólo el botón del PDF avisa que falta. Para leer los PDF que
+generes ya está instalado `pypdf` en el Python del sistema (la ruta completa
+está en CLAUDE.md, sección 4: Python no está en el PATH).
 
 Después, en este orden: primero la regresión de lo ya reportado (es rápida y te
 deja ver qué patrones se repiten), después seguridad y aislamiento, que es lo
@@ -345,6 +434,6 @@ encima.
 |---|---|---|---|
 | 13/09/2026 | Sprint 06 | 12 (1 crítico, 3 altos, 4 medios, 4 bajos) | 10 corregidos · 1 falso positivo (M1) · 3 al backlog (HU-80, 81, 82). Se sumó un hallazgo que el informe no formalizó: sesiones vivas tras dar de baja a un usuario |
 | 16/09/2026 | **Sprints 07 y 08** (juntos: el 07 nunca se había corrido) | 8 (2 críticos, 1 alto, 3 medios, 2 bajos), todos confirmados ejecutándolos. Informe en `informes-QA/informe-QA-sprints-07-08.md` | **Los 8 corregidos**, ninguno al backlog, + 2 encontrados al corregir. Los dos críticos eran el mismo error de concurrencia (consultar-decidir-escribir) y se cerraron con una transacción que traba la fila del producto. Detalle al final del informe |
-| *pendiente* | **Sprint 09** (vocabulario, listados en celular, configuración agrupada y todo el módulo de Servicios) | — | Es **HU-50** del backlog. Servicios comparte tablas con Productos, así que lo que más conviene atacar es el cruce entre los dos catálogos |
+| *pendiente* | **Sprints 09 y 10 juntos** (Servicios completo · Reportes completo) | — | Es **HU-50** del backlog, que quedó sin correr, y encima se sumó el Sprint 10 entero. Lo que más conviene atacar: en el 09, el **cruce entre los dos catálogos** (Servicios comparte tablas con Productos); en el 10, que **los números cierren** — es puro cálculo y un error ahí no se ve como error, se ve como un número |
 
 *(Completar después de cada corrida.)*

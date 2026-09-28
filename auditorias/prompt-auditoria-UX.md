@@ -67,8 +67,19 @@ informe. Lo que sí sirve es decir si la solución **no alcanzó**, con el recor
   y se corte, eso sí reportalo: es el error que se repite.
 - **La matrícula se sacó del sistema** (era del mundo cooperativo). La federación se quedó,
   rotulada *"Cámara o federación a la que pertenece"*, y siempre fue opcional.
-- **Reportes y Articulación llevan a una pantalla que explica que están en construcción**, no a
-  un botón muerto.
+- **Articulación lleva a una pantalla que explica que está en construcción**, no a un botón
+  muerto. (Reportes salió de esa lista el 27/09: ya tiene su pantalla.)
+- **Un reporte no es el listado de Movimientos con fechas.** El listado es la pantalla de
+  trabajo (se carga, se corrige, se anula, lo último arriba); el reporte se mira, se imprime y
+  se manda: sin botones de acción, en orden cronológico y sin lo anulado. Que sean dos
+  pantallas es a propósito.
+- **Las pérdidas valorizadas no se suman al balance**, y los casilleros del período se esconden
+  en esa vista para no invitar a restarlos. Lo que sí vale reportar es si el aviso **no
+  alcanza** para que se entienda.
+- **El costo de un producto es opcional y vacío significa "no lo sé"**, no cero. Un 0 escrito a
+  mano se rechaza a propósito.
+- **Los tres atajos de período** (este mes, el mes pasado, este año) existen para no tener que
+  armar dos fechas a mano. *Otras fechas* queda para el caso raro.
 - **Un servicio no pregunta unidad de medida ni stock mínimo**: no se guarda en ningún lado.
 - **El servicio de un movimiento es opcional y va último** en el formulario: la mayoría de los
   movimientos (la luz, el alquiler, un sueldo) no salen de ningún servicio.
@@ -177,9 +188,34 @@ prendido: osvaldo@metaloeste.com.ar (admin) y daniel@metaloeste.com.ar (tesorero
     Mirá Productos y Servicios uno después del otro: ¿se distinguen? ¿O alguien
     puede creer que está en una estando en la otra?
 
+REPORTES — es el módulo nuevo y el que MÁS se lee y menos se toca.
+Todo lo demás del sistema se usa para cargar; esto se usa para entender. Un
+número que no se entiende no sirve aunque esté bien calculado.
+22. Como Marta: "Quiero ver cómo nos fue este mes." ¿Llegás? ¿En cuántos pasos?
+23. "¿En qué se nos está yendo la plata?" — hay cuatro maneras de mirar el
+    mismo período. ¿Se entiende que son el mismo dinero agrupado distinto, o
+    parecen cuatro reportes que no cierran entre sí?
+24. "Mandale esto al contador." Bajá el CSV y el PDF. **Abrí el CSV con Excel
+    de verdad**, no lo mires en el editor. ¿Se entiende el archivo solo, sin la
+    app al lado? ¿Sabés de qué empresa y de qué período es?
+25. "¿Cuánta plata se nos va en roturas?" — la vista *Lo que se perdió*.
+    **La pregunta clave: ¿queda claro que esa plata NO está en los egresos?**
+    La pantalla lo explica con un aviso; evaluá si alcanza, o si alguien igual
+    va a intentar restar ese número del balance.
+26. En esa misma vista, mirá "Bolsa de pan": dice **"No se sabe"** en vez de
+    $0, porque no tiene costo cargado. ¿Se entiende por qué, y qué hacer?
+27. Como Marta, en Productos, editá un producto: hay un campo nuevo,
+    *"¿Cuánto te cuesta perder uno?"*. ¿Se entiende que es un **costo** y no un
+    precio de venta? ¿Y que dejarlo vacío es una respuesta válida?
+28. Como Silvia (operador): entrá a Reportes. ¿El mensaje te deja claro por qué
+    no podés y a quién pedirle?
+
 COMO EMPRESA NUEVA (aprobá Huerta Norte desde el superadmin y entrá con su admin)
-21. Los primeros cinco minutos: todo vacío. ¿La app te dice qué hacer primero,
+29. Los primeros cinco minutos: todo vacío. ¿La app te dice qué hacer primero,
     o te deja solo frente a pantallas en blanco?
+30. Entrá a Reportes con la empresa recién aprobada: todavía no cargó nada.
+    ¿El reporte vacío explica qué va a aparecer ahí, o es una hoja en blanco
+    con tres ceros?
 
 ## Qué mirar, más allá de las tareas
 
@@ -248,6 +284,20 @@ no sabe de dónde salió:
 - ¿Queda claro **de qué período** habla cada número que está en pantalla?
 - Cuando dos números de la misma pantalla no coinciden porque miran cosas
   distintas, ¿se explica, o parece que el sistema se equivocó?
+- **El caso más difícil del sistema hoy**: las pérdidas valorizadas NO están en
+  los egresos del balance, a propósito. Son dos números grandes de plata en la
+  misma app que **no suman entre sí y está bien que no sumen**. Hay un aviso
+  que lo explica y los casilleros del período se esconden en esa vista.
+  ¿Alcanza? ¿O alguien va a intentar restarlos igual? Esto es lo que más vale
+  la pena mirar con alguien real adelante.
+- **"No se sabe" contra "$0"**: un producto sin costo cargado no vale cero, no
+  se sabe cuánto vale, y el reporte lo dice así. ¿Se entiende la diferencia, o
+  se lee como que el sistema no calculó bien?
+- Los avisos de lo que **queda afuera** de un número (los movimientos anulados,
+  las salidas sin valorizar): ¿se leen como una explicación o como un error?
+- **Un archivo descargado se lee sin la app al lado.** Abrí el CSV y el PDF
+  como los va a abrir el contador: ¿se entiende de qué empresa, de qué período
+  y qué queda afuera de cada total?
 
 CONSISTENCIA
 - La misma acción, ¿se hace igual en todas las pantallas? (íconos, colores,
@@ -332,9 +382,15 @@ después.
 ## Para arrancar
 
 Levantá MariaDB de XAMPP, recreá la base desde cero con los dos .sql y poné la
-app a andar (node app.js desde cooperApp/). Después abrí el navegador y empezá
-por el operador, que es el rol más acotado y el que más claro deja si la app
-se entiende sin conocer el resto del sistema.
+app a andar (node app.js desde cooperApp/). Corré también una vez `npm install`
+en esa carpeta: sin eso la descarga en PDF no anda (la app sí).
+
+Después abrí el navegador y empezá por el operador, que es el rol más acotado y
+el que más claro deja si la app se entiende sin conocer el resto del sistema.
+
+Y para los reportes, cambiá de sombrero: ahí no estás cargando datos, estás
+tratando de entender un número que alguien más calculó. Es la única parte del
+sistema que se usa para decidir, no para registrar.
 ````
 
 ---
@@ -365,6 +421,6 @@ se entiende sin conocer el resto del sistema.
 |---|---|---|---|
 | 15/09/2026 | Sprint 08 | 26 hallazgos (4 bloquean, 8 hacen perder tiempo, 8 generan duda, 6 molestan) + 16 términos a renombrar + 3 bugs. Informe en `informes-UX/informe-UX-2026-09-15.md` | **16/09**: los 4 que bloquean (H-01 a H-04) + se sacó la matrícula del sistema + el largo mínimo de contraseña + 1 bug encontrado al corregir. El resto, al backlog: HU-84 a HU-88 en el Sprint 13. El vocabulario queda para decidir en grupo. Detalle al final del informe |
 | 16/09/2026 | *(sin auditoría nueva: se aplicó lo pendiente de la anterior)* | — | **HU-84** (vocabulario, decidido por el grupo), **HU-85** (listados como tarjetas en el celular, con hoja compartida) y **HU-86** (configuración agrupada en el menú principal). Las tres estaban planificadas para el Sprint 13 y se adelantaron al 09, porque arreglaban justo lo que el módulo de Servicios iba a duplicar |
-| *pendiente* | **Sprint 09** (módulo de Servicios completo) | — | Lo que más conviene mirar: que el vocabulario decidido se haya respetado en las pantallas nuevas, y si "cuánto deja cada servicio" se encuentra y se entiende |
+| *pendiente* | **Sprints 09 y 10 juntos** (Servicios completo · Reportes completo) | — | Lo que más conviene mirar: que el vocabulario decidido se haya respetado en las pantallas nuevas; si *cuánto deja cada servicio* se encuentra y se entiende; y sobre todo **si se entiende que las pérdidas valorizadas no están en el balance** — son dos números grandes de plata que no suman entre sí y está bien que no sumen |
 
 *(Completar después de cada corrida.)*
