@@ -230,13 +230,13 @@ INSERT INTO categorias_movimiento (nombre, naturaleza, id_empresa) VALUES
   ('Ventas',    'ingreso', @empresa),
   ('Otros ingresos', 'ingreso', @empresa),
   ('Sueldos',   'egreso',  @empresa),
-  ('Servicios', 'egreso',  @empresa),
+  ('Gastos fijos', 'egreso',  @empresa),
   ('Insumos',   'egreso',  @empresa);
 
 SET @cat_ventas    := (SELECT id_categoria FROM categorias_movimiento WHERE id_empresa = @empresa AND naturaleza = 'ingreso' AND nombre = 'Ventas');
 SET @cat_subsidios := (SELECT id_categoria FROM categorias_movimiento WHERE id_empresa = @empresa AND naturaleza = 'ingreso' AND nombre = 'Otros ingresos');
 SET @cat_sueldos   := (SELECT id_categoria FROM categorias_movimiento WHERE id_empresa = @empresa AND naturaleza = 'egreso'  AND nombre = 'Sueldos');
-SET @cat_servicios := (SELECT id_categoria FROM categorias_movimiento WHERE id_empresa = @empresa AND naturaleza = 'egreso'  AND nombre = 'Servicios');
+SET @cat_fijos     := (SELECT id_categoria FROM categorias_movimiento WHERE id_empresa = @empresa AND naturaleza = 'egreso'  AND nombre = 'Gastos fijos');
 SET @cat_insumos   := (SELECT id_categoria FROM categorias_movimiento WHERE id_empresa = @empresa AND naturaleza = 'egreso'  AND nombre = 'Insumos');
 
 INSERT INTO tipos_movimiento (nombre, id_categoria) VALUES
@@ -244,8 +244,8 @@ INSERT INTO tipos_movimiento (nombre, id_categoria) VALUES
   ('Venta minorista', @cat_ventas),
   ('Reintegro de exportación',  @cat_subsidios),
   ('Sueldos del personal',@cat_sueldos),
-  ('Luz',             @cat_servicios),
-  ('Internet',        @cat_servicios),
+  ('Luz',             @cat_fijos),
+  ('Internet',        @cat_fijos),
   ('Harina',          @cat_insumos),
   ('Envases',         @cat_insumos);
 
@@ -254,8 +254,8 @@ INSERT INTO movimientos (id_tipo, monto, descripcion, fecha, id_empresa, id_usua
   ((SELECT id_tipo FROM tipos_movimiento WHERE id_categoria = @cat_ventas    AND nombre = 'Venta minorista'),   48000.00, 'Ventas del local',                   CURDATE() - INTERVAL 4  DAY, @empresa, @tesorero, 0),
   ((SELECT id_tipo FROM tipos_movimiento WHERE id_categoria = @cat_subsidios AND nombre = 'Reintegro de exportación'),    200000.00, 'Reintegro del trimestre',   CURDATE() - INTERVAL 9  DAY, @empresa, @tesorero, 0),
   ((SELECT id_tipo FROM tipos_movimiento WHERE id_categoria = @cat_sueldos   AND nombre = 'Sueldos del personal'),  180000.00, 'Sueldos del mes',         CURDATE() - INTERVAL 3  DAY, @empresa, @tesorero, 0),
-  ((SELECT id_tipo FROM tipos_movimiento WHERE id_categoria = @cat_servicios AND nombre = 'Luz'),                32000.00, 'Factura de luz',                    CURDATE() - INTERVAL 6  DAY, @empresa, @tesorero, 0),
-  ((SELECT id_tipo FROM tipos_movimiento WHERE id_categoria = @cat_servicios AND nombre = 'Internet'),           15000.00, 'Abono de internet',                 CURDATE() - INTERVAL 6  DAY, @empresa, @tesorero, 0),
+  ((SELECT id_tipo FROM tipos_movimiento WHERE id_categoria = @cat_fijos     AND nombre = 'Luz'),                32000.00, 'Factura de luz',                    CURDATE() - INTERVAL 6  DAY, @empresa, @tesorero, 0),
+  ((SELECT id_tipo FROM tipos_movimiento WHERE id_categoria = @cat_fijos     AND nombre = 'Internet'),           15000.00, 'Abono de internet',                 CURDATE() - INTERVAL 6  DAY, @empresa, @tesorero, 0),
   ((SELECT id_tipo FROM tipos_movimiento WHERE id_categoria = @cat_insumos   AND nombre = 'Harina'),             90000.00, 'Compra de harina por tonelada',          CURDATE() - INTERVAL 10 DAY, @empresa, @tesorero, 0),
   ((SELECT id_tipo FROM tipos_movimiento WHERE id_categoria = @cat_ventas    AND nombre = 'Venta mayorista'),   275000.00, 'Venta del mes anterior',            CURDATE() - INTERVAL 35 DAY, @empresa, @tesorero, 0),
   ((SELECT id_tipo FROM tipos_movimiento WHERE id_categoria = @cat_insumos   AND nombre = 'Envases'),            12000.00, 'Compra de envases (mes anterior)',    CURDATE() - INTERVAL 38 DAY, @empresa, @tesorero, 0),
@@ -268,28 +268,28 @@ SET @tesorero := (SELECT id FROM usuarios WHERE email = 'lucia@elamanecer.com.ar
 INSERT INTO categorias_movimiento (nombre, naturaleza, id_empresa) VALUES
   ('Ventas',    'ingreso', @empresa),
   ('Sueldos',   'egreso',  @empresa),
-  ('Servicios', 'egreso',  @empresa),
+  ('Gastos fijos', 'egreso',  @empresa),
   ('Insumos',   'egreso',  @empresa);
 
 SET @cat_ventas    := (SELECT id_categoria FROM categorias_movimiento WHERE id_empresa = @empresa AND naturaleza = 'ingreso' AND nombre = 'Ventas');
 SET @cat_sueldos   := (SELECT id_categoria FROM categorias_movimiento WHERE id_empresa = @empresa AND naturaleza = 'egreso'  AND nombre = 'Sueldos');
-SET @cat_servicios := (SELECT id_categoria FROM categorias_movimiento WHERE id_empresa = @empresa AND naturaleza = 'egreso'  AND nombre = 'Servicios');
+SET @cat_fijos     := (SELECT id_categoria FROM categorias_movimiento WHERE id_empresa = @empresa AND naturaleza = 'egreso'  AND nombre = 'Gastos fijos');
 SET @cat_insumos   := (SELECT id_categoria FROM categorias_movimiento WHERE id_empresa = @empresa AND naturaleza = 'egreso'  AND nombre = 'Insumos');
 
 INSERT INTO tipos_movimiento (nombre, id_categoria) VALUES
   ('Venta mayorista', @cat_ventas),
   ('Venta minorista', @cat_ventas),
   ('Sueldos del personal',@cat_sueldos),
-  ('Luz',             @cat_servicios),
-  ('Alquiler',        @cat_servicios),
+  ('Luz',             @cat_fijos),
+  ('Alquiler',        @cat_fijos),
   ('Tela',            @cat_insumos);
 
 INSERT INTO movimientos (id_tipo, monto, descripcion, fecha, id_empresa, id_usuario, anulado) VALUES
   ((SELECT id_tipo FROM tipos_movimiento WHERE id_categoria = @cat_ventas    AND nombre = 'Venta mayorista'),  210000.00, 'Pedido de remeras',            CURDATE() - INTERVAL 1  DAY, @empresa, @tesorero, 0),
   ((SELECT id_tipo FROM tipos_movimiento WHERE id_categoria = @cat_ventas    AND nombre = 'Venta minorista'),   60000.00, 'Ventas de la semana',          CURDATE() - INTERVAL 7  DAY, @empresa, @tesorero, 0),
   ((SELECT id_tipo FROM tipos_movimiento WHERE id_categoria = @cat_sueldos   AND nombre = 'Sueldos del personal'),  150000.00, 'Sueldos del mes',    CURDATE() - INTERVAL 3  DAY, @empresa, @tesorero, 0),
-  ((SELECT id_tipo FROM tipos_movimiento WHERE id_categoria = @cat_servicios AND nombre = 'Luz'),                21000.00, 'Factura de luz',               CURDATE() - INTERVAL 5  DAY, @empresa, @tesorero, 0),
-  ((SELECT id_tipo FROM tipos_movimiento WHERE id_categoria = @cat_servicios AND nombre = 'Alquiler'),          120000.00, 'Alquiler del taller',          CURDATE() - INTERVAL 8  DAY, @empresa, @tesorero, 0),
+  ((SELECT id_tipo FROM tipos_movimiento WHERE id_categoria = @cat_fijos     AND nombre = 'Luz'),                21000.00, 'Factura de luz',               CURDATE() - INTERVAL 5  DAY, @empresa, @tesorero, 0),
+  ((SELECT id_tipo FROM tipos_movimiento WHERE id_categoria = @cat_fijos     AND nombre = 'Alquiler'),          120000.00, 'Alquiler del taller',          CURDATE() - INTERVAL 8  DAY, @empresa, @tesorero, 0),
   ((SELECT id_tipo FROM tipos_movimiento WHERE id_categoria = @cat_insumos   AND nombre = 'Tela'),               70000.00, 'Compra de tela',               CURDATE() - INTERVAL 11 DAY, @empresa, @tesorero, 0),
   ((SELECT id_tipo FROM tipos_movimiento WHERE id_categoria = @cat_ventas    AND nombre = 'Venta mayorista'),  190000.00, 'Venta del mes anterior',       CURDATE() - INTERVAL 34 DAY, @empresa, @tesorero, 0);
 
@@ -299,38 +299,44 @@ SET @tesorero := (SELECT id FROM usuarios WHERE email = 'daniel@metaloeste.com.a
 
 INSERT INTO categorias_movimiento (nombre, naturaleza, id_empresa) VALUES
   ('Ventas',              'ingreso', @empresa),
-  ('Trabajos a terceros', 'ingreso', @empresa),
+  ('Ventas de servicios', 'ingreso', @empresa),
   ('Sueldos',             'egreso',  @empresa),
   ('Insumos',             'egreso',  @empresa),
-  ('Servicios',           'egreso',  @empresa);
+  ('Gastos fijos',        'egreso',  @empresa),
+  -- Lo que se le paga a otro por un trabajo: el flete. No es un gasto fijo.
+  ('Pagos a terceros',    'egreso',  @empresa);
 
 SET @cat_ventas    := (SELECT id_categoria FROM categorias_movimiento WHERE id_empresa = @empresa AND naturaleza = 'ingreso' AND nombre = 'Ventas');
-SET @cat_terceros  := (SELECT id_categoria FROM categorias_movimiento WHERE id_empresa = @empresa AND naturaleza = 'ingreso' AND nombre = 'Trabajos a terceros');
+SET @cat_terceros  := (SELECT id_categoria FROM categorias_movimiento WHERE id_empresa = @empresa AND naturaleza = 'ingreso' AND nombre = 'Ventas de servicios');
 SET @cat_sueldos   := (SELECT id_categoria FROM categorias_movimiento WHERE id_empresa = @empresa AND naturaleza = 'egreso'  AND nombre = 'Sueldos');
 SET @cat_insumos   := (SELECT id_categoria FROM categorias_movimiento WHERE id_empresa = @empresa AND naturaleza = 'egreso'  AND nombre = 'Insumos');
-SET @cat_servicios := (SELECT id_categoria FROM categorias_movimiento WHERE id_empresa = @empresa AND naturaleza = 'egreso'  AND nombre = 'Servicios');
+SET @cat_fijos     := (SELECT id_categoria FROM categorias_movimiento WHERE id_empresa = @empresa AND naturaleza = 'egreso'  AND nombre = 'Gastos fijos');
+SET @cat_pagos     := (SELECT id_categoria FROM categorias_movimiento WHERE id_empresa = @empresa AND naturaleza = 'egreso'  AND nombre = 'Pagos a terceros');
 
 INSERT INTO tipos_movimiento (nombre, id_categoria) VALUES
   ('Venta de piezas', @cat_ventas),
   ('Torneado',        @cat_terceros),
+  -- El tipo tiene que decir lo mismo que el servicio al que se ata el
+  -- movimiento: un Torneado atado a Corte de chapa se leia contradictorio.
+  ('Corte y plegado', @cat_terceros),
   ('Soldadura',       @cat_terceros),
   ('Sueldos del personal',@cat_sueldos),
   ('Chapa',           @cat_insumos),
   ('Electrodos',      @cat_insumos),
-  ('Luz',             @cat_servicios),
-  ('Gas',             @cat_servicios),
+  ('Luz',             @cat_fijos),
+  ('Gas',             @cat_fijos),
   -- Lo usa un egreso atado a un servicio contratado (ver mas abajo).
-  ('Flete',           @cat_servicios);
+  ('Flete',           @cat_pagos);
 
 INSERT INTO movimientos (id_tipo, monto, descripcion, fecha, id_empresa, id_usuario, anulado) VALUES
   ((SELECT id_tipo FROM tipos_movimiento WHERE id_categoria = @cat_ventas   AND nombre = 'Venta de piezas'),  520000.00, 'Venta de piezas a fábrica',     CURDATE() - INTERVAL 2  DAY, @empresa, @tesorero, 0),
-  ((SELECT id_tipo FROM tipos_movimiento WHERE id_categoria = @cat_terceros AND nombre = 'Torneado'),         130000.00, 'Trabajo para automotriz',       CURDATE() - INTERVAL 6  DAY, @empresa, @tesorero, 0),
+  ((SELECT id_tipo FROM tipos_movimiento WHERE id_categoria = @cat_terceros AND nombre = 'Corte y plegado'),  130000.00, 'Trabajo para automotriz',       CURDATE() - INTERVAL 6  DAY, @empresa, @tesorero, 0),
   ((SELECT id_tipo FROM tipos_movimiento WHERE id_categoria = @cat_terceros AND nombre = 'Soldadura'),         85000.00, 'Soldadura de estructura',       CURDATE() - INTERVAL 4  DAY, @empresa, @tesorero, 0),
   ((SELECT id_tipo FROM tipos_movimiento WHERE id_categoria = @cat_sueldos  AND nombre = 'Sueldos del personal'), 300000.00, 'Sueldos del mes',     CURDATE() - INTERVAL 3  DAY, @empresa, @tesorero, 0),
   ((SELECT id_tipo FROM tipos_movimiento WHERE id_categoria = @cat_insumos  AND nombre = 'Chapa'),            160000.00, 'Compra de chapa',               CURDATE() - INTERVAL 9  DAY, @empresa, @tesorero, 0),
   ((SELECT id_tipo FROM tipos_movimiento WHERE id_categoria = @cat_insumos  AND nombre = 'Electrodos'),        22000.00, 'Compra de electrodos',          CURDATE() - INTERVAL 9  DAY, @empresa, @tesorero, 0),
-  ((SELECT id_tipo FROM tipos_movimiento WHERE id_categoria = @cat_servicios AND nombre = 'Luz'),              45000.00, 'Factura de luz',                CURDATE() - INTERVAL 6  DAY, @empresa, @tesorero, 0),
-  ((SELECT id_tipo FROM tipos_movimiento WHERE id_categoria = @cat_servicios AND nombre = 'Gas'),              38000.00, 'Factura de gas (mes anterior)', CURDATE() - INTERVAL 40 DAY, @empresa, @tesorero, 0);
+  ((SELECT id_tipo FROM tipos_movimiento WHERE id_categoria = @cat_fijos     AND nombre = 'Luz'),              45000.00, 'Factura de luz',                CURDATE() - INTERVAL 6  DAY, @empresa, @tesorero, 0),
+  ((SELECT id_tipo FROM tipos_movimiento WHERE id_categoria = @cat_fijos     AND nombre = 'Gas'),              38000.00, 'Factura de gas (mes anterior)', CURDATE() - INTERVAL 40 DAY, @empresa, @tesorero, 0);
 
 -- =============================================================================
 -- Categorías y subcategorías de PRODUCTOS para las 3 empresas que tienen el
@@ -480,14 +486,19 @@ INSERT INTO productos (nombre, descripcion, unidad_medida, stock_minimo, id_cate
 SET @empresa := (SELECT id_empresa FROM empresas WHERE email = 'contacto@metaloeste.com.ar');
 
 -- El arbol de servicios es APARTE del de productos, aunque comparta la tabla:
--- "Trabajos a terceros" no tiene nada que ver con "Materia prima", y mezclarlos
+-- "Los que ofrecemos" no tiene nada que ver con "Materia prima", y mezclarlos
 -- haria que el alta de un producto ofreciera categorias de servicios.
+--
+-- Los nombres dicen QUIEN PAGA sin tener que pensarlo. Antes eran "Trabajos a
+-- terceros" (igual que una categoria de dinero, las dos con una hija
+-- "Soldadura") y "Servicios contratados", que se lee para los dos lados
+-- (auditoria de UX del 28/09).
 INSERT INTO categorias_producto (nombre, id_empresa, es_servicio, activo) VALUES
-  ('Trabajos a terceros', @empresa, 1, 1),
-  ('Servicios contratados', @empresa, 1, 1);
+  ('Los que ofrecemos',   @empresa, 1, 1),
+  ('Los que contratamos', @empresa, 1, 1);
 
-SET @cat_trabajos    := (SELECT id_categoria_producto FROM categorias_producto WHERE id_empresa = @empresa AND es_servicio = 1 AND nombre = 'Trabajos a terceros');
-SET @cat_contratados := (SELECT id_categoria_producto FROM categorias_producto WHERE id_empresa = @empresa AND es_servicio = 1 AND nombre = 'Servicios contratados');
+SET @cat_trabajos    := (SELECT id_categoria_producto FROM categorias_producto WHERE id_empresa = @empresa AND es_servicio = 1 AND nombre = 'Los que ofrecemos');
+SET @cat_contratados := (SELECT id_categoria_producto FROM categorias_producto WHERE id_empresa = @empresa AND es_servicio = 1 AND nombre = 'Los que contratamos');
 
 INSERT INTO subcategorias_producto (nombre, id_categoria_producto, activo) VALUES
   ('Soldadura',   @cat_trabajos,    1),
@@ -534,12 +545,12 @@ UPDATE movimientos SET id_servicio = @sv_corte
 -- arriba: entre medio pasaron dos secciones y depender de que una variable
 -- siga valiendo lo mismo es la clase de cosa que se rompe sola al reordenar.
 SET @tesorero      := (SELECT id FROM usuarios WHERE email = 'daniel@metaloeste.com.ar');
-SET @cat_terceros  := (SELECT id_categoria FROM categorias_movimiento WHERE id_empresa = @empresa AND naturaleza = 'ingreso' AND nombre = 'Trabajos a terceros');
-SET @cat_servicios := (SELECT id_categoria FROM categorias_movimiento WHERE id_empresa = @empresa AND naturaleza = 'egreso'  AND nombre = 'Servicios');
+SET @cat_terceros  := (SELECT id_categoria FROM categorias_movimiento WHERE id_empresa = @empresa AND naturaleza = 'ingreso' AND nombre = 'Ventas de servicios');
+SET @cat_pagos     := (SELECT id_categoria FROM categorias_movimiento WHERE id_empresa = @empresa AND naturaleza = 'egreso'  AND nombre = 'Pagos a terceros');
 
 INSERT INTO movimientos (id_tipo, monto, descripcion, fecha, id_empresa, id_usuario, id_servicio, anulado) VALUES
   ((SELECT id_tipo FROM tipos_movimiento WHERE id_categoria = @cat_terceros  AND nombre = 'Soldadura'), 67000.00, 'Soldadura de portón', CURDATE() - INTERVAL 11 DAY, @empresa, @tesorero, @sv_soldadura, 0),
-  ((SELECT id_tipo FROM tipos_movimiento WHERE id_categoria = @cat_servicios AND nombre = 'Flete'),     18000.00, 'Flete de la chapa',   CURDATE() - INTERVAL 9  DAY, @empresa, @tesorero, @sv_flete,     0);
+  ((SELECT id_tipo FROM tipos_movimiento WHERE id_categoria = @cat_pagos     AND nombre = 'Flete'),     18000.00, 'Flete de la chapa',   CURDATE() - INTERVAL 9  DAY, @empresa, @tesorero, @sv_flete,     0);
 
 -- =============================================================================
 -- MOTIVOS DE MOVIMIENTO DE STOCK

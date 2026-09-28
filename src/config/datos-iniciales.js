@@ -7,12 +7,18 @@
 //
 // Se usan terminos genericos a proposito (por ejemplo "Impuestos nacionales"
 // en vez del nombre del organismo de turno), para que no envejezcan.
+//
+// La luz, el gas y el alquiler van en "Gastos fijos" y NO en "Servicios",
+// aunque en la calle se les diga "pagar los servicios": Servicios es tambien
+// el nombre de un modulo, y en la fila de un movimiento convivian la
+// categoria "Servicios" y el servicio que lo origino, sin nada que dijera
+// cual era cual (auditoria de UX del 28/09).
 
 const CATEGORIAS_INICIALES = [
   { nombre: 'Ventas',         naturaleza: 'ingreso', tipos: ['Venta mayorista', 'Venta minorista'] },
   { nombre: 'Otros ingresos', naturaleza: 'ingreso', tipos: ['Intereses', 'Otros'] },
   { nombre: 'Sueldos',        naturaleza: 'egreso',  tipos: ['Sueldos del personal', 'Cargas sociales'] },
-  { nombre: 'Servicios',      naturaleza: 'egreso',  tipos: ['Luz', 'Gas', 'Agua', 'Internet', 'Alquiler'] },
+  { nombre: 'Gastos fijos',   naturaleza: 'egreso',  tipos: ['Luz', 'Gas', 'Agua', 'Internet', 'Alquiler'] },
   { nombre: 'Insumos',        naturaleza: 'egreso',  tipos: ['Compra de mercadería'] },
   { nombre: 'Impuestos',      naturaleza: 'egreso',  tipos: ['Impuestos nacionales', 'Ingresos brutos', 'Tasas municipales'] },
 ]

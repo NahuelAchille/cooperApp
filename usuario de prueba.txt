@@ -167,8 +167,15 @@ CAMBIOS DEL 16/09 POR LA AUDITORIA DE QA:
  ver que el menu cambia segun lo que contrato cada empresa.
 
  Su catalogo de servicios trae 6, en dos categorias: los que
- PRESTA ("Trabajos a terceros": soldadura, corte, plegado) y los
- que CONTRATA ("Servicios contratados": flete, mantenimiento).
+ PRESTA ("Los que ofrecemos": soldadura, corte, plegado) y los
+ que CONTRATA ("Los que contratamos": flete, mantenimiento).
+
+ Del lado del dinero, sus categorias NO repiten esos nombres:
+ lo que cobra por un servicio va en "Ventas de servicios", la
+ luz y el gas en "Gastos fijos" y el flete en "Pagos a terceros".
+ Es a proposito: la categoria dice como se ordena la plata y el
+ servicio dice de donde salio. Si se llamaran igual, en la fila
+ de un movimiento no se sabria cual es cual.
  Uno viene dado de baja a proposito ("Pintura electrostatica"),
  para poder probar el filtro de estado sin dar de baja nada.
 
@@ -295,7 +302,7 @@ CAMBIOS DEL 16/09 POR LA AUDITORIA DE QA:
      - "Categorias" (el boton, o Configuracion -> Categorias de
        servicios): el arbol es APARTE del de productos. Al cargar
        un servicio no aparece "Materia prima", y al cargar un
-       producto no aparece "Trabajos a terceros".
+       producto no aparece "Los que ofrecemos".
      - Se puede tener un producto y un servicio con el MISMO
        nombre: son dos catalogos distintos. Repetir el nombre
        adentro del mismo catalogo si lo rechaza.
