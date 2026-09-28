@@ -129,6 +129,7 @@ exports.getReporteAgrupado = async (req, res) => {
       criterio,
       periodo: { desde: periodo.desde, hasta: periodo.hasta, etiqueta: periodo.etiqueta },
       modulo_apagado: null,
+      aviso: criterio === 'producto' ? avisoDeProductosSinPlata(filas) : null,
       filas
     })
 
@@ -141,6 +142,9 @@ exports.getReporteAgrupado = async (req, res) => {
 // Cada criterio devuelve las mismas columnas, aunque las saque de lugares
 // distintos: nombre, ingresos, egresos, resultado y un detalle propio. Asi la
 // pantalla pinta una sola tabla y no tres.
+//
+// `movio` dice si esa fila tuvo algun movimiento en el periodo. Una tabla con
+// todas las filas en cero no es un reporte: la pantalla no ofrece bajarla.
 const armarFilas = async (criterio, id_empresa, periodo) => {
 
   if (criterio === 'servicio') {
@@ -155,6 +159,7 @@ const armarFilas = async (criterio, id_empresa, periodo) => {
       ingresos: s.total_ingresos,
       egresos: s.total_egresos,
       resultado: s.resultado,
+      movio: s.cantidad > 0,
       detalle: s.cantidad === 0
         ? 'Sin movimientos en el período'
         : `${s.cantidad} ${s.cantidad === 1 ? 'movimiento' : 'movimientos'}`
@@ -171,9 +176,12 @@ const armarFilas = async (criterio, id_empresa, periodo) => {
       // El detalle de un producto son las cantidades, no la plata: es lo que
       // el del deposito reconoce. Y si quedaron movimientos sin el $, se dice
       // acá mismo: sin eso, el total parece el total y es una parte.
+      // Con la unidad: en la misma columna conviven kilos, bolsas y unidades,
+      // y "salieron 14,50" a secas no dice de que (UX 28/09, vocabulario).
+      const unidad = p.unidad_medida ? ' ' + p.unidad_medida : ''
       const partes = []
-      if (Number(p.entradas) > 0) partes.push(`entraron ${formatearCantidad(p.entradas)}`)
-      if (Number(p.salidas) > 0) partes.push(`salieron ${formatearCantidad(p.salidas)}`)
+      if (Number(p.entradas) > 0) partes.push(`entraron ${formatearCantidad(p.entradas)}${unidad}`)
+      if (Number(p.salidas) > 0) partes.push(`salieron ${formatearCantidad(p.salidas)}${unidad}`)
       if (!partes.length) partes.push('Sin movimientos en el período')
       if (sinValorizar > 0) {
         partes.push(sinValorizar === 1
@@ -189,6 +197,7 @@ const armarFilas = async (criterio, id_empresa, periodo) => {
         egresos: pagado,
         resultado: cobrado - pagado,
         detalle: partes.join(' · '),
+        movio: Number(p.entradas) > 0 || Number(p.salidas) > 0,
         sin_valorizar: sinValorizar
       }
     })
@@ -211,11 +220,26 @@ const armarFilas = async (criterio, id_empresa, periodo) => {
       ingresos: esIngreso ? total : 0,
       egresos: esIngreso ? 0 : total,
       resultado: esIngreso ? total : -total,
+      movio: Number(c.cantidad) > 0,
       detalle: Number(c.cantidad) === 0
         ? 'Sin movimientos en el período'
         : `${c.cantidad} ${Number(c.cantidad) === 1 ? 'movimiento' : 'movimientos'}`
     }
   })
+}
+
+// El reporte por producto con TODA la plata en cero no es "no se vendio
+// nada": es que ninguna salida tiene el cobro cargado, porque el sistema no
+// conoce los precios y el movimiento de dinero se ofrece, no se calcula. En
+// pantalla el detalle de cada fila lo insinua; el archivo que se manda al
+// contador tiene que decirlo con todas las letras (UX 28/09, H-01).
+// Devuelve el aviso, o null si no hace falta.
+const avisoDeProductosSinPlata = (filas) => {
+  const conPlata = filas.some(f => f.ingresos || f.egresos)
+  const sinCargar = filas.reduce((s, f) => s + (f.sin_valorizar || 0), 0)
+  if (conPlata || sinCargar === 0) return null
+  return 'Ninguna de las salidas de este período tiene el cobro cargado, por eso todas las filas dan $0. ' +
+         'El dinero de una venta se carga desde Stock, al registrar la salida.'
 }
 
 // Las cantidades se guardan con 2 decimales, pero mostrar "5,00 unidades"
@@ -470,8 +494,12 @@ const armarDescargaAgrupada = async (vista, id_empresa, periodo) => {
   ])
   const agrupador = { categoria: 'Categoría', producto: 'Producto', servicio: 'Servicio' }[vista]
 
+  const avisos = avisosDelPeriodo(periodoCompleto.totales)
+  const sinPlata = vista === 'producto' ? avisoDeProductosSinPlata(filas) : null
+  if (sinPlata) avisos.push(sinPlata)
+
   return {
-    avisos: avisosDelPeriodo(periodoCompleto.totales),
+    avisos,
     ...totalesDelPeriodo(periodoCompleto.totales),
     encabezadoCSV: [agrupador, 'Detalle', 'Entró', 'Salió', 'Resultado'],
     filasCSV: filas.map(f => [
@@ -485,8 +513,11 @@ const armarDescargaAgrupada = async (vista, id_empresa, periodo) => {
         { titulo: 'Salió', ancho: 0.18, align: 'right' },
         { titulo: 'Resultado', ancho: 0.18, align: 'right' }
       ],
+      // El detalle va abajo del nombre, como en la pantalla. Sin el, el PDF
+      // por producto era una hoja de ceros sin una palabra de por que
+      // (UX 28/09, H-01).
       filas: filas.map(f => [
-        f.nombre + (f.activo ? '' : ' (de baja)'),
+        f.nombre + (f.activo ? '' : ' (de baja)') + (f.detalle ? `\n${f.detalle}` : ''),
         f.ingresos ? plata(f.ingresos) : '—',
         f.egresos ? plata(f.egresos) : '—',
         { texto: plata(f.resultado), color: f.resultado < 0 ? ROJO : (f.resultado > 0 ? VERDE : GRIS) }
@@ -518,16 +549,31 @@ const armarDescargaDePerdidas = async (id_empresa, periodo) => {
       { etiqueta: 'Se fue en mercadería', valor: plata(t.valorizado), color: ROJO }
     ],
     totalesCSV: [['Se fue en mercadería', numero(t.valorizado)]],
-    encabezadoCSV: ['Bloque', 'Nombre', 'Detalle', 'Cuánto costó'],
+    // Los dos cortes son LA MISMA plata mirada de dos maneras. Uno abajo del
+    // otro en la misma columna, quien la seleccionaba en Excel veia el doble
+    // del total (UX 28/09, H-02). Ahora cada uno es un bloque aparte, con su
+    // titulo, su encabezado y su total, separados por dos filas en blanco.
+    //
+    // Y el producto sin costo dice "No se sabe", como la pantalla y el PDF:
+    // una celda vacia en una columna de plata se lee como nada (H-10).
+    encabezadoCSV: null,
     filasCSV: [
-      ...datos.motivos.map(m => ['Por qué se fue', m.nombre,
+      ['¿Por qué se fue?'],
+      ['Motivo', 'Detalle', 'Cuánto costó'],
+      ...datos.motivos.map(m => [m.nombre + (m.activo ? '' : ' (de baja)'),
         `${m.movimientos} ${m.movimientos === 1 ? 'salida' : 'salidas'}` +
         (m.sin_costo > 0 ? ` · ${m.sin_costo} sin poder valorizar` : ''),
         numero(m.valorizado)]),
-      ...datos.productos.map(p => ['Qué se fue', p.nombre,
+      ['Total', '', numero(t.valorizado)],
+      [],
+      [],
+      ['¿Qué se fue?'],
+      ['Producto', 'Detalle', 'Cuánto costó'],
+      ...datos.productos.map(p => [p.nombre,
         `${p.cantidad}${p.unidad_medida ? ' ' + p.unidad_medida : ''}` +
         (p.costo_referencia === null ? ' · sin costo cargado' : ` · a ${p.costo_referencia} cada uno`),
-        p.costo_referencia === null ? '' : numero(p.valorizado)])
+        p.costo_referencia === null ? 'No se sabe' : numero(p.valorizado)]),
+      ['Total', '', numero(t.valorizado)]
     ],
     bloques: [
       {

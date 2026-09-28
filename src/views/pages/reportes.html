@@ -28,7 +28,9 @@
     <!-- Se muestra si el rol no llega a finanzas -->
     <div class="aviso-permiso d-none" id="aviso-permiso">
       <i class="fa-solid fa-lock fa-2x mb-3"></i>
-      <p class="mb-0">Tu usuario no tiene acceso a los reportes de la empresa.</p>
+      <!-- Dice qué hacer, no sólo qué pasa (UX 28/09, H-13) -->
+      <p class="mb-1">Los reportes los ven el administrador y el tesorero de tu empresa.</p>
+      <p class="mb-0 small">Si necesitás uno, pedíselo a ellos.</p>
     </div>
 
     <!-- Se muestra si la empresa tiene el módulo apagado -->
@@ -81,7 +83,17 @@
             <button type="button" class="btn-vista" data-vista="categoria">Por categoría</button>
             <button type="button" class="btn-vista d-none" data-vista="producto" id="vista-producto">Por producto</button>
             <button type="button" class="btn-vista d-none" data-vista="servicio" id="vista-servicio">Por servicio</button>
-            <button type="button" class="btn-vista d-none" data-vista="perdidas" id="vista-perdidas">Lo que se perdió</button>
+          </div>
+          <!-- Pasar de una a otra deja los casilleros iguales, y eso es la
+               prueba de que cierran. Sin decirlo, parece que la página no se
+               actualizó (UX 28/09, H-07). -->
+          <p class="nota-vista">Son la misma plata del período, ordenada de distinta manera.</p>
+
+          <!-- Las pérdidas NO son esa plata: son mercadería, y a propósito no
+               suman con lo de arriba. Por eso van aparte y con otro rótulo. -->
+          <div class="vista-aparte d-none" id="grupo-perdidas">
+            <span class="rotulo-aparte">Además:</span>
+            <button type="button" class="btn-vista" data-vista="perdidas" id="vista-perdidas">Lo que se perdió</button>
           </div>
         </div>
       </div>
@@ -159,6 +171,11 @@
           </div>
         </div>
 
+        <!-- Por producto con TODO en $0: no es "no se vendió nada", es que
+             ninguna salida tiene el cobro cargado. El aviso lo arma el
+             servidor, y es el mismo que va al CSV y al PDF (UX 28/09, H-01). -->
+        <p class="aviso-anulados d-none" id="aviso-agrupado"></p>
+
         <!-- Vista agrupada: una fila por categoría, producto o servicio.
              Es una sola tabla para los tres porque los tres contestan lo
              mismo ("de dónde salió esta plata") y sólo cambia el agrupador.
@@ -187,7 +204,10 @@
 
           <div class="aviso-perdidas">
             <i class="fa-solid fa-circle-info me-1"></i>
-            <strong>Esta plata no está en los totales de arriba.</strong>
+            <!-- La misma frase que los archivos. Antes decía "no está en los
+                 totales de arriba", pero en esta vista los totales están
+                 escondidos: señalaba un lugar vacío (UX 28/09, H-08). -->
+            <strong>Esta plata NO está en los egresos del balance.</strong>
             Los egresos son plata que salió de la caja; esto es mercadería que se fue sin
             venderse, valuada a lo que te costó. Sumarlas sería contar dos veces lo mismo,
             porque esa mercadería ya se pagó cuando se compró.
@@ -300,7 +320,7 @@
       if (moduloActivo('productos')) {
         document.getElementById('vista-producto').classList.remove('d-none')
         // Las pérdidas salen del stock: sin productos no hay mercadería que perder.
-        document.getElementById('vista-perdidas').classList.remove('d-none')
+        document.getElementById('grupo-perdidas').classList.remove('d-none')
       }
       if (moduloActivo('servicios')) document.getElementById('vista-servicio').classList.remove('d-none')
 
@@ -331,6 +351,10 @@
       const errorDiv = document.getElementById('error-periodo')
       errorDiv.classList.add('d-none')
 
+      // Mientras se arma el reporte nuevo, los botones no bajan nada: si
+      // quedaran andando, bajarían el reporte de antes sin que se note.
+      habilitarDescargas(false)
+
       const params = paramsDelPeriodo()
       if (!params) {
         errorDiv.textContent = 'Elegí las dos fechas y apretá Ver.'
@@ -354,8 +378,13 @@
       pintar(datos)
       actualizarDescargas(params)
 
-      if (VISTAS_AGRUPADAS.includes(vistaElegida)) await cargarAgrupado(params)
-      if (vistaElegida === 'perdidas') await cargarPerdidas(params)
+      // Cada vista dice si su tabla quedó con algo. Con la tabla vacía no se
+      // ofrece la descarga: bajaría un archivo sin una fila.
+      let hayFilas = datos.movimientos.length > 0
+      if (VISTAS_AGRUPADAS.includes(vistaElegida)) hayFilas = await cargarAgrupado(params)
+      if (vistaElegida === 'perdidas') hayFilas = await cargarPerdidas(params)
+
+      habilitarDescargas(hayFilas)
     }
 
     // Los dos botones apuntan al reporte que se está mirando, con su período.
@@ -371,8 +400,27 @@
         return '/reportes/descargar?' + p.toString()
       }
 
-      document.getElementById('btn-csv').href = armar('csv')
-      document.getElementById('btn-pdf').href = armar('pdf')
+      // Se guardan aparte y recién se ponen en el href al habilitarlos.
+      document.getElementById('btn-csv').dataset.destino = armar('csv')
+      document.getElementById('btn-pdf').dataset.destino = armar('pdf')
+    }
+
+    // Un link sin href no se puede apretar, así que apagarlo es sacárselo.
+    function habilitarDescargas(si) {
+      ['btn-csv', 'btn-pdf'].forEach(id => {
+        const boton = document.getElementById(id)
+        if (si && boton.dataset.destino) {
+          boton.href = boton.dataset.destino
+          boton.classList.remove('apagado')
+          boton.removeAttribute('aria-disabled')
+          boton.removeAttribute('title')
+        } else {
+          boton.removeAttribute('href')
+          boton.classList.add('apagado')
+          boton.setAttribute('aria-disabled', 'true')
+          boton.title = 'No hay nada para descargar en este período'
+        }
+      })
     }
 
     // Lo que se fue en mercadería, valuado a lo que costó (HU-53).
@@ -382,10 +430,12 @@
     // sería contar dos veces lo mismo, porque ya se pagó al comprarla. El
     // aviso de arriba del bloque lo dice, porque es lo primero que alguien se
     // pregunta al ver dos números grandes en la misma pantalla.
+    //
+    // Devuelve si quedó algo en la tabla, para saber si ofrecer la descarga.
     async function cargarPerdidas(params) {
       const res = await fetch('/reportes/perdidas?' + params.toString())
       const datos = await res.json()
-      if (!res.ok) return
+      if (!res.ok) return false
 
       const porMotivo = document.getElementById('tabla-perdidas-motivo')
       const porProducto = document.getElementById('tabla-perdidas-producto')
@@ -396,7 +446,7 @@
           El módulo de <strong>${esc(datos.modulo_apagado)}</strong> no está activo en tu empresa.
         </div></td></tr>`
         porProducto.innerHTML = ''
-        return
+        return false
       }
 
       const t = datos.totales
@@ -425,7 +475,7 @@
           No se perdió nada en este período. Buena noticia.
         </div></td></tr>`
         porProducto.innerHTML = `<tr><td colspan="2"><div class="tabla-vacia">—</div></td></tr>`
-        return
+        return false
       }
 
       porMotivo.innerHTML = datos.motivos.map(m => `
@@ -450,6 +500,8 @@
           <td class="text-end fw-bold ${p.costo_referencia === null ? 'text-muted' : 'negativo'}">${
             p.costo_referencia === null ? 'No se sabe' : formatMoneda(p.valorizado)}</td>
         </tr>`).join('')
+
+      return true
     }
 
     // Las cantidades se guardan con 2 decimales, pero "5,00 kg" cuando son 5
@@ -460,15 +512,20 @@
     }
 
     // La tabla agrupada, para las vistas por categoría, producto y servicio.
+    // Devuelve si quedó algo en la tabla, para saber si ofrecer la descarga.
     async function cargarAgrupado(params) {
       const pedido = new URLSearchParams(params)
       pedido.set('por', vistaElegida)
 
       const res = await fetch('/reportes/agrupado?' + pedido.toString())
       const datos = await res.json()
-      if (!res.ok) return
+      if (!res.ok) return false
 
       document.getElementById('th-agrupador').textContent = AGRUPADOR[vistaElegida]
+
+      const aviso = document.getElementById('aviso-agrupado')
+      aviso.classList.toggle('d-none', !datos.aviso)
+      aviso.innerHTML = datos.aviso ? `<i class="fa-solid fa-circle-info me-1"></i>${esc(datos.aviso)}` : ''
 
       const tbody = document.getElementById('tabla-agrupado')
 
@@ -479,14 +536,14 @@
         tbody.innerHTML = `<tr><td colspan="4"><div class="tabla-vacia">
           El módulo de <strong>${esc(datos.modulo_apagado)}</strong> no está activo en tu empresa.
         </div></td></tr>`
-        return
+        return false
       }
 
       if (!datos.filas.length) {
         tbody.innerHTML = `<tr><td colspan="4"><div class="tabla-vacia">
           Todavía no hay nada cargado para agrupar acá.
         </div></td></tr>`
-        return
+        return false
       }
 
       tbody.innerHTML = datos.filas.map(f => `
@@ -499,6 +556,10 @@
           <td class="text-end col-detalle">${f.egresos ? formatMoneda(f.egresos) : '<span class="chico-gris">—</span>'}</td>
           <td class="text-end fw-bold ${f.resultado > 0 ? 'positivo' : f.resultado < 0 ? 'negativo' : 'text-muted'}">${formatMoneda(f.resultado)}</td>
         </tr>`).join('')
+
+      // Las categorías y los servicios aparecen aunque estén en cero, a
+      // propósito. Pero si NINGUNA fila movió nada, no hay qué descargar.
+      return datos.filas.some(f => f.movio)
     }
 
     function pintar(datos) {
@@ -597,6 +658,7 @@
 
         document.getElementById('caja-movimientos').classList.toggle('d-none', !esListado)
         document.getElementById('caja-agrupado').classList.toggle('d-none', !esAgrupado)
+        if (!esAgrupado) document.getElementById('aviso-agrupado').classList.add('d-none')
         document.getElementById('caja-perdidas').classList.toggle('d-none', !esPerdidas)
 
         // Los tres casilleros del período no aplican a las pérdidas: esa plata

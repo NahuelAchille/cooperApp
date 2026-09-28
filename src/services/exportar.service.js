@@ -135,7 +135,9 @@ const armarCSV = ({ titulo, empresa, periodo, totales = [], avisos = [], encabez
   avisos.forEach(a => lineas.push(celda(a)))
 
   lineas.push('')   // una fila en blanco separa el encabezado de la tabla
-  lineas.push(encabezado.map(celda).join(SEPARADOR))
+  // Sin encabezado cuando el reporte trae varios bloques, cada uno con el suyo
+  // adentro de las filas (lo que se perdio).
+  if (encabezado) lineas.push(encabezado.map(celda).join(SEPARADOR))
   filas.forEach(f => lineas.push(f.map(celda).join(SEPARADOR)))
 
   return '﻿' + lineas.join('\r\n')

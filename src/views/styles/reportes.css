@@ -124,6 +124,21 @@ body {
   color: var(--verde-primario);
 }
 
+/* Debajo de las vistas que son la misma plata (UX 28/09, H-07) */
+.nota-vista { font-size: 0.78rem; color: #7d8c84; margin: 6px 0 0; }
+
+/* Las pérdidas, aparte: no son esa plata */
+.vista-aparte {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px dashed #d8e6de;
+}
+.rotulo-aparte { font-size: 0.82rem; font-weight: 600; color: #7d8c84; }
+.vista-aparte .btn-vista { flex: 0 1 auto; }
+
 /* ===== LA TABLA AGRUPADA ===== */
 .tabla-agrupada td { vertical-align: middle; }
 .agr-nombre { font-weight: 600; }
@@ -240,6 +255,14 @@ body {
   background: #f4faf7;
   border-color: var(--verde-secundario);
   color: var(--verde-oscuro);
+}
+/* Reporte vacío, o todavía armándose: no hay nada que bajar */
+.btn-descargar.apagado,
+.btn-descargar.apagado:hover {
+  background: #f5f7f6;
+  border-color: #e3e9e6;
+  color: #aab5af;
+  cursor: not-allowed;
 }
 
 /* ===== LOS TOTALES ===== */
