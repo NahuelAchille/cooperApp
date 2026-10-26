@@ -472,6 +472,31 @@ INSERT INTO productos (nombre, descripcion, unidad_medida, stock_minimo, id_cate
   ('Amoladora angular',      NULL,                   'unidad', 0,   @cat_herramientas, @sub_electricas, @empresa, 1,     NULL, NULL),
   ('Pintura antióxido',      'Balde de 4 litros',    'litro',  8,   @cat_materia,      NULL,            @empresa, 1, 15900.00, NOW());
 
+-- El precio de venta de una unidad: lo que aparece ya escrito al registrar
+-- una venta. Es opcional, y "Bolsa de pan", "Retazos surtidos" y "Amoladora
+-- angular" van SIN precio a propósito, para ver en la demo que la venta igual
+-- se puede hacer escribiéndolo a mano.
+UPDATE productos p
+JOIN empresas e ON e.id_empresa = p.id_empresa
+JOIN (
+  SELECT 'contacto@laesperanza.com.ar' AS email, 'Queso cremoso'          AS nombre, 12500.00 AS precio UNION ALL
+  SELECT 'contacto@laesperanza.com.ar',          'Jamón cocido',                     17000.00          UNION ALL
+  SELECT 'contacto@laesperanza.com.ar',          'Fideos secos 500g',                 1400.00          UNION ALL
+  SELECT 'contacto@laesperanza.com.ar',          'Arroz largo fino',                  2600.00          UNION ALL
+  SELECT 'contacto@laesperanza.com.ar',          'Milanesas de soja',                 9200.00          UNION ALL
+  SELECT 'contacto@laesperanza.com.ar',          'Agua mineral 2L',                   1800.00          UNION ALL
+  SELECT 'contacto@elamanecer.com.ar',           'Tela algodón blanca',               4500.00          UNION ALL
+  SELECT 'contacto@elamanecer.com.ar',           'Tela algodón azul',                 4700.00          UNION ALL
+  SELECT 'contacto@elamanecer.com.ar',           'Remera lisa talle M',               9500.00          UNION ALL
+  SELECT 'contacto@elamanecer.com.ar',           'Ambo de trabajo',                  38000.00          UNION ALL
+  SELECT 'contacto@metaloeste.com.ar',           'Chapa galvanizada N°20',           32000.00          UNION ALL
+  SELECT 'contacto@metaloeste.com.ar',           'Caño estructural 40x40',            4300.00          UNION ALL
+  SELECT 'contacto@metaloeste.com.ar',           'Electrodo 2,5 mm',                 24500.00          UNION ALL
+  SELECT 'contacto@metaloeste.com.ar',           'Pintura antióxido',                21000.00
+) precios ON precios.email = e.email AND precios.nombre = p.nombre
+SET p.precio_venta = precios.precio
+WHERE p.es_servicio = 0;
+
 -- =============================================================================
 -- CATÁLOGO DE SERVICIOS
 -- =============================================================================
@@ -585,6 +610,36 @@ INSERT INTO motivos_stock (nombre, efecto_stock, efecto_dinero, id_empresa, acti
   ('Promoción sin cargo','salida',  'ninguno', (SELECT id_empresa FROM empresas WHERE email = 'contacto@laesperanza.com.ar'), 0),
   ('Devolución a cliente','entrada','ninguno', (SELECT id_empresa FROM empresas WHERE email = 'contacto@elamanecer.com.ar'),  1),
   ('Recorte de producción','salida','ninguno', (SELECT id_empresa FROM empresas WHERE email = 'contacto@metaloeste.com.ar'),  1);
+
+-- En qué tipo de movimiento de dinero cae la plata de cada VENTA y de cada
+-- COMPRA. Con esto configurado, "Registrar una venta" y "Registrar una compra"
+-- no preguntan ninguna categoría: el motivo ya sabe dónde va la plata.
+UPDATE motivos_stock ms
+JOIN empresas e               ON e.id_empresa = ms.id_empresa
+JOIN categorias_movimiento c  ON c.id_empresa = e.id_empresa AND c.nombre = 'Ventas'
+JOIN tipos_movimiento t       ON t.id_categoria = c.id_categoria
+                             AND t.nombre = CASE e.email WHEN 'contacto@metaloeste.com.ar' THEN 'Venta de piezas'
+                                                         ELSE 'Venta minorista' END
+SET ms.id_tipo = t.id_tipo
+WHERE ms.nombre = 'Venta';
+
+-- Las compras van a "Insumos › Compra de mercadería", igual que en una empresa
+-- recién aprobada (config/datos-iniciales.js). Ese tipo no existía en las tres
+-- empresas de prueba, que tenían sus insumos por nombre (Harina, Tela, Chapa):
+-- se agrega acá para no tener que elegir uno de esos, que se lee raro cuando lo
+-- que se compró es otra cosa.
+INSERT INTO tipos_movimiento (nombre, id_categoria)
+SELECT 'Compra de mercadería', c.id_categoria
+FROM categorias_movimiento c
+JOIN empresas e ON e.id_empresa = c.id_empresa
+WHERE c.nombre = 'Insumos'
+  AND e.email IN ('contacto@laesperanza.com.ar', 'contacto@elamanecer.com.ar', 'contacto@metaloeste.com.ar');
+
+UPDATE motivos_stock ms
+JOIN categorias_movimiento c ON c.id_empresa = ms.id_empresa AND c.nombre = 'Insumos'
+JOIN tipos_movimiento t      ON t.id_categoria = c.id_categoria AND t.nombre = 'Compra de mercadería'
+SET ms.id_tipo = t.id_tipo
+WHERE ms.nombre = 'Compra';
 
 -- =============================================================================
 -- MOVIMIENTOS DE STOCK

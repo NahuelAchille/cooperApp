@@ -103,6 +103,11 @@ body {
 .efecto-salida  { background-color: #fde8e8; color: var(--danger); }
 .efecto-ninguno { background-color: #eef1f0; color: #7a8a82; }
 
+/* A qué categoría va la plata del motivo, debajo del ingreso o el egreso.
+   Si falta, va en ámbar: sin eso, las ventas no se pueden registrar. */
+.destino-plata { font-size: 0.76rem; color: #6c8a7a; margin-top: 4px; }
+.destino-plata.falta { color: #8a6d1f; font-weight: 600; }
+
 .badge-estado {
   font-size: 0.72rem;
   padding: 3px 9px;

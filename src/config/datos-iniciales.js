@@ -39,9 +39,15 @@ const CATEGORIAS_INICIALES = [
 //     partido en dos (positivo y negativo) porque un mismo motivo no puede a
 //     veces sumar y a veces restar: el efecto es fijo, si no el historial
 //     queda imposible de interpretar.
+//
+// Compra y Venta traen ademas el tipo de dinero donde cae su plata, buscado
+// por nombre entre las categorias de arriba (que se cargan antes). Es lo que
+// deja registrar una venta en un solo paso, sin elegir categoria.
 const MOTIVOS_STOCK_INICIALES = [
-  { nombre: 'Compra',           efecto_stock: 'entrada', efecto_dinero: 'egreso'  },
-  { nombre: 'Venta',            efecto_stock: 'salida',  efecto_dinero: 'ingreso' },
+  { nombre: 'Compra',           efecto_stock: 'entrada', efecto_dinero: 'egreso',
+    tipo: { categoria: 'Insumos', nombre: 'Compra de mercadería' } },
+  { nombre: 'Venta',            efecto_stock: 'salida',  efecto_dinero: 'ingreso',
+    tipo: { categoria: 'Ventas', nombre: 'Venta minorista' } },
   { nombre: 'Consumo interno',  efecto_stock: 'salida',  efecto_dinero: 'ninguno' },
   { nombre: 'Pérdida',          efecto_stock: 'salida',  efecto_dinero: 'ninguno' },
   { nombre: 'Robo',             efecto_stock: 'salida',  efecto_dinero: 'ninguno' },

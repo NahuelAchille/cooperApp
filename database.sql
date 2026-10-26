@@ -302,6 +302,17 @@ CREATE TABLE productos (
   -- es un costo malo, y la fecha lo deja a la vista sin tener que explicarlo.
   costo_referencia         DECIMAL(12,2) NULL,
   costo_actualizado_en     DATETIME NULL,
+  -- A cuanto se vende una unidad. Es lo que aparece ya escrito al registrar
+  -- una venta, para no tener que saberse los precios de memoria.
+  --
+  -- Es OPCIONAL y NULL significa "todavia no tiene precio": la venta lo pide
+  -- a mano. Y es una SUGERENCIA, no una regla: al vender se puede cambiar (un
+  -- descuento, un precio por cantidad), y lo que queda en el movimiento de
+  -- dinero es lo que se cobro de verdad, no este numero.
+  --
+  -- No es el costo de arriba: aquel es lo que te cuesta a vos, este es lo que
+  -- le cobras al cliente. Un servicio no lleva ninguno de los dos.
+  precio_venta             DECIMAL(12,2) NULL,
   activo                   TINYINT(1) DEFAULT 1,
   creado_en                DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
   FOREIGN KEY (id_categoria_producto)    REFERENCES categorias_producto(id_categoria_producto),
@@ -336,8 +347,18 @@ CREATE TABLE motivos_stock (
   nombre          VARCHAR(80) NOT NULL,
   efecto_stock    ENUM('entrada', 'salida') NOT NULL,
   efecto_dinero   ENUM('ingreso', 'egreso', 'ninguno') NOT NULL DEFAULT 'ninguno',
+  -- En que tipo de movimiento de dinero cae la plata de este motivo (por
+  -- ejemplo, Venta -> Ventas > Venta minorista). Se configura UNA vez aca, y
+  -- por eso al registrar una venta no hay que elegir ninguna categoria: era la
+  -- segunda clasificacion de la misma venta, y la que trababa a la gente.
+  --
+  -- Solo tiene sentido si el motivo mueve plata; si no, va en NULL. Su
+  -- naturaleza (ingreso o egreso) tiene que coincidir con efecto_dinero: eso
+  -- lo controla el servidor.
+  id_tipo         INT NULL,
   id_empresa      INT NOT NULL,
   activo          TINYINT(1) DEFAULT 1,
+  FOREIGN KEY (id_tipo)    REFERENCES tipos_movimiento(id_tipo),
   FOREIGN KEY (id_empresa) REFERENCES empresas(id_empresa),
   UNIQUE (id_empresa, nombre)
 );
@@ -362,6 +383,10 @@ CREATE TABLE motivos_stock (
 --
 -- El vinculo es lo que evita cargar la misma venta dos veces: con la columna
 -- ocupada, el sistema no vuelve a ofrecerlo.
+--
+-- Desde el 25/10/2026 las VENTAS no pasan por la oferta: "Registrar una
+-- venta" crea los dos movimientos juntos, en la misma transaccion, y el de
+-- stock nace ya con esta columna completa.
 CREATE TABLE movimientos_stock (
   id_movimiento_stock INT AUTO_INCREMENT PRIMARY KEY,
   id_producto         INT NOT NULL,

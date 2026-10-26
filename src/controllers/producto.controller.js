@@ -62,7 +62,10 @@ const limpiarStockMinimo = (valor) => {
 // de sumarlo como $0, asi que la distincion tiene que llegar hasta la base.
 //
 // Un servicio no lleva costo: no se pierde mercaderia de algo que no se guarda.
-const limpiarCosto = (valor, es_servicio) => {
+//
+// El precio de venta usa la misma validacion (ver limpiarPrecio): cambian sólo
+// las palabras de los mensajes, por eso van como parametro.
+const limpiarImporte = (valor, es_servicio, palabras) => {
 
   if (es_servicio) return { valor: null }
 
@@ -70,12 +73,12 @@ const limpiarCosto = (valor, es_servicio) => {
 
   // Un booleano se convierte en 1 o en 0: hay que descartarlo antes.
   if (typeof valor === 'boolean') {
-    return { error: 'El costo tiene que ser un número' }
+    return { error: `${palabras.El} tiene que ser un número` }
   }
 
   const numero = Number(valor)
   if (!Number.isFinite(numero)) {
-    return { error: 'El costo tiene que ser un número' }
+    return { error: `${palabras.El} tiene que ser un número` }
   }
 
   // Se redondea ANTES de comparar, igual que el monto y el stock minimo: si no,
@@ -83,19 +86,33 @@ const limpiarCosto = (valor, es_servicio) => {
   const redondeado = Math.round(numero * 100) / 100
 
   if (redondeado < 0) {
-    return { error: 'El costo no puede ser negativo' }
+    return { error: `${palabras.El} no puede ser negativo` }
   }
-  // Un costo de 0 escrito a mano se rechaza: si no se sabe, el campo va vacio.
-  // Guardar 0 diria que perder eso no cuesta nada, y el reporte lo sumaria.
+  // Un 0 escrito a mano se rechaza: si no se sabe, el campo va vacio. Guardar
+  // 0 diria que perder eso no cuesta nada (y el reporte lo sumaria), o que se
+  // regala.
   if (redondeado === 0) {
-    return { error: 'Si no sabés cuánto cuesta, dejá el campo vacío en vez de poner 0' }
+    return { error: palabras.siEsCero }
   }
   if (redondeado > 9999999999.99) {  // no entra en DECIMAL(12,2)
-    return { error: 'El costo es demasiado grande' }
+    return { error: `${palabras.El} es demasiado grande` }
   }
 
   return { valor: redondeado }
 }
+
+const limpiarCosto = (valor, es_servicio) => limpiarImporte(valor, es_servicio, {
+  El: 'El costo',
+  siEsCero: 'Si no sabés cuánto cuesta, dejá el campo vacío en vez de poner 0'
+})
+
+// A cuanto se vende una unidad. Opcional: vacio es "todavia no tiene precio" y
+// la venta lo pide a mano. Un servicio no lleva: no pasa por el stock, y su
+// plata se carga desde Movimientos.
+const limpiarPrecio = (valor, es_servicio) => limpiarImporte(valor, es_servicio, {
+  El: 'El precio de venta',
+  siEsCero: 'Si todavía no tiene precio, dejá el campo vacío en vez de poner 0'
+})
 
 // Como se mide lo que se esta cargando. Es lo unico que separa de verdad a un
 // producto de un servicio, y por eso esta escrito en un solo lugar.
@@ -242,6 +259,11 @@ exports.crearProducto = async (req, res) => {
       return res.status(400).json({ error: costo.error })
     }
 
+    const precio = limpiarPrecio(req.body.precio_venta, es_servicio)
+    if (precio.error) {
+      return res.status(400).json({ error: precio.error })
+    }
+
     const clasificacion = await validarClasificacion(req.body, id_empresa, es_servicio)
     if (clasificacion.error) {
       return res.status(400).json({ error: clasificacion.error })
@@ -254,7 +276,8 @@ exports.crearProducto = async (req, res) => {
       ...clasificacion,
       id_empresa,
       es_servicio,
-      costo_referencia: costo.valor
+      costo_referencia: costo.valor,
+      precio_venta: precio.valor
     })
 
     res.status(201).json({ id_producto, message: `${r.Uno} creado correctamente` })
@@ -301,6 +324,11 @@ exports.actualizarProducto = async (req, res) => {
       return res.status(400).json({ error: costo.error })
     }
 
+    const precio = limpiarPrecio(req.body.precio_venta, es_servicio)
+    if (precio.error) {
+      return res.status(400).json({ error: precio.error })
+    }
+
     const clasificacion = await validarClasificacion(req.body, id_empresa, es_servicio)
     if (clasificacion.error) {
       return res.status(400).json({ error: clasificacion.error })
@@ -318,7 +346,8 @@ exports.actualizarProducto = async (req, res) => {
       ...medida,
       ...clasificacion,
       costo_referencia: costo.valor,
-      costoCambio
+      costoCambio,
+      precio_venta: precio.valor
     })
 
     res.json({ message: `${r.Uno} actualizado correctamente` })

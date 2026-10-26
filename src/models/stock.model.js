@@ -129,7 +129,7 @@ const findMovimientos = async (id_empresa, filtros = {}) => {
            m.anulado AS dinero_anulado,
            p.id_producto, p.nombre AS producto_nombre, p.unidad_medida,
            mo.id_motivo_stock, mo.nombre AS motivo_nombre,
-           mo.efecto_stock, mo.efecto_dinero,
+           mo.efecto_stock, mo.efecto_dinero, mo.id_tipo AS motivo_id_tipo,
            u.nombre AS usuario_nombre, u.apellido AS usuario_apellido
     FROM movimientos_stock ms
     JOIN productos p      ON p.id_producto = ms.id_producto
@@ -204,14 +204,18 @@ const conProductoTrabado = async (id_producto, id_empresa, decidir) => {
   }
 }
 
+// id_movimiento viene cuando el movimiento de dinero se crea en el mismo paso
+// (una venta): asi nacen atados, sin un momento en que el stock este cargado y
+// la plata no.
 const createMovimiento = async ({ id_producto, id_motivo_stock, cantidad,
-                                  descripcion, fecha, id_empresa, id_usuario }, ejecutor = db) => {
+                                  descripcion, fecha, id_empresa, id_usuario,
+                                  id_movimiento = null }, ejecutor = db) => {
 
   const [result] = await ejecutor.query(`
     INSERT INTO movimientos_stock
-      (id_producto, id_motivo_stock, cantidad, descripcion, fecha, id_empresa, id_usuario)
-    VALUES (?, ?, ?, ?, ?, ?, ?)
-  `, [id_producto, id_motivo_stock, cantidad, descripcion, fecha, id_empresa, id_usuario])
+      (id_producto, id_motivo_stock, cantidad, descripcion, fecha, id_empresa, id_usuario, id_movimiento)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+  `, [id_producto, id_motivo_stock, cantidad, descripcion, fecha, id_empresa, id_usuario, id_movimiento])
 
   return result.insertId
 }

@@ -122,6 +122,14 @@
               <div class="form-text">Si no hay compra ni venta de por medio, dejá "Ninguno".</div>
             </div>
 
+            <!-- Sólo si el motivo mueve plata. Se elige UNA vez acá, y por eso
+                 al registrar una venta no hay que elegir ninguna categoría. -->
+            <div class="mb-3 d-none" id="bloque-tipo">
+              <label class="form-label">¿En qué categoría de movimientos va esa plata?</label>
+              <select class="form-select" name="id_tipo" id="select-tipo"></select>
+              <div class="form-text" id="ayuda-tipo"></div>
+            </div>
+
             <div class="resumen-motivo" id="resumen-motivo"></div>
 
             <div id="motivo-error" class="text-danger small mt-2 d-none"></div>
@@ -227,6 +235,7 @@
             <span class="badge-efecto ${m.efecto_dinero === 'ingreso' ? 'efecto-entrada' : m.efecto_dinero === 'egreso' ? 'efecto-salida' : 'efecto-ninguno'}">
               ${TEXTO_DINERO[m.efecto_dinero]}
             </span>
+            ${destinoDeLaPlata(m)}
           </td>
           <td><span class="badge-estado ${m.activo ? 'badge-activo' : 'badge-inactivo'}">${m.activo ? 'Activo' : 'De baja'}</span></td>
           <td class="text-end">
@@ -241,7 +250,68 @@
       window.motivosCargados = motivos
     }
 
+    // Debajo del ingreso o el egreso, a qué categoría va esa plata. Si falta,
+    // se marca: un motivo de venta sin categoría no deja registrar ventas.
+    function destinoDeLaPlata(m) {
+      if (m.efecto_dinero === 'ninguno') return ''
+      if (!m.id_tipo) {
+        return '<div class="destino-plata falta"><i class="fa-solid fa-triangle-exclamation me-1"></i>Falta elegir la categoría</div>'
+      }
+      if (!m.tipo_activo) {
+        return `<div class="destino-plata falta"><i class="fa-solid fa-triangle-exclamation me-1"></i>Va a ${esc(m.tipo_categoria_nombre)} › ${esc(m.tipo_nombre)}, que está dada de baja</div>`
+      }
+      return `<div class="destino-plata">Va a ${esc(m.tipo_categoria_nombre)} › ${esc(m.tipo_nombre)}</div>`
+    }
+
     // ================= FORMULARIO =================
+
+    let tiposDeMovimiento = []   // las categorías de dinero activas, aplanadas
+
+    // Mismo árbol que la pantalla de movimientos, aplanado a "Categoría › Tipo".
+    async function cargarTiposDeMovimiento() {
+      if (tiposDeMovimiento.length) return
+
+      const categorias = await fetch('/categorias?soloActivas=true').then(r => r.ok ? r.json() : [])
+      const porCategoria = await Promise.all(categorias.map(async (c) => {
+        const tipos = await fetch(`/categorias/${c.id_categoria}/tipos`).then(r => r.ok ? r.json() : [])
+        return tipos.filter(t => t.activo).map(t => ({
+          id_tipo: t.id_tipo,
+          nombre: t.nombre,
+          categoria_nombre: c.nombre,
+          naturaleza: c.naturaleza
+        }))
+      }))
+
+      tiposDeMovimiento = porCategoria.flat()
+    }
+
+    // Muestra el desplegable de la categoría sólo si el motivo mueve plata, y
+    // sólo con las categorías de esa naturaleza: una venta no puede caer en
+    // un egreso.
+    function actualizarTipos(idElegido) {
+      const dinero = document.getElementById('select-dinero').value
+      const bloque = document.getElementById('bloque-tipo')
+      const select = document.getElementById('select-tipo')
+
+      bloque.classList.toggle('d-none', dinero === 'ninguno')
+      if (dinero === 'ninguno') {
+        select.innerHTML = ''
+        return
+      }
+
+      const anterior = idElegido !== undefined ? idElegido : select.value
+      const opciones = tiposDeMovimiento.filter(t => t.naturaleza === dinero)
+
+      select.innerHTML = '<option value="">Elegí una categoría</option>' +
+        opciones.map(t => `<option value="${t.id_tipo}">${esc(t.categoria_nombre)} › ${esc(t.nombre)}</option>`).join('')
+      if (anterior && opciones.some(t => String(t.id_tipo) === String(anterior))) select.value = anterior
+
+      document.getElementById('ayuda-tipo').textContent = opciones.length
+        ? (dinero === 'ingreso'
+            ? 'Así, al registrar una venta, la plata va directo ahí y no hay que elegirla cada vez.'
+            : 'Así, la plata de este motivo va directo ahí y no hay que elegirla cada vez.')
+        : `No hay categorías de ${dinero}s activas. Creala en Categorías de movimientos.`
+    }
 
     // Traduce los dos desplegables a una frase, que es como la persona lo
     // piensa: "cuando pase esto, va a suceder aquello".
@@ -267,7 +337,7 @@
     }
 
     document.getElementById('select-stock').addEventListener('change', actualizarResumen)
-    document.getElementById('select-dinero').addEventListener('change', actualizarResumen)
+    document.getElementById('select-dinero').addEventListener('change', () => { actualizarResumen(); actualizarTipos() })
 
     document.getElementById('btn-nuevo').addEventListener('click', () => abrirModalMotivo(null))
 
@@ -282,7 +352,9 @@
       }
     })
 
-    function abrirModalMotivo(motivo) {
+    async function abrirModalMotivo(motivo) {
+      await cargarTiposDeMovimiento()
+
       const form = document.getElementById('form-motivo')
       form.reset()
       document.getElementById('motivo-error').classList.add('d-none')
@@ -300,6 +372,7 @@
         form.efecto_dinero.value = motivo.efecto_dinero
       }
 
+      actualizarTipos(esEdicion ? motivo.id_tipo : '')
       actualizarResumen()
       new bootstrap.Modal(document.getElementById('modalMotivo')).show()
     }
@@ -330,7 +403,8 @@
         body: JSON.stringify({
           nombre: datos.nombre,
           efecto_stock: datos.efecto_stock,
-          efecto_dinero: datos.efecto_dinero
+          efecto_dinero: datos.efecto_dinero,
+          id_tipo: datos.id_tipo || null
         })
       })
       const resultado = await res.json()

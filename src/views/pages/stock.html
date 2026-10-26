@@ -32,8 +32,19 @@
       <a class="btn btn-secundario d-none" id="link-motivos" href="/pages/configuracion-motivos-stock.html">
         <i class="fa-solid fa-right-left me-2"></i>Motivos
       </a>
-      <button class="btn btn-nuevo" id="btn-nuevo">
-        <i class="fa-solid fa-right-left me-2"></i>Registrar entrada o salida
+      <!-- "Otra": con la venta y la compra afuera, este formulario queda para
+           el resto (pérdidas, consumo, ajustes), y el nombre lo dice. -->
+      <button class="btn btn-secundario" id="btn-nuevo">
+        <i class="fa-solid fa-right-left me-2"></i>Otra entrada o salida
+      </button>
+      <!-- La venta y la compra tienen botón propio: son lo que más se hace, y
+           con el formulario genérico pedían dos clasificaciones. La venta es
+           el destacado. -->
+      <button class="btn btn-secundario" id="btn-comprar">
+        <i class="fa-solid fa-truck-ramp-box me-2"></i>Registrar una compra
+      </button>
+      <button class="btn btn-nuevo" id="btn-vender">
+        <i class="fa-solid fa-cart-shopping me-2"></i>Registrar una venta
       </button>
     </div>
   </div>
@@ -205,6 +216,9 @@
               <label class="form-label">Motivo *</label>
               <select class="form-select" name="id_motivo_stock" id="select-motivo" required></select>
               <div class="form-text" id="ayuda-motivo">El motivo define si la cantidad suma o resta.</div>
+              <div class="form-text d-none" id="ayuda-sin-ventas">
+                <i class="fa-solid fa-cart-shopping me-1"></i>Las ventas y las compras no están en esta lista: tienen sus propios botones, <strong>Registrar una venta</strong> y <strong>Registrar una compra</strong>, que cargan también la plata.
+              </div>
             </div>
 
             <div class="row g-2 mb-3">
@@ -232,6 +246,97 @@
           <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
           <button type="button" id="btn-guardar-mov" class="btn fw-bold px-4" style="background-color:#2d7a4f;color:white;">
             <i class="fa-solid fa-floppy-disk me-2"></i>Registrar
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+
+  <!-- Modal: registrar una VENTA o una COMPRA en un solo paso.
+       Es el mismo formulario para las dos, porque son la misma operación al
+       revés: cambian las palabras, qué precio aparece escrito y la casilla del
+       costo, que es sólo de la compra. Los textos los pone abrirModalOperacion().
+       Pide sólo lo que la persona sabe en el mostrador: qué, cuánto y a
+       cuánto. El motivo y la categoría de la plata ya están decididos de antes
+       (los configura el administrador una vez, en Motivos de stock). -->
+  <div class="modal fade" id="modalOperacion" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title fw-bold" id="op-titulo"></h5>
+          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+
+          <!-- Si falta configurar algo, se dice acá arriba y no se deja guardar -->
+          <div class="alert alert-warning py-2 small d-none" id="op-falta-config"></div>
+
+          <form id="form-operacion" novalidate>
+
+            <div class="mb-3">
+              <label class="form-label" id="op-pregunta-producto"></label>
+              <select class="form-select" name="id_producto" id="op-producto" required></select>
+            </div>
+
+            <!-- Sólo aparece si la empresa tiene más de un motivo de esta clase -->
+            <div class="mb-3 d-none" id="op-bloque-motivo">
+              <label class="form-label" id="op-pregunta-motivo"></label>
+              <select class="form-select" name="id_motivo_stock" id="op-motivo"></select>
+            </div>
+
+            <div class="row g-2 mb-1">
+              <div class="col-6">
+                <label class="form-label">Cantidad *</label>
+                <div class="input-group">
+                  <input type="number" class="form-control" name="cantidad" min="0.01" step="0.01" placeholder="0" required>
+                  <span class="input-group-text d-none" id="op-unidad"></span>
+                </div>
+              </div>
+              <div class="col-6">
+                <label class="form-label" id="op-pregunta-precio"></label>
+                <div class="input-group">
+                  <span class="input-group-text">$</span>
+                  <input type="number" class="form-control" name="precio_unitario" min="0.01" step="0.01" placeholder="0,00" required>
+                </div>
+              </div>
+            </div>
+            <div class="form-text mb-3" id="op-ayuda-precio"></div>
+
+            <!-- Sólo en la compra, y sólo si lo pagado no coincide con el costo
+                 cargado. Viene tildada: con inflación, lo último que se pagó es
+                 el costo real, y así el reporte de pérdidas no queda atrasado
+                 sin que nadie tenga que acordarse de editar el producto. -->
+            <div class="form-check mb-3 d-none" id="op-bloque-costo">
+              <input class="form-check-input" type="checkbox" id="op-actualizar-costo" checked>
+              <label class="form-check-label small" for="op-actualizar-costo" id="op-texto-costo"></label>
+            </div>
+
+            <div class="total-venta mb-3">
+              <span id="op-texto-total"></span>
+              <strong id="op-total">$ 0,00</strong>
+            </div>
+
+            <div class="row g-2 mb-3">
+              <div class="col-12 col-sm-5">
+                <label class="form-label">Fecha *</label>
+                <input type="date" class="form-control" name="fecha" required>
+              </div>
+              <div class="col-12 col-sm-7">
+                <label class="form-label">Detalle</label>
+                <input type="text" class="form-control" name="descripcion" maxlength="200" id="op-detalle">
+              </div>
+            </div>
+
+            <div class="resumen-movimiento" id="op-resumen"></div>
+
+            <div id="op-error" class="text-danger small mt-2 d-none"></div>
+          </form>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
+          <button type="button" id="btn-guardar-op" class="btn fw-bold px-4" style="background-color:#2d7a4f;color:white;">
+            <i class="fa-solid fa-floppy-disk me-2"></i><span id="op-texto-boton"></span>
           </button>
         </div>
       </div>
@@ -385,6 +490,12 @@
         categorias.map(c => `<option value="${c.id_categoria_producto}">${esc(c.nombre)}${c.activo ? '' : ' (de baja)'}</option>`).join('')
 
       cargarExistencias()
+
+      // Atajos desde el tablero y desde Movimientos: stock.html?vender=1 abre
+      // la venta directo, y ?comprar=1 la compra.
+      const atajo = new URLSearchParams(location.search)
+      if (atajo.get('vender')) abrirModalOperacion('venta', null)
+      else if (atajo.get('comprar')) abrirModalOperacion('compra', null)
     }
 
     function armarConsulta() {
@@ -479,7 +590,13 @@
               <button class="btn-mini" data-accion="historial" data-id="${item.id_producto}" title="Ver el historial de este producto">
                 <i class="fa-solid fa-clock-rotate-left"></i>
               </button>
-              <button class="btn-mini" data-accion="mover" data-id="${item.id_producto}" title="Registrar una entrada o una salida">
+              <button class="btn-mini" data-accion="comprar" data-id="${item.id_producto}" title="Registrar una compra de este producto">
+                <i class="fa-solid fa-truck-ramp-box"></i>
+              </button>
+              <button class="btn-mini" data-accion="vender" data-id="${item.id_producto}" title="Registrar una venta de este producto">
+                <i class="fa-solid fa-cart-shopping"></i>
+              </button>
+              <button class="btn-mini" data-accion="mover" data-id="${item.id_producto}" title="Registrar otra entrada o salida">
                 <i class="fa-solid fa-right-left"></i>
               </button>
             </td>
@@ -668,7 +785,11 @@
       const boton = evento.target.closest('button')
       if (!boton) return
 
-      if (boton.dataset.accion === 'mover') {
+      if (boton.dataset.accion === 'vender') {
+        abrirModalOperacion('venta', boton.dataset.id)
+      } else if (boton.dataset.accion === 'comprar') {
+        abrirModalOperacion('compra', boton.dataset.id)
+      } else if (boton.dataset.accion === 'mover') {
         abrirModal(boton.dataset.id)
       } else if (boton.dataset.accion === 'historial') {
         // Lleva a la pestaña de movimientos ya filtrada por ese producto, que
@@ -689,7 +810,13 @@
       // Sólo productos y motivos activos: no se le cargan movimientos a algo
       // que la empresa dio de baja.
       productos = await fetch('/productos?estado=activos').then(r => r.ok ? r.json() : [])
-      motivos = await fetch('/productos/motivos?soloActivos=true').then(r => r.ok ? r.json() : [])
+      const activos = await fetch('/productos/motivos?soloActivos=true').then(r => r.ok ? r.json() : [])
+
+      // Las ventas y las compras no van por acá: tienen su formulario, que
+      // carga la plata en el mismo paso. Dejarlas en las dos listas era tener
+      // dos caminos para lo mismo, y el de acá las deja a medias.
+      motivos = activos.filter(m => !esMotivoDe('venta')(m) && !esMotivoDe('compra')(m))
+      document.getElementById('ayuda-sin-ventas').classList.toggle('d-none', motivos.length === activos.length)
 
       document.getElementById('select-producto').innerHTML =
         '<option value="">Elegí un producto</option>' +
@@ -805,6 +932,302 @@
       div.classList.remove('d-none')
     }
 
+    // ================= REGISTRAR UNA VENTA O UNA COMPRA =================
+    //
+    // Antes eran dos formularios: el de entradas y salidas (con el motivo
+    // "Venta" o "Compra") y después otro que pedía la categoría y el tipo de
+    // la plata y el total hecho de cabeza. Acá es uno solo: qué, cuánto y a
+    // cuánto. El servidor guarda la mercadería y la plata juntas.
+    //
+    // Venta y compra usan el MISMO formulario: son la misma operación al
+    // revés. Lo que cambia está en esta tabla, igual que en el servidor.
+    const OPERACIONES = {
+      venta: {
+        efecto_stock: 'salida',
+        efecto_dinero: 'ingreso',
+        endpoint: '/productos/stock/ventas',
+        titulo: '<i class="fa-solid fa-cart-shopping me-2"></i>Registrar una venta',
+        preguntaProducto: '¿Qué vendiste? *',
+        preguntaMotivo: '¿Qué tipo de venta? *',
+        preguntaPrecio: 'Precio por unidad *',
+        textoTotal: 'Total de la venta',
+        placeholderDetalle: 'Opcional: cliente, remito...',
+        boton: 'Registrar la venta',
+        la: 'la venta',
+        de: 'de venta',
+        loQueHace: 'saque mercadería y genere un ingreso',
+        categorias: 'ingresos',
+        las: 'las ventas',
+        faltaProducto: 'Elegí qué vendiste.',
+        faltaPrecio: 'Escribí a cuánto lo vendiste.',
+        // El precio que aparece escrito es el de venta del producto
+        sugerido: (p) => p.precio_venta,
+        ayudaConSugerido: 'Es el precio cargado en el producto. Si cobraste otro (un descuento, un precio por cantidad), cambialo.',
+        ayudaSinSugerido: 'Este producto no tiene precio cargado: escribí a cuánto lo vendiste.'
+      },
+      compra: {
+        efecto_stock: 'entrada',
+        efecto_dinero: 'egreso',
+        endpoint: '/productos/stock/compras',
+        titulo: '<i class="fa-solid fa-truck-ramp-box me-2"></i>Registrar una compra',
+        preguntaProducto: '¿Qué compraste? *',
+        preguntaMotivo: '¿Qué tipo de compra? *',
+        preguntaPrecio: 'Lo que pagaste por unidad *',
+        textoTotal: 'Total de la compra',
+        placeholderDetalle: 'Opcional: proveedor, factura...',
+        boton: 'Registrar la compra',
+        la: 'la compra',
+        de: 'de compra',
+        loQueHace: 'sume mercadería y genere un egreso',
+        categorias: 'egresos',
+        las: 'las compras',
+        faltaProducto: 'Elegí qué compraste.',
+        faltaPrecio: 'Escribí cuánto pagaste por unidad.',
+        // En la compra, lo que aparece escrito es el costo del producto
+        sugerido: (p) => p.costo_referencia,
+        ayudaConSugerido: 'Es el costo cargado en el producto. Si pagaste otro, cambialo.',
+        ayudaSinSugerido: 'Este producto no tiene costo cargado: escribí cuánto pagaste por unidad.'
+      }
+    }
+
+    // Qué motivo es de cada clase: por lo que hace, no por cómo se llama.
+    // Mismo criterio que el servidor.
+    const esMotivoDe = (clase) => (m) =>
+      m.efecto_stock === OPERACIONES[clase].efecto_stock &&
+      m.efecto_dinero === OPERACIONES[clase].efecto_dinero
+
+    let claseOp = 'venta'     // la que está abierta ahora
+    let opProductos = []      // activos, con su existencia, su precio y su costo
+    let opMotivos = []        // los motivos activos de la clase abierta
+
+    // Los pesos como se leen acá: $ 25.000,00
+    function formatearPlata(numero) {
+      return Number(numero).toLocaleString('es-AR', { style: 'currency', currency: 'ARS' })
+    }
+
+    async function abrirModalOperacion(clase, idProducto) {
+      claseOp = clase
+      const op = OPERACIONES[clase]
+      const form = document.getElementById('form-operacion')
+      form.reset()
+      document.getElementById('op-error').classList.add('d-none')
+
+      // Las palabras de esta operación
+      document.getElementById('op-titulo').innerHTML = op.titulo
+      document.getElementById('op-pregunta-producto').textContent = op.preguntaProducto
+      document.getElementById('op-pregunta-motivo').textContent = op.preguntaMotivo
+      document.getElementById('op-pregunta-precio').textContent = op.preguntaPrecio
+      document.getElementById('op-texto-total').textContent = op.textoTotal
+      document.getElementById('op-detalle').placeholder = op.placeholderDetalle
+      document.getElementById('op-texto-boton').textContent = op.boton
+
+      // La existencia se pide entera y no se toma del listado de la pantalla:
+      // ése puede estar filtrado, y el producto quedaría afuera.
+      const [catalogo, stock, todosLosMotivos] = await Promise.all([
+        fetch('/productos?estado=activos').then(r => r.ok ? r.json() : []),
+        fetch('/productos/stock').then(r => r.ok ? r.json() : []),
+        fetch('/productos/motivos?soloActivos=true').then(r => r.ok ? r.json() : [])
+      ])
+
+      opProductos = catalogo.map(p => ({
+        ...p,
+        existencia: Number(stock.find(s => s.id_producto === p.id_producto)?.existencia || 0)
+      }))
+      opMotivos = todosLosMotivos.filter(esMotivoDe(clase))
+
+      // En la lista se ve cuánto hay de cada uno: al vender evita elegir algo
+      // que no está, y al comprar se ve qué falta.
+      document.getElementById('op-producto').innerHTML =
+        '<option value="">Elegí un producto</option>' +
+        opProductos.map(p =>
+          `<option value="${p.id_producto}">${esc(p.nombre)} (hay ${formatearCantidad(p.existencia)} ${esc(p.unidad_medida)})</option>`
+        ).join('')
+
+      // Si hay un solo motivo de esta clase, ni se pregunta.
+      document.getElementById('op-bloque-motivo').classList.toggle('d-none', opMotivos.length <= 1)
+      document.getElementById('op-motivo').innerHTML =
+        '<option value="">Elegí uno</option>' +
+        opMotivos.map(m => `<option value="${m.id_motivo_stock}">${esc(m.nombre)}</option>`).join('')
+      if (opMotivos.length === 1) form.id_motivo_stock.value = opMotivos[0].id_motivo_stock
+
+      form.fecha.value = fechaDeHoy()
+      form.fecha.max = fechaDeHoy()
+
+      if (idProducto) form.id_producto.value = idProducto
+      alElegirProductoOp()
+
+      revisarConfiguracionOp()
+      actualizarOp()
+      new bootstrap.Modal(document.getElementById('modalOperacion')).show()
+    }
+
+    // ¿Está todo listo? Si al motivo le falta decir en qué categoría cae la
+    // plata, se avisa ANTES de que la persona complete todo, y a quién le
+    // toca arreglarlo.
+    function revisarConfiguracionOp() {
+      const op = OPERACIONES[claseOp]
+      const aviso = document.getElementById('op-falta-config')
+      const boton = document.getElementById('btn-guardar-op')
+      const esAdmin = usuarioActual.rol === 'admin_empresa'
+      const linkMotivos = esAdmin
+        ? ' <a href="/pages/configuracion-motivos-stock.html">Ir a Motivos de stock</a>'
+        : ''
+
+      let problema = ''
+      if (!opMotivos.length) {
+        problema = esAdmin
+          ? `Tu empresa no tiene ningún motivo ${op.de} activo. Creá uno que ${op.loQueHace}.`
+          : `Tu empresa no tiene ningún motivo ${op.de} activo. Pedile al administrador que lo cree.`
+      } else {
+        const elegido = opMotivos.find(m => String(m.id_motivo_stock) === document.getElementById('op-motivo').value)
+        if (elegido && (!elegido.id_tipo || !elegido.tipo_activo)) {
+          problema = esAdmin
+            ? `Falta decir en qué categoría de ${op.categorias} van ${op.las} de "${esc(elegido.nombre)}".`
+            : `Falta configurar en qué categoría van ${op.las} de "${esc(elegido.nombre)}". Pedile al administrador que lo complete.`
+        }
+      }
+
+      aviso.innerHTML = problema ? `<i class="fa-solid fa-triangle-exclamation me-1"></i>${problema}${linkMotivos}` : ''
+      aviso.classList.toggle('d-none', !problema)
+      boton.disabled = !!problema
+    }
+
+    // Al elegir el producto: su unidad al lado de la cantidad, y el precio
+    // (venta) o el costo (compra) ya escrito si lo tiene cargado.
+    function alElegirProductoOp() {
+      const op = OPERACIONES[claseOp]
+      const form = document.getElementById('form-operacion')
+      const producto = opProductos.find(p => String(p.id_producto) === form.id_producto.value)
+      const unidad = document.getElementById('op-unidad')
+      const ayuda = document.getElementById('op-ayuda-precio')
+
+      unidad.textContent = producto ? producto.unidad_medida : ''
+      unidad.classList.toggle('d-none', !producto)
+
+      const sugerido = producto ? op.sugerido(producto) : null
+      if (!producto) {
+        form.precio_unitario.value = ''
+        ayuda.textContent = ''
+      } else if (sugerido !== null) {
+        form.precio_unitario.value = Number(sugerido)
+        ayuda.textContent = op.ayudaConSugerido
+      } else {
+        form.precio_unitario.value = ''
+        ayuda.textContent = op.ayudaSinSugerido
+      }
+
+      // Cada producto arranca con la casilla del costo tildada de nuevo
+      document.getElementById('op-actualizar-costo').checked = true
+    }
+
+    // El total, cómo queda el stock y, en la compra, la casilla del costo:
+    // todo mientras se escribe.
+    function actualizarOp() {
+      const form = document.getElementById('form-operacion')
+      const producto = opProductos.find(p => String(p.id_producto) === form.id_producto.value)
+      const cantidad = Number(form.cantidad.value)
+      const precio = Number(form.precio_unitario.value)
+
+      // En centavos y con enteros, igual que el servidor: así el total que se
+      // ve es exactamente el que se guarda.
+      const centavos = (cantidad > 0 && precio > 0)
+        ? Math.round(Math.round(cantidad * 100) * Math.round(precio * 100) / 100)
+        : 0
+      document.getElementById('op-total').textContent = formatearPlata(centavos / 100)
+
+      // La casilla del costo: sólo en la compra y sólo si lo pagado es
+      // distinto de lo cargado. Si es igual, no hay nada que actualizar.
+      const precioRedondo = Math.round(precio * 100) / 100
+      const costoCargado = producto?.costo_referencia === null || producto?.costo_referencia === undefined
+        ? null
+        : Number(producto.costo_referencia)
+      const ofrecerCosto = claseOp === 'compra' && producto && precioRedondo > 0 && precioRedondo !== costoCargado
+      document.getElementById('op-bloque-costo').classList.toggle('d-none', !ofrecerCosto)
+      if (ofrecerCosto) {
+        document.getElementById('op-texto-costo').textContent =
+          `Guardar ${formatearPlata(precioRedondo)} como el costo de ${producto.nombre}` +
+          (costoCargado === null ? '.' : ` (antes: ${formatearPlata(costoCargado)}).`) +
+          ' Es el que usa el reporte de pérdidas.'
+      }
+
+      const div = document.getElementById('op-resumen')
+      div.classList.remove('alerta')
+
+      if (!producto) {
+        div.innerHTML = '<i class="fa-solid fa-circle-info me-1"></i>Elegí un producto para ver cuánto hay.'
+        return
+      }
+
+      const hay = producto.existencia
+      const unidad = esc(producto.unidad_medida)
+
+      if (!(cantidad > 0)) {
+        div.innerHTML = `<i class="fa-solid fa-box me-1"></i>Hay <strong>${formatearCantidad(hay)} ${unidad}</strong> de ${esc(producto.nombre)}.`
+        return
+      }
+
+      if (claseOp === 'compra') {
+        div.innerHTML = `<i class="fa-solid fa-box me-1"></i>Hay ${formatearCantidad(hay)} ${unidad} · después de la compra va a haber <span class="queda">${formatearCantidad(hay + cantidad)} ${unidad}</span>.`
+        return
+      }
+
+      if (cantidad > hay) {
+        div.classList.add('alerta')
+        div.innerHTML = `<i class="fa-solid fa-triangle-exclamation me-1"></i>Hay <strong>${formatearCantidad(hay)} ${unidad}</strong> y estás vendiendo ${formatearCantidad(cantidad)}. No alcanza.`
+        return
+      }
+
+      div.innerHTML = `<i class="fa-solid fa-box me-1"></i>Hay ${formatearCantidad(hay)} ${unidad} · después de la venta quedan <span class="queda">${formatearCantidad(hay - cantidad)} ${unidad}</span>.`
+    }
+
+    document.getElementById('btn-vender').addEventListener('click', () => abrirModalOperacion('venta', null))
+    document.getElementById('btn-comprar').addEventListener('click', () => abrirModalOperacion('compra', null))
+    document.getElementById('op-producto').addEventListener('change', () => { alElegirProductoOp(); actualizarOp() })
+    document.getElementById('op-motivo').addEventListener('change', revisarConfiguracionOp)
+    document.querySelector('#form-operacion [name="cantidad"]').addEventListener('input', actualizarOp)
+    document.querySelector('#form-operacion [name="precio_unitario"]').addEventListener('input', actualizarOp)
+
+    document.getElementById('btn-guardar-op').addEventListener('click', async (evento) => {
+      const op = OPERACIONES[claseOp]
+      const boton = evento.currentTarget
+      const form = document.getElementById('form-operacion')
+      const errorDiv = document.getElementById('op-error')
+      errorDiv.classList.add('d-none')
+
+      const datos = Object.fromEntries(new FormData(form))
+
+      if (!datos.id_producto) return mostrarError(errorDiv, op.faltaProducto)
+      if (opMotivos.length > 1 && !datos.id_motivo_stock) return mostrarError(errorDiv, `Elegí qué tipo ${op.de} es.`)
+      if (!datos.cantidad || Number(datos.cantidad) <= 0) return mostrarError(errorDiv, 'La cantidad tiene que ser mayor que cero.')
+      if (!datos.precio_unitario || Number(datos.precio_unitario) <= 0) return mostrarError(errorDiv, op.faltaPrecio)
+      if (!datos.fecha) return mostrarError(errorDiv, 'Elegí una fecha.')
+
+      // La casilla del costo viaja sólo si se la mostró: escondida no vale.
+      if (claseOp === 'compra') {
+        datos.actualizar_costo = !document.getElementById('op-bloque-costo').classList.contains('d-none') &&
+                                 document.getElementById('op-actualizar-costo').checked
+      }
+
+      // Se apaga mientras viaja: un doble clic no puede cargar dos veces.
+      boton.disabled = true
+
+      const res = await fetch(op.endpoint, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(datos)
+      })
+      const resultado = await res.json()
+      boton.disabled = false
+
+      if (!res.ok) return mostrarError(errorDiv, resultado.error)
+
+      bootstrap.Modal.getInstance(document.getElementById('modalOperacion')).hide()
+      mostrarToast(resultado.message)
+
+      cargarExistencias()
+      if (!document.getElementById('vista-movimientos').classList.contains('d-none')) cargarMovimientos()
+    })
+
     // ================= HU-45 · EL DINERO DEL MOVIMIENTO =================
     //
     // Cuando el motivo mueve plata (una venta, una compra), el sistema OFRECE
@@ -861,6 +1284,11 @@
         ? '<option value="">Elegí una opción</option>' +
           opciones.map(t => `<option value="${t.id_tipo}">${esc(t.categoria_nombre)} › ${esc(t.nombre)}</option>`).join('')
         : '<option value="">No hay categorías de ' + esc(propuesta.naturaleza) + 's</option>'
+
+      // Si el motivo ya sabe dónde cae su plata, va elegido de entrada.
+      if (propuesta.id_tipo && opciones.some(t => t.id_tipo === propuesta.id_tipo)) {
+        form.id_tipo.value = propuesta.id_tipo
+      }
 
       document.getElementById('ayuda-tipo').textContent = opciones.length
         ? `Se muestran sólo las categorías de ${propuesta.naturaleza}s.`
@@ -962,6 +1390,7 @@
       } else if (boton.dataset.accion === 'cargar-dinero') {
         abrirModalDinero(movimiento, {
           naturaleza: movimiento.efecto_dinero,
+          id_tipo: movimiento.motivo_id_tipo,
           descripcion: `${movimiento.motivo_nombre}: ${formatearCantidad(movimiento.cantidad)} ${movimiento.unidad_medida} de ${movimiento.producto_nombre}`
         })
       }

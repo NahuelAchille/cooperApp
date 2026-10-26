@@ -26,4 +26,18 @@ router.put('/movimientos/:id/anular', ...deposito, stockController.anularMovimie
 
 router.post('/movimientos/:id/dinero', ...finanzas, stockController.registrarMovimientoDinero)
 
+// Una VENTA o una COMPRA en un solo paso: la mercaderia y la plata, juntas. La
+// hacen los mismos que el stock, incluido el operador, que es el que esta en
+// el mostrador y el que recibe al proveedor: es lo unico de la plata que el
+// operador puede tocar. Pide los dos modulos porque escribe en los dos lados.
+const operacion = [
+  requireLogin,
+  requireRol('admin_empresa', 'operador'),
+  requireModulo('productos'),
+  requireModulo('movimientos')
+]
+
+router.post('/ventas',  ...operacion, stockController.registrarVenta)
+router.post('/compras', ...operacion, stockController.registrarCompra)
+
 module.exports = router

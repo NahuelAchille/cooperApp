@@ -97,6 +97,8 @@
         const hayProductos = moduloActivo('productos')
 
         if (rolDeDeposito && hayProductos) {
+            document.getElementById('btn-venta').classList.remove('d-none')
+            document.getElementById('btn-compra').classList.remove('d-none')
             document.getElementById('btn-stock').classList.remove('d-none')
             document.getElementById('link-ver-stock').classList.remove('d-none')
             cargarFaltantes()
@@ -251,6 +253,11 @@
     <nav id="secondary-nav">
         <h2>Acciones Rápidas</h2>
             <ul>
+                <!-- La venta y la compra van primero: es lo que más se hace.
+                     Abren el formulario de una vez, sin pasar por la lista de
+                     stock. -->
+                <li id="btn-venta" class="d-none"><a href="/pages/stock.html?vender=1">+ Registrar una venta</a></li>
+                <li id="btn-compra" class="d-none"><a href="/pages/stock.html?comprar=1">+ Registrar una compra</a></li>
                 <li id="btn-ingreso" class="d-none"><a href="/pages/movimientos.html?nuevo=ingreso">+ Registrar ingreso</a></li>
                 <li id="btn-egreso" class="d-none"><a href="/pages/movimientos.html?nuevo=egreso">- Registrar egreso</a></li>
                 <li id="btn-stock" class="d-none"><a href="/pages/stock.html">Ajustar stock</a></li>

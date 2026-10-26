@@ -196,6 +196,20 @@ body {
 .resumen-movimiento .queda { font-weight: 700; }
 .resumen-movimiento.alerta { background: #fde8e8; color: #7a2020; }
 
+/* El total de la venta: el número que la persona va a cobrar, así que se ve
+   grande y aparte. Se calcula mientras escribe la cantidad y el precio. */
+.total-venta {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  border: 1.5px solid #c8e6d5;
+  border-radius: 8px;
+  padding: 10px 14px;
+  color: var(--verde-primario);
+  font-weight: 600;
+}
+.total-venta strong { font-size: 1.35rem; }
+
 /* Avisos de "sin permiso" y "modulo apagado" */
 .aviso-permiso {
   background: var(--card-bg);

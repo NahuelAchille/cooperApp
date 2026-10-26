@@ -44,23 +44,24 @@ const formatearCantidad = (numero) => {
 
 // Valida el monto del movimiento de dinero. Devuelve { valor } o { error }.
 // Mismo criterio que en movimientos: redondea antes de comparar contra cero.
-const parsearMonto = (valor) => {
+// "El" cambia las palabras del mensaje: la venta lo usa para el precio.
+const parsearMonto = (valor, El = 'El monto') => {
 
   if (valor === undefined || valor === null || valor === '' || typeof valor === 'boolean') {
-    return { error: 'El monto es obligatorio' }
+    return { error: `${El} es obligatorio` }
   }
 
   const numero = Number(valor)
   if (!Number.isFinite(numero)) {
-    return { error: 'El monto tiene que ser un número' }
+    return { error: `${El} tiene que ser un número` }
   }
 
   const redondeado = Math.round(numero * 100) / 100
   if (redondeado <= 0) {
-    return { error: 'El monto tiene que ser mayor que cero' }
+    return { error: `${El} tiene que ser mayor que cero` }
   }
   if (redondeado > 999999999999.99) {  // no entra en DECIMAL(14,2)
-    return { error: 'El monto es demasiado grande' }
+    return { error: `${El} es demasiado grande` }
   }
 
   return { valor: redondeado }
@@ -214,6 +215,7 @@ exports.registrarMovimiento = async (req, res) => {
     const propuesta = (motivo.efecto_dinero !== 'ninguno' && puedeCargarDinero(req.session.user))
       ? {
           naturaleza: motivo.efecto_dinero,
+          id_tipo: motivo.id_tipo,   // si el motivo ya sabe dónde cae, va elegido
           fecha: revision.fecha,
           descripcion: `${motivo.nombre}: ${formatearCantidad(cantidad.valor)} ${producto.unidad_medida} de ${producto.nombre}`
         }
@@ -235,6 +237,244 @@ exports.registrarMovimiento = async (req, res) => {
 // Quien puede cargar movimientos de dinero. Mismo criterio que las rutas de
 // /movimientos: el operador queda afuera.
 const puedeCargarDinero = (user) => ['admin_empresa', 'tesorero'].includes(user.rol)
+
+// Los pesos como se leen en Argentina: $ 37.500,00.
+const formatearPlata = (numero) => numero.toLocaleString('es-AR', { style: 'currency', currency: 'ARS' })
+
+// VENTA y COMPRA en un solo paso. Son la misma operacion espejada: una saca
+// mercaderia y trae plata, la otra trae mercaderia y se lleva plata. Por eso
+// van por UNA sola funcion y las diferencias viven en esta tabla: escritas dos
+// veces, cada arreglo habria que hacerlo dos veces, y el dia que uno se olvide
+// las dos se comportarian distinto sin que nadie lo decida.
+//
+// Que motivo es una venta o una compra se reconoce por lo que HACE, no por el
+// nombre: cada empresa nombra los suyos como quiere.
+const OPERACIONES = {
+  venta: {
+    efecto_stock: 'salida',
+    efecto_dinero: 'ingreso',
+    la: 'la venta',
+    Laoperacion: 'Venta',
+    de: 'de venta',
+    loQueHace: 'saque mercadería y genere un ingreso',
+    categorias: 'ingresos',
+    las: 'las ventas',
+    laPlata: 'su cobro',
+    noSePuede: 'no se puede vender',
+    Precio: 'El precio'
+  },
+  compra: {
+    efecto_stock: 'entrada',
+    efecto_dinero: 'egreso',
+    la: 'la compra',
+    Laoperacion: 'Compra',
+    de: 'de compra',
+    loQueHace: 'sume mercadería y genere un egreso',
+    categorias: 'egresos',
+    las: 'las compras',
+    laPlata: 'su pago',
+    noSePuede: 'no se puede comprar',
+    Precio: 'El costo'
+  }
+}
+
+const esMotivoDe = (clase) => (motivo) =>
+  motivo.efecto_stock === OPERACIONES[clase].efecto_stock &&
+  motivo.efecto_dinero === OPERACIONES[clase].efecto_dinero
+
+// Registrar una venta o una compra en un solo paso: el movimiento de stock y
+// el de dinero, juntos y atados.
+//
+// Antes eran dos formularios y dos clasificaciones: en Stock se elegia el
+// motivo, y despues se abria otro cartel que pedia la categoria y el tipo del
+// dinero, y el total calculado de cabeza. Para el operador el segundo paso ni
+// aparecia, y la operacion quedaba a medias hasta que alguien de finanzas la
+// completara. Al usarlo el grupo, era lo que trababa.
+//
+// Ahora la persona dice QUE, CUANTO y A CUANTO. Lo demas ya esta decidido:
+//   - el motivo: el de la empresa (si tiene uno solo, ni se pregunta)
+//   - la categoria del dinero: la que el motivo tiene configurada (id_tipo)
+//   - el total: cantidad por precio, calculado aca y no en la pantalla
+//
+// El operador SI registra la plata de sus ventas y de sus compras (decision
+// del grupo, 25/10 y 26/10/2026): es el que esta en el mostrador y el que
+// recibe al proveedor. Sigue sin entrar a Movimientos ni ver el balance; lo
+// unico que puede hacer con la plata es esto.
+const registrarOperacion = async (clase, req, res) => {
+
+  const op = OPERACIONES[clase]
+
+  try {
+    const id_empresa = req.session.user.empresa.id
+    const id_usuario = req.session.user.id
+    const esAdmin = req.session.user.rol === 'admin_empresa'
+
+    const producto = await productoModel.findProductoById(req.body.id_producto, id_empresa)
+    if (!producto) {
+      return res.status(404).json({ error: 'No se encontró el producto' })
+    }
+    if (producto.es_servicio) {
+      return res.status(400).json({ error: `Los servicios no pasan por el stock: ${op.laPlata} se registra desde Movimientos` })
+    }
+    if (!producto.activo) {
+      return res.status(400).json({ error: `Ese producto está dado de baja: ${op.noSePuede}` })
+    }
+
+    // --- El motivo: si la empresa tiene uno solo de esta clase, se usa ese ---
+    const candidatos = (await motivoStockModel.findMotivos(id_empresa, { soloActivos: true })).filter(esMotivoDe(clase))
+
+    let motivo
+    if (req.body.id_motivo_stock) {
+      motivo = candidatos.find(m => String(m.id_motivo_stock) === String(req.body.id_motivo_stock))
+      if (!motivo) {
+        return res.status(400).json({ error: `Ese motivo no es una ${clase} activa de tu empresa` })
+      }
+    } else if (candidatos.length === 1) {
+      motivo = candidatos[0]
+    } else if (candidatos.length === 0) {
+      return res.status(400).json({
+        error: esAdmin
+          ? `Tu empresa no tiene ningún motivo ${op.de} activo. Crealo en Configuración › Motivos de stock: uno que ${op.loQueHace}.`
+          : `Tu empresa no tiene ningún motivo ${op.de} activo. Pedile al administrador que lo cree.`
+      })
+    } else {
+      return res.status(400).json({ error: `Elegí qué tipo ${op.de} es` })
+    }
+
+    // --- Dónde cae la plata: lo dice el motivo, no la persona ---
+    //
+    // Se vuelve a mirar el tipo entero, no solo que este cargado: entre que el
+    // admin lo configuro y hoy, la categoria pudo darse de baja.
+    const tipo = motivo.id_tipo ? await categoriaModel.findTipoById(motivo.id_tipo, id_empresa) : null
+    if (!tipo || !tipo.activo || !tipo.categoria_activa || tipo.naturaleza !== op.efecto_dinero) {
+      return res.status(400).json({
+        error: esAdmin
+          ? `Falta decir en qué categoría de ${op.categorias} van ${op.las} de "${motivo.nombre}". Elegila en Configuración › Motivos de stock y volvé a intentar.`
+          : `Falta configurar en qué categoría van ${op.las} de "${motivo.nombre}". Pedile al administrador que lo complete en Motivos de stock.`
+      })
+    }
+
+    const cantidad = parsearCantidad(req.body.cantidad)
+    if (cantidad.error) {
+      return res.status(400).json({ error: cantidad.error })
+    }
+
+    const precio = parsearMonto(req.body.precio_unitario, op.Precio)
+    if (precio.error) {
+      return res.status(400).json({ error: precio.error })
+    }
+
+    // El total se calcula en centavos y con enteros, como en los reportes:
+    // con la cuenta comun, 0,1 por 3 da 0,30000000000000004.
+    const centavos = Math.round(Math.round(cantidad.valor * 100) * Math.round(precio.valor * 100) / 100)
+    if (centavos <= 0) {
+      return res.status(400).json({ error: `El total de ${op.la} da $ 0: revisá la cantidad y el precio` })
+    }
+    if (centavos > 99999999999999) {  // no entra en DECIMAL(14,2)
+      return res.status(400).json({ error: `El total de ${op.la} es demasiado grande` })
+    }
+    const total = centavos / 100
+
+    // Sólo en la compra: lo que se pagó por unidad pasa a ser el costo del
+    // producto (el que valoriza las pérdidas), si la persona lo deja tildado y
+    // si de verdad cambió. Con inflacion, es la forma de que el costo no quede
+    // viejo sin que nadie tenga que acordarse de editarlo. Si el valor es el
+    // mismo no se toca, para no rejuvenecer la fecha del costo sin motivo.
+    const costoAnterior = producto.costo_referencia === null ? null : Number(producto.costo_referencia)
+    const actualizarCosto = clase === 'compra' &&
+                            req.body.actualizar_costo === true &&
+                            costoAnterior !== precio.valor
+
+    const revision = validarFechaDeCarga(req.body.fecha)
+    if (revision.error) {
+      return res.status(400).json({ error: revision.error })
+    }
+
+    const detalle = typeof req.body.descripcion === 'string'
+      ? req.body.descripcion.trim().slice(0, 200) || null
+      : null
+
+    // El movimiento de dinero cuenta qué se vendió o compró, para que en
+    // Movimientos se entienda sin ir a buscar al stock. El detalle (el cliente,
+    // el proveedor, el remito) va a continuación.
+    const unidad = producto.unidad_medida ? ` ${producto.unidad_medida}` : ''
+    const descripcionDinero = `${motivo.nombre}: ${formatearCantidad(cantidad.valor)}${unidad} de ${producto.nombre}` +
+                              (detalle ? ` · ${detalle}` : '')
+
+    // Todo adentro del candado del producto: el control del stock, el dinero
+    // y la mercaderia. O entran los dos movimientos o no entra ninguno: nunca
+    // queda una venta con el stock descontado y la plata sin cargar.
+    const resultado = await stockModel.conProductoTrabado(
+      producto.id_producto, id_empresa,
+      async (disponible, conexion) => {
+
+        // Una compra suma: no hay nada que pueda faltar.
+        if (op.efecto_stock === 'salida' && cantidad.valor > disponible) {
+          return {
+            error: `No hay stock suficiente: hay ${formatearCantidad(disponible)} y estás vendiendo ${formatearCantidad(cantidad.valor)}. ` +
+                   'Si el sistema todavía no tiene la existencia real, cargala con un movimiento de "Ajuste positivo".'
+          }
+        }
+
+        if (actualizarCosto) {
+          await productoModel.actualizarCosto(producto.id_producto, id_empresa, precio.valor, conexion)
+        }
+
+        const id_movimiento = await movimientoModel.create({
+          id_tipo: tipo.id_tipo,
+          monto: total,
+          descripcion: descripcionDinero.slice(0, 255),
+          fecha: revision.fecha,
+          id_empresa,
+          id_usuario
+        }, conexion)
+
+        const id_movimiento_stock = await stockModel.createMovimiento({
+          id_producto: producto.id_producto,
+          id_motivo_stock: motivo.id_motivo_stock,
+          cantidad: cantidad.valor,
+          descripcion: detalle,
+          fecha: revision.fecha,
+          id_empresa,
+          id_usuario,
+          id_movimiento
+        }, conexion)
+
+        return { id_movimiento_stock, id_movimiento }
+      }
+    )
+
+    if (resultado.error) {
+      return res.status(400).json({ error: resultado.error })
+    }
+
+    const { id_movimiento_stock, id_movimiento, existencia } = resultado
+
+    const comoQueda = op.efecto_stock === 'salida'
+      ? `Quedan ${formatearCantidad(existencia)}${unidad}.`
+      : `Ahora hay ${formatearCantidad(existencia)}${unidad}.`
+    const avisoCosto = actualizarCosto
+      ? ` El costo del producto pasó a ${formatearPlata(precio.valor)}.`
+      : ''
+
+    res.status(201).json({
+      id_movimiento_stock,
+      id_movimiento,
+      existencia,
+      total,
+      costoActualizado: actualizarCosto,
+      message: `${op.Laoperacion} registrada: ${formatearCantidad(cantidad.valor)}${unidad} de ${producto.nombre} por ${formatearPlata(total)}. ` +
+               comoQueda + avisoCosto
+    })
+
+  } catch (error) {
+    console.error(error)
+    res.status(500).json({ error: `Error al registrar ${op.la}` })
+  }
+}
+
+exports.registrarVenta  = (req, res) => registrarOperacion('venta', req, res)
+exports.registrarCompra = (req, res) => registrarOperacion('compra', req, res)
 
 // HU-45 · Registrar el movimiento de dinero que corresponde a un movimiento de
 // stock ya cargado, y dejar los dos atados.

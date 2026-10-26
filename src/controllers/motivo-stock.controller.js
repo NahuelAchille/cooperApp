@@ -1,5 +1,6 @@
 const motivoStockModel = require('../models/motivo-stock.model')
 const stockModel = require('../models/stock.model')
+const categoriaModel = require('../models/categoria.model')
 
 const EFECTOS_STOCK = ['entrada', 'salida']
 const EFECTOS_DINERO = ['ingreso', 'egreso', 'ninguno']
@@ -42,6 +43,37 @@ const validarEfectos = (body) => {
   return { efecto_stock, efecto_dinero }
 }
 
+// Valida en que tipo de dinero cae la plata del motivo. Devuelve { id_tipo }
+// o { error }.
+//
+// Si el motivo no mueve plata, el tipo se FUERZA en null aunque venga uno: no
+// hay plata que clasificar, y un tipo colgado ahi se leeria como que si.
+//
+// Es opcional tambien en los que mueven plata (un motivo recien creado puede
+// no tenerlo todavia), pero si viene tiene que ser de esta empresa, estar
+// activo y ser de la misma naturaleza: una Venta no puede caer en un egreso.
+const validarTipo = async (body, efecto_dinero, id_empresa) => {
+
+  if (efecto_dinero === 'ninguno') return { id_tipo: null }
+
+  if (body.id_tipo === undefined || body.id_tipo === null || body.id_tipo === '') {
+    return { id_tipo: null }
+  }
+
+  const tipo = await categoriaModel.findTipoById(body.id_tipo, id_empresa)
+  if (!tipo) {
+    return { error: 'No se encontró la categoría de dinero elegida' }
+  }
+  if (!tipo.activo || !tipo.categoria_activa) {
+    return { error: 'Esa categoría de dinero está dada de baja: elegí una activa' }
+  }
+  if (tipo.naturaleza !== efecto_dinero) {
+    return { error: `Este motivo genera un ${efecto_dinero}, así que su plata tiene que ir a una categoría de ${efecto_dinero}s` }
+  }
+
+  return { id_tipo: tipo.id_tipo }
+}
+
 exports.getMotivos = async (req, res) => {
 
   try {
@@ -72,7 +104,12 @@ exports.crearMotivo = async (req, res) => {
       return res.status(400).json({ error: efectos.error })
     }
 
-    const id_motivo_stock = await motivoStockModel.createMotivo({ nombre, ...efectos, id_empresa })
+    const tipo = await validarTipo(req.body, efectos.efecto_dinero, id_empresa)
+    if (tipo.error) {
+      return res.status(400).json({ error: tipo.error })
+    }
+
+    const id_motivo_stock = await motivoStockModel.createMotivo({ nombre, ...efectos, ...tipo, id_empresa })
     res.status(201).json({ id_motivo_stock, message: 'Motivo creado correctamente' })
 
   } catch (error) {
@@ -123,7 +160,15 @@ exports.actualizarMotivo = async (req, res) => {
       }
     }
 
-    await motivoStockModel.updateMotivo(id, id_empresa, { nombre, ...efectos })
+    // El tipo de dinero, en cambio, SI se puede cambiar aunque el motivo ya se
+    // haya usado: no reinterpreta nada, sólo dice dónde caen las ventas de
+    // acá en adelante. Las ya cargadas tienen su movimiento de dinero propio.
+    const tipo = await validarTipo(req.body, efectos.efecto_dinero, id_empresa)
+    if (tipo.error) {
+      return res.status(400).json({ error: tipo.error })
+    }
+
+    await motivoStockModel.updateMotivo(id, id_empresa, { nombre, ...efectos, ...tipo })
     res.json({ message: 'Motivo actualizado correctamente' })
 
   } catch (error) {

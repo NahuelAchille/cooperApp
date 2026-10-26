@@ -53,7 +53,7 @@ const findProductos = async (id_empresa, filtros = {}) => {
   const [rows] = await db.query(`
     SELECT p.id_producto, p.nombre, p.descripcion, p.unidad_medida, p.stock_minimo, p.activo,
            p.es_servicio, p.id_categoria_producto, p.id_subcategoria_producto,
-           p.costo_referencia, p.costo_actualizado_en,
+           p.costo_referencia, p.costo_actualizado_en, p.precio_venta,
            c.nombre AS categoria_nombre,
            s.nombre AS subcategoria_nombre
     FROM productos p
@@ -77,7 +77,7 @@ const findProductoById = async (id_producto, id_empresa) => {
   const [rows] = await db.query(`
     SELECT p.id_producto, p.nombre, p.descripcion, p.unidad_medida, p.stock_minimo, p.activo,
            p.es_servicio, p.id_categoria_producto, p.id_subcategoria_producto,
-           p.costo_referencia, p.costo_actualizado_en
+           p.costo_referencia, p.costo_actualizado_en, p.precio_venta
     FROM productos p
     WHERE p.id_producto = ? AND p.id_empresa = ?
   `, [id_producto, id_empresa])
@@ -87,7 +87,8 @@ const findProductoById = async (id_producto, id_empresa) => {
 
 const createProducto = async ({ nombre, descripcion, unidad_medida, stock_minimo,
                                 id_categoria_producto, id_subcategoria_producto,
-                                id_empresa, es_servicio = 0, costo_referencia = null }) => {
+                                id_empresa, es_servicio = 0, costo_referencia = null,
+                                precio_venta = null }) => {
 
   // La fecha del costo se pone sola cuando hay costo: es un dato del sistema,
   // no algo que la persona tenga que contestar.
@@ -95,11 +96,11 @@ const createProducto = async ({ nombre, descripcion, unidad_medida, stock_minimo
     INSERT INTO productos
       (nombre, descripcion, unidad_medida, stock_minimo,
        id_categoria_producto, id_subcategoria_producto, id_empresa, es_servicio,
-       costo_referencia, costo_actualizado_en)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ${costo_referencia === null ? 'NULL' : 'NOW()'})
+       costo_referencia, costo_actualizado_en, precio_venta)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ${costo_referencia === null ? 'NULL' : 'NOW()'}, ?)
   `, [nombre, descripcion, unidad_medida, stock_minimo,
       id_categoria_producto, id_subcategoria_producto, id_empresa, es_servicio,
-      costo_referencia])
+      costo_referencia, precio_venta])
 
   return result.insertId
 }
@@ -111,17 +112,18 @@ const createProducto = async ({ nombre, descripcion, unidad_medida, stock_minimo
 const updateProducto = async (id_producto, id_empresa,
                               { nombre, descripcion, unidad_medida, stock_minimo,
                                 id_categoria_producto, id_subcategoria_producto,
-                                costo_referencia = null, costoCambio = false }) => {
+                                costo_referencia = null, costoCambio = false,
+                                precio_venta = null }) => {
 
   await db.query(`
     UPDATE productos
     SET nombre = ?, descripcion = ?, unidad_medida = ?, stock_minimo = ?,
         id_categoria_producto = ?, id_subcategoria_producto = ?,
-        costo_referencia = ?
+        costo_referencia = ?, precio_venta = ?
         ${costoCambio ? (costo_referencia === null ? ', costo_actualizado_en = NULL' : ', costo_actualizado_en = NOW()') : ''}
     WHERE id_producto = ? AND id_empresa = ?
   `, [nombre, descripcion, unidad_medida, stock_minimo,
-      id_categoria_producto, id_subcategoria_producto, costo_referencia,
+      id_categoria_producto, id_subcategoria_producto, costo_referencia, precio_venta,
       id_producto, id_empresa])
 }
 
@@ -132,6 +134,18 @@ const setActivoProducto = async (id_producto, id_empresa, activo) => {
   )
 }
 
+// Guarda lo que se pagó en una compra como el costo nuevo del producto. Va
+// aparte de updateProducto porque no toca nada más, y recibe la conexión para
+// entrar en la misma transacción que la compra: si la compra no se guarda, el
+// costo tampoco cambia.
+const actualizarCosto = async (id_producto, id_empresa, costo, ejecutor = db) => {
+  await ejecutor.query(
+    'UPDATE productos SET costo_referencia = ?, costo_actualizado_en = NOW() WHERE id_producto = ? AND id_empresa = ?',
+    [costo, id_producto, id_empresa]
+  )
+}
+
 module.exports = {
-  findProductos, findProductoById, createProducto, updateProducto, setActivoProducto
+  findProductos, findProductoById, createProducto, updateProducto, setActivoProducto,
+  actualizarCosto
 }

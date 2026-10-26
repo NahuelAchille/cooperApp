@@ -210,6 +210,18 @@
                 </button>
               </div>
               <input type="hidden" name="naturaleza" id="mov-naturaleza">
+              <!-- Una venta de mercadería cargada acá no descuenta el stock, y
+                   una compra no lo suma: el depósito quedaría mal. Se avisa al
+                   elegir "Entró" o "Salió", que es justo cuando alguien la
+                   cargaría acá. -->
+              <div class="form-text d-none" id="aviso-venta-stock">
+                <i class="fa-solid fa-cart-shopping me-1"></i>¿Vendiste mercadería? Cargala desde
+                <a href="/pages/stock.html?vender=1">Registrar una venta</a>, así también se descuenta del stock.
+              </div>
+              <div class="form-text d-none" id="aviso-compra-stock">
+                <i class="fa-solid fa-truck-ramp-box me-1"></i>¿Compraste mercadería? Cargala desde
+                <a href="/pages/stock.html?comprar=1">Registrar una compra</a>, así también entra al stock.
+              </div>
             </div>
 
             <div class="row g-3">
@@ -647,6 +659,12 @@
 
       selTipo.innerHTML = '<option value="">Elegí la categoría primero</option>'
       selTipo.disabled = true
+
+      // Sólo a quien puede ir a Stock: el tesorero no entra, y un link que
+      // termina en "sin permiso" es peor que no avisar.
+      const puedeIrAStock = usuarioActual.rol === 'admin_empresa' && moduloActivo('productos')
+      document.getElementById('aviso-venta-stock').classList.toggle('d-none', !(puedeIrAStock && naturaleza === 'ingreso'))
+      document.getElementById('aviso-compra-stock').classList.toggle('d-none', !(puedeIrAStock && naturaleza === 'egreso'))
 
       if (!naturaleza) {
         selCat.innerHTML = '<option value="">Elegí primero si entró o salió</option>'

@@ -147,6 +147,20 @@
                 <input type="number" class="form-control" name="stock_minimo" min="0" step="0.01" placeholder="0">
                 <div class="form-text" id="ayuda-stock">Cuando baje de acá, el sistema avisa. En 0 no avisa.</div>
               </div>
+              <!-- A cuánto se vende. Es lo que aparece ya escrito al registrar
+                   una venta, para no tener que saberse los precios de memoria.
+                   Opcional: si está vacío, la venta lo pide a mano. Y es una
+                   sugerencia: al vender se puede cambiar. -->
+              <div class="col-12">
+                <label class="form-label">Precio de venta <span class="text-muted fw-normal">(opcional)</span></label>
+                <div class="input-group">
+                  <span class="input-group-text">$</span>
+                  <input type="number" class="form-control" name="precio_venta" min="0.01" step="0.01" placeholder="Dejalo vacío si no tiene precio fijo">
+                </div>
+                <div class="form-text">
+                  A cuánto le cobrás una unidad al cliente. Aparece ya escrito al registrar una venta, y ahí se puede cambiar.
+                </div>
+              </div>
               <!-- Lo que cuesta perder una unidad (HU-53). Es un COSTO, no un
                    precio de venta: lo que te costó a vos, no lo que ibas a
                    ganar. Opcional a propósito: vacío significa "no lo sé", y el
@@ -565,6 +579,7 @@
         // null es "no lo sé": el campo queda vacío, nunca en 0.
         form.costo_referencia.value = producto.costo_referencia !== null ? Number(producto.costo_referencia) : ''
         mostrarAntiguedadDelCosto(producto)
+        form.precio_venta.value = producto.precio_venta !== null ? Number(producto.precio_venta) : ''
         form.id_categoria_producto.value = producto.id_categoria_producto
 
         // Si la clasificación del producto fue desactivada después de haberlo
@@ -626,6 +641,7 @@
           stock_minimo: datos.stock_minimo,
           // Vacío viaja como null, no como 0: son cosas distintas.
           costo_referencia: datos.costo_referencia || null,
+          precio_venta: datos.precio_venta || null,
           id_categoria_producto: datos.id_categoria_producto,
           id_subcategoria_producto: datos.id_subcategoria_producto || null
         })
