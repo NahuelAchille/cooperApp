@@ -1,7 +1,21 @@
 ===========================================================
  CooperApp - USUARIOS DE PRUEBA
- Actualizado: 02/11/2026  (la venta y la compra en un solo paso)
+ Actualizado: 02/11/2026  (la venta y la compra en un solo paso,
+                           y Articulacion: el buscador entre empresas)
 ===========================================================
+
+-----------------------------------------------------------
+ ACCESO RAPIDO (el que siempre nos olvidamos va primero)
+-----------------------------------------------------------
+ SUPERADMIN (la plataforma: aprueba y rechaza empresas)
+   superadmin@cooperapp.com  /  password
+
+ Admin de La Esperanza (la empresa mas completa)
+   marta@laesperanza.com.ar  /  esperanza123
+
+ Todos los demas usuarios de prueba  /  prueba123
+ (la lista completa, mas abajo)
+-----------------------------------------------------------
 
 La app corre en http://localhost:3000
 
@@ -13,8 +27,10 @@ OJO: el esquema de la base cambio varias veces en el Sprint 07 y 08
 (productos, stock y motivos), el 16/09 se saco la columna "matricula"
 de la tabla empresas y se agrego "baja_en_cascada", el 17/09 se
 agrego "es_servicio" en productos y en categorias_producto, y
-"id_servicio" en movimientos, y el 25/10 se agrego "precio_venta" en
-productos e "id_tipo" en motivos_stock. Si venis de una version
+"id_servicio" en movimientos, el 25/10 se agrego "precio_venta" en
+productos e "id_tipo" en motivos_stock, y el 02/11 la tabla "rubros",
+las coordenadas de "localidades", el telefono y lo que se muestra de
+cada empresa, y "visible_empresas" e "id_rubro" en productos. Si venis de una version
 anterior hay que BORRAR la base y volver a crearla, no alcanza con
 reimportar. Los comandos estan al final.
 
@@ -41,6 +57,26 @@ CAMBIOS DEL 25/10 AL 02/11 - LA VENTA Y LA COMPRA EN UN SOLO PASO:
     TAMBIEN su plata (decision del grupo, 02/11). El cartel dice
     cuanta plata se va antes de confirmar.
   - Hay que RECREAR LA BASE (dos columnas nuevas y datos nuevos).
+
+CAMBIOS DEL 02/11 - ARTICULACION: EL BUSCADOR ENTRE EMPRESAS:
+  - "Articulacion" en el menu ya no es "en construccion": es un
+    BUSCADOR. Se escribe lo que se necesita (por ejemplo "papel")
+    y aparecen las empresas que lo ofrecen, de la MAS CERCANA a la
+    mas lejana. Al entrar a una, su ficha: lo que ofrece, los datos
+    de contacto que eligio mostrar y un mapa de la zona.
+  - Lo que una empresa OFRECE sale de su propio catalogo: en cada
+    producto y servicio hay una casilla "Mostrar a otras empresas"
+    y un RUBRO (una lista comun a todas, de general a especifico).
+    Las otras empresas NUNCA ven el stock, el costo ni el precio.
+  - En Mi empresa: la LOCALIDAD (de una lista), el telefono, y que
+    datos de contacto ve el resto. Tambien se pide al registrarse,
+    pero es opcional.
+  - En el tablero, el bloque "Matches" ahora es un buscador directo.
+  - Una empresa aparece si tiene prendido el modulo Articulacion y
+    algo marcado para mostrar. Las 4 activas lo traen prendido.
+  - Hay una QUINTA empresa, Papelera Castelar, para el ejemplo del
+    papel (ver abajo).
+  - Hay que RECREAR LA BASE (tablas y columnas nuevas).
 
 CAMBIOS DEL 27/09 - REPORTES (HU-51):
   - Reportes ya NO es un boton muerto: tiene su pantalla, con el
@@ -147,8 +183,11 @@ CAMBIOS DEL 16/09 POR LA AUDITORIA DE QA:
 
 
 ===========================================================
- 2) LAS 4 EMPRESAS
+ 2) LAS 5 EMPRESAS
 ===========================================================
+
+ Las 4 activas tienen prendido Articulacion, con su localidad y
+ algunos productos o servicios marcados "Mostrar a otras empresas".
 
  --- Alimentos La Esperanza S.R.L. (ACTIVA) ---
  7 miembros - Ituzaingo - rubro alimentos
@@ -217,6 +256,16 @@ CAMBIOS DEL 16/09 POR LA AUDITORIA DE QA:
  OJO: esta empresa esta PENDIENTE a proposito. Ninguno de
  sus 5 usuarios puede entrar todavia. Sirve para probar la
  aprobacion desde el panel del superadmin.
+
+ --- Papelera Castelar S.R.L. (ACTIVA) ---
+ 1 miembro - Castelar - rubro papel y carton
+ Modulos: movimientos, productos, reportes, articulacion
+   gustavo@papeleracastelar.com.ar  Gustavo Perez  ADMIN
+
+ Existe SOLO para el ejemplo del buscador: "papel" desde La
+ Esperanza (Ituzaingo) la encuentra a 2,3 km. No tiene finanzas
+ ni stock cargados, solo su catalogo de 4 productos, los 4
+ marcados para mostrar.
 
 
 ===========================================================
@@ -537,6 +586,31 @@ CAMBIOS DEL 16/09 POR LA AUDITORIA DE QA:
        ese filtro, cada servicio pareceria pura ganancia.
      - En el celular el panel deja dos columnas, el servicio y lo
        que deja. Entro y Salio siguen en la pantalla grande.
+
+ --- ARTICULACION: EL BUSCADOR ENTRE EMPRESAS ---
+
+   Como Marta (La Esperanza, Ituzaingo), menu "Articulacion", o el
+   buscador del tablero.
+
+   Que conviene probar:
+     - "papel": aparece Papelera Castelar a 2,3 km. Entrar a su
+       ficha: contacto, lo que ofrece agrupado por rubro y el mapa.
+     - "tela": El Amanecer (Moron, 4,3 km). Su ficha NO muestra el
+       telefono: lo escondio a proposito.
+     - "chapa" o el rubro "Metalurgia": Metalurgica del Oeste
+       (Merlo). Su ficha SI muestra el domicilio.
+     - "queso": no aparece nada. La Esperanza lo tiene pero no lo
+       marco para mostrar.
+     - Sin acentos ("carton") y con las palabras en otro orden
+       ("kraft papel") encuentra igual.
+     - En Productos, marcar el Queso "Mostrar a otras empresas":
+       sin rubro no deja guardar. Con rubro, ahora si lo encuentra
+       otra empresa (entrar como Osvaldo de Metalurgica y buscar).
+     - En Mi empresa, cambiar la localidad o destildar el email, y
+       ver la ficha con "Ver mi ficha como la ven las demas".
+     - Apagar el modulo Articulacion en una empresa: desaparece del
+       buscador de las demas.
+     - Ninguna ficha ni resultado muestra stock, costo ni precio.
 
  --- MODULOS ---
 

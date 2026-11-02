@@ -154,6 +154,25 @@ Reportarlo otra vez gasta lugar en el informe sin agregar nada:
   recién cuando se pide un PDF** y la app arranca igual sin él. Está hecho a
   propósito. Si el PDF te da "Falta instalar la librería", corré `npm install`.
 
+- **Articulación (el buscador entre empresas, 02/11/2026)**, lo que es a propósito:
+  - **El rubro general cuenta en la búsqueda**: "papel" trae también las cajas de
+    cartón de una papelera, porque están en *Papel, cartón y embalaje*.
+  - **La distancia es en línea recta entre los centros de las localidades**, no
+    entre los locales. Dos empresas de la misma localidad dan 0 ("en tu misma
+    zona"). Las coordenadas son aproximadas a propósito.
+  - **La localidad es opcional**, en el registro y en Mi empresa: la lista sólo
+    tiene el GBA, CABA y La Plata. Sin localidad, la empresa va al final.
+  - **El email y el teléfono se muestran de fábrica; el domicilio no.** La
+    localidad se ve siempre.
+  - **Una empresa puede ver su propia ficha** ("así te ven"), pero no se
+    encuentra a sí misma en el buscador.
+  - **`GET /localidades` no pide sesión**: la usa el registro. Es una lista de
+    nombres de lugares, sin coordenadas.
+  - **Los rubros no se editan desde la app**: los define el sistema.
+  - **El buscador no usa los filtros plegables**: la búsqueda es la pantalla.
+  - **El mapa muestra un círculo, no un alfiler**, y si no hay internet la
+    ficha funciona igual sin él.
+
 Si encontrás una forma NUEVA de explotar alguna de estas, eso sí reportalo.
 
 ## Antes de empezar: regresión de lo ya reportado
@@ -366,6 +385,37 @@ Es lo único del sistema donde el operador toca plata, y donde dos tablas
 - **Un motivo de venta con nombre raro** (`<img onerror=...>`, `=HYPERLINK(...)`):
   la descripción de la plata arranca con ese nombre, así que miralo en
   Movimientos, en el toast, en el cartel de anular y en el CSV.
+
+ARTICULACIÓN: EL BUSCADOR ENTRE EMPRESAS (02/11/2026)
+Es el primer módulo donde una empresa VE datos de otra. Todo lo que hasta ahora
+era "aislamiento entre empresas" acá se abre a propósito, y el riesgo es que se
+abra de más. Rutas: `GET /articulacion/buscar`, `/articulacion/empresas/:id`,
+`/articulacion/mi-estado`, `GET /rubros`, `GET /localidades`.
+- **Que no salga nada privado**: buscá en las respuestas (y en el HTML) stock,
+  costo, precio, CUIT, montos, usuarios. Probá con un producto que tenga todo
+  cargado. Las consultas eligen columna por columna (`articulacion.model.js`).
+- **Quién aparece**: sólo empresas **activas**, con **Articulación prendido**, y
+  sólo productos **activos**, marcados para mostrar, **con rubro** y de un módulo
+  que la empresa **tenga prendido**. Probá cada condición por separado
+  (suspender la empresa, apagar Productos, dar de baja el producto, sacarle el
+  rubro por SQL) y fijate que desaparezca de la búsqueda **y** de la ficha.
+- **El contacto lo decide el servidor**: con `mostrar_email = 0`, el email no
+  tiene que venir en la respuesta, no sólo no verse.
+- **XSS, con más razón que en ningún lado**: todo lo que se ve lo escribió OTRA
+  empresa. Nombre, descripción, nombre de la empresa, teléfono y domicilio, en
+  el buscador, en la ficha, en el tooltip del mapa y en el link `tel:`.
+- **La búsqueda**: comodines del `LIKE` (`%`, `_`), una letra, 100 caracteres,
+  6 palabras, un `id_rubro` que no existe o que es texto.
+- **La ficha**: un `id` de una empresa pendiente, de una que no participa, texto,
+  negativo, enorme.
+- **"Un campo que no viene no se toca"**: editar un producto o Mi empresa sin
+  mandar `visible_empresas`, `id_rubro`, `id_localidad`, `telefono` o las
+  casillas no tiene que borrarlos. Mandarlos explícitos sí los cambia.
+- **Mostrar sin rubro** tiene que rebotar, en el alta y en la edición.
+- **Roles**: admin, tesorero y operador buscan; el superadmin no; sin sesión,
+  401; con el módulo apagado, 403.
+- **La distancia**: compará una contra un cálculo a mano (Haversine) entre los
+  centros de las dos localidades.
 
 FLUJOS COMPLETOS
 - Registro de empresa → aprobación → alta de usuarios → carga de movimientos.
