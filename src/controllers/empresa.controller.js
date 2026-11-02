@@ -4,6 +4,18 @@ const categoriaModel = require('../models/categoria.model')
 const motivoStockModel = require('../models/motivo-stock.model')
 const { CATEGORIAS_INICIALES, MOTIVOS_STOCK_INICIALES } = require('../config/datos-iniciales')
 const { validarLargos, LARGOS } = require('../services/validacion.service')
+const { resolverLocalidad } = require('../services/ubicacion.service')
+
+// Un telefono escrito como lo escribe la gente: "11 4623-1180", "(0220) 448
+// 7730", "+54 9 11 ...". Se acepta eso y nada mas, sin exigir un formato fijo.
+const TELEFONO_VALIDO = /^[0-9 +()\-]{6,30}$/
+
+// Las casillas de "que ven las otras empresas". Si el campo no viene, queda
+// como estaba: un pedido viejo o armado a mano no apaga nada sin querer.
+const aCasilla = (valor, actual) => {
+  if (valor === undefined) return actual
+  return [true, 1, '1', 'true', 'on'].includes(valor) ? 1 : 0
+}
 
 // Convierte un campo de cantidad del formulario a numero.
 // Devuelve null si vino vacio, o undefined si el valor no sirve.
@@ -104,11 +116,36 @@ exports.actualizarMiEmpresa = async (req, res) => {
       return res.status(400).json({ error: 'Las cantidades deben ser números enteros de cero o más' })
     }
 
+    // Lo nuevo de Articulacion (teléfono, localidad y qué se muestra) sigue la
+    // regla de "un campo que no viene no se toca": un pedido viejo, o armado
+    // a mano sin estos campos, no borra la localidad ni apaga nada.
+    const actual = await empresaModel.findById(id_empresa)
+
+    let telefono = actual.telefono
+    if (req.body.telefono !== undefined) {
+      telefono = typeof req.body.telefono === 'string' ? req.body.telefono.trim() || null : null
+    }
+    if (telefono && !TELEFONO_VALIDO.test(telefono)) {
+      return res.status(400).json({ error: 'El teléfono sólo puede tener números, espacios, guiones, paréntesis y el signo +' })
+    }
+
+    const ubicacion = await resolverLocalidad(
+      req.body.id_localidad === undefined ? actual.id_localidad : req.body.id_localidad
+    )
+    if (ubicacion.error) {
+      return res.status(400).json({ error: ubicacion.error })
+    }
+
     await empresaModel.update(id_empresa, {
       nombre: nombre.trim(),
       email: emailLimpio,
       federacion: federacion?.trim() || null,
       domicilio: domicilio?.trim() || null,
+      telefono,
+      ...ubicacion,
+      mostrar_email:     aCasilla(req.body.mostrar_email, actual.mostrar_email),
+      mostrar_telefono:  aCasilla(req.body.mostrar_telefono, actual.mostrar_telefono),
+      mostrar_domicilio: aCasilla(req.body.mostrar_domicilio, actual.mostrar_domicilio),
       cantidadTrabajadores,
       cantidadDiversidad,
       cantidadHombre,

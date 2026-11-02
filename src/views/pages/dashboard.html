@@ -96,6 +96,14 @@
         const rolDeDeposito = user.rol === 'admin_empresa' || user.rol === 'operador'
         const hayProductos = moduloActivo('productos')
 
+        // El bloque de Articulación: un buscador directo, que lleva a la
+        // pantalla del buscador con lo escrito. Sin el módulo, se dice por qué
+        // no está, en vez del viejo "Módulo en desarrollo".
+        if (moduloActivo('articulacion')) {
+            document.getElementById('buscador-dashboard').classList.remove('d-none')
+            document.getElementById('articulacion-apagada').classList.add('d-none')
+        }
+
         if (rolDeDeposito && hayProductos) {
             document.getElementById('btn-venta').classList.remove('d-none')
             document.getElementById('btn-compra').classList.remove('d-none')
@@ -319,12 +327,22 @@
                     </table>
                 </div>
             </section>
+            <!-- Articulación: ya no hay "matches" que esperar (diseño del
+                 02/11/2026). Se busca lo que se necesita, y el formulario
+                 lleva al buscador con lo escrito. -->
             <section class="dashboard-block" id="dashboard-matches">
                 <div class="dashboard-block-header">
-                    <h3>Matches</h3>
+                    <h3>Buscar entre empresas</h3>
                 </div>
-                <p class="text-muted" style="padding:12px 4px;margin:0;">
-                    <i class="fa-solid fa-screwdriver-wrench me-1"></i>Módulo en desarrollo.
+                <form id="buscador-dashboard" class="d-none" action="/pages/articulacion.html" method="get" style="padding:12px 4px;margin:0;">
+                    <div class="input-group">
+                        <input type="search" class="form-control" name="q" maxlength="100" placeholder="¿Qué necesitás? Ej: papel, fletes, telas">
+                        <button class="btn btn-success" type="submit"><i class="fa-solid fa-magnifying-glass"></i></button>
+                    </div>
+                </form>
+                <p class="text-muted" id="articulacion-apagada" style="padding:12px 4px;margin:0;">
+                    <i class="fa-solid fa-plug-circle-xmark me-1"></i>El módulo de Articulación no está activo en tu empresa.
+                    El administrador puede activarlo desde <em>Módulos del sistema</em>.
                 </p>
             </section>
         </section>

@@ -54,6 +54,7 @@ const findProductos = async (id_empresa, filtros = {}) => {
     SELECT p.id_producto, p.nombre, p.descripcion, p.unidad_medida, p.stock_minimo, p.activo,
            p.es_servicio, p.id_categoria_producto, p.id_subcategoria_producto,
            p.costo_referencia, p.costo_actualizado_en, p.precio_venta,
+           p.visible_empresas, p.id_rubro,
            c.nombre AS categoria_nombre,
            s.nombre AS subcategoria_nombre
     FROM productos p
@@ -77,7 +78,8 @@ const findProductoById = async (id_producto, id_empresa) => {
   const [rows] = await db.query(`
     SELECT p.id_producto, p.nombre, p.descripcion, p.unidad_medida, p.stock_minimo, p.activo,
            p.es_servicio, p.id_categoria_producto, p.id_subcategoria_producto,
-           p.costo_referencia, p.costo_actualizado_en, p.precio_venta
+           p.costo_referencia, p.costo_actualizado_en, p.precio_venta,
+           p.visible_empresas, p.id_rubro
     FROM productos p
     WHERE p.id_producto = ? AND p.id_empresa = ?
   `, [id_producto, id_empresa])
@@ -88,7 +90,7 @@ const findProductoById = async (id_producto, id_empresa) => {
 const createProducto = async ({ nombre, descripcion, unidad_medida, stock_minimo,
                                 id_categoria_producto, id_subcategoria_producto,
                                 id_empresa, es_servicio = 0, costo_referencia = null,
-                                precio_venta = null }) => {
+                                precio_venta = null, visible_empresas = 0, id_rubro = null }) => {
 
   // La fecha del costo se pone sola cuando hay costo: es un dato del sistema,
   // no algo que la persona tenga que contestar.
@@ -96,11 +98,11 @@ const createProducto = async ({ nombre, descripcion, unidad_medida, stock_minimo
     INSERT INTO productos
       (nombre, descripcion, unidad_medida, stock_minimo,
        id_categoria_producto, id_subcategoria_producto, id_empresa, es_servicio,
-       costo_referencia, costo_actualizado_en, precio_venta)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ${costo_referencia === null ? 'NULL' : 'NOW()'}, ?)
+       costo_referencia, costo_actualizado_en, precio_venta, visible_empresas, id_rubro)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ${costo_referencia === null ? 'NULL' : 'NOW()'}, ?, ?, ?)
   `, [nombre, descripcion, unidad_medida, stock_minimo,
       id_categoria_producto, id_subcategoria_producto, id_empresa, es_servicio,
-      costo_referencia, precio_venta])
+      costo_referencia, precio_venta, visible_empresas, id_rubro])
 
   return result.insertId
 }
@@ -113,17 +115,18 @@ const updateProducto = async (id_producto, id_empresa,
                               { nombre, descripcion, unidad_medida, stock_minimo,
                                 id_categoria_producto, id_subcategoria_producto,
                                 costo_referencia = null, costoCambio = false,
-                                precio_venta = null }) => {
+                                precio_venta = null, visible_empresas = 0, id_rubro = null }) => {
 
   await db.query(`
     UPDATE productos
     SET nombre = ?, descripcion = ?, unidad_medida = ?, stock_minimo = ?,
         id_categoria_producto = ?, id_subcategoria_producto = ?,
-        costo_referencia = ?, precio_venta = ?
+        costo_referencia = ?, precio_venta = ?, visible_empresas = ?, id_rubro = ?
         ${costoCambio ? (costo_referencia === null ? ', costo_actualizado_en = NULL' : ', costo_actualizado_en = NOW()') : ''}
     WHERE id_producto = ? AND id_empresa = ?
   `, [nombre, descripcion, unidad_medida, stock_minimo,
       id_categoria_producto, id_subcategoria_producto, costo_referencia, precio_venta,
+      visible_empresas, id_rubro,
       id_producto, id_empresa])
 }
 

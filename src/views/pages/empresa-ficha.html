@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css">
+  <!-- El mapa: Leaflet + OpenStreetMap. No pide clave ni tarjeta (Google
+       Maps sí, y choca con que el proyecto corre local). Necesita internet
+       para dibujar el mapa, igual que Bootstrap por CDN. -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+  <link rel="stylesheet" href="/styles/header.css">
+  <link rel="stylesheet" href="/styles/articulacion.css">
+  <title>Empresa - CooperApp</title>
+</head>
+<body>
+
+  <div id="header"></div>
+
+  <script src="/components/header.js"></script>
+
+  <div class="page-header">
+    <a href="/pages/articulacion.html" id="link-volver" class="text-white text-decoration-none small">
+      <i class="fa-solid fa-arrow-left me-1"></i>Volver a la búsqueda
+    </a>
+  </div>
+
+  <div class="content">
+
+    <div class="card-blanca text-center d-none" id="aviso-error">
+      <i class="fa-solid fa-circle-info fa-2x mb-3" style="color:#6c8a7a;"></i>
+      <p class="mb-0" id="aviso-error-texto"></p>
+    </div>
+
+    <div class="d-none" id="zona-ficha">
+
+      <!-- Cuando la empresa mira su propia ficha: es así como la ven las demás -->
+      <div class="aviso-suave d-none" id="aviso-propia">
+        <i class="fa-solid fa-eye me-1"></i>Esta es tu ficha: así la ven las otras empresas.
+        Lo que se muestra se elige en <a href="/pages/perfil-empresa.html">Mi empresa</a> y en cada producto o servicio.
+      </div>
+
+      <div class="card-blanca">
+        <h1 class="ficha-titulo" id="ficha-nombre"></h1>
+        <div class="text-muted mt-1" id="ficha-donde"></div>
+      </div>
+
+      <div class="card-blanca">
+        <div class="seccion-titulo"><i class="fa-solid fa-address-book me-2"></i>Contacto</div>
+        <div id="ficha-contacto"></div>
+      </div>
+
+      <div class="card-blanca">
+        <div class="seccion-titulo"><i class="fa-solid fa-box-open me-2"></i>Lo que ofrece</div>
+        <div id="ficha-ofrece"></div>
+      </div>
+
+      <!-- Extra: si no hay internet o no hay localidad, la ficha sirve igual -->
+      <div class="card-blanca d-none" id="bloque-mapa">
+        <div class="seccion-titulo"><i class="fa-solid fa-map-location-dot me-2"></i>Dónde está</div>
+        <div id="mapa"></div>
+        <div class="nota-mapa">
+          La zona es aproximada: es el centro de la localidad, no la dirección del local.
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+  <script>
+
+    // Todo lo que se muestra acá lo escribió OTRA empresa: va escapado siempre.
+    function esc(texto) {
+      return String(texto).replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+    }
+
+    function mostrarError(texto) {
+      document.getElementById('aviso-error-texto').textContent = texto
+      document.getElementById('aviso-error').classList.remove('d-none')
+    }
+
+    function pintarContacto(contacto) {
+      const filas = []
+      if (contacto.email) {
+        filas.push(`<div class="dato-contacto"><i class="fa-solid fa-envelope"></i><a href="mailto:${esc(contacto.email)}">${esc(contacto.email)}</a></div>`)
+      }
+      if (contacto.telefono) {
+        // En el celular, tocar el número llama. Sólo dígitos y + en el enlace.
+        const numero = contacto.telefono.replace(/[^0-9+]/g, '')
+        filas.push(`<div class="dato-contacto"><i class="fa-solid fa-phone"></i><a href="tel:${esc(numero)}">${esc(contacto.telefono)}</a></div>`)
+      }
+      if (contacto.domicilio) {
+        filas.push(`<div class="dato-contacto"><i class="fa-solid fa-location-dot"></i>${esc(contacto.domicilio)}</div>`)
+      }
+
+      document.getElementById('ficha-contacto').innerHTML = filas.length
+        ? filas.join('')
+        : '<span class="text-muted">Esta empresa no eligió mostrar datos de contacto.</span>'
+    }
+
+    // Agrupado por rubro: es como se piensa ("¿qué tiene de papel?").
+    function pintarOfrece(ofrece) {
+      if (!ofrece.length) {
+        document.getElementById('ficha-ofrece').innerHTML = '<span class="text-muted">Por ahora no muestra ningún producto ni servicio.</span>'
+        return
+      }
+
+      const grupos = new Map()
+      for (const item of ofrece) {
+        if (!grupos.has(item.rubro)) grupos.set(item.rubro, [])
+        grupos.get(item.rubro).push(item)
+      }
+
+      document.getElementById('ficha-ofrece').innerHTML = [...grupos.entries()].map(([rubro, items]) => `
+        <div class="grupo-rubro">
+          <div class="rubro">${esc(rubro)}</div>
+          ${items.map(i => `
+            <div class="item-ofrece">
+              <div>${esc(i.nombre)}${i.es_servicio ? '<span class="etiqueta-servicio">servicio</span>' : ''}</div>
+              ${i.descripcion ? `<div class="descripcion">${esc(i.descripcion)}</div>` : ''}
+            </div>`).join('')}
+        </div>`).join('')
+    }
+
+    // El mapa es un extra: si Leaflet no cargó (sin internet) o la empresa no
+    // tiene localidad, el bloque no aparece y la ficha queda igual de útil.
+    function pintarMapa(ubicacion, nombre) {
+      if (!ubicacion || typeof L === 'undefined') return
+
+      document.getElementById('bloque-mapa').classList.remove('d-none')
+
+      const centro = [ubicacion.latitud, ubicacion.longitud]
+      const mapa = L.map('mapa', { scrollWheelZoom: false }).setView(centro, 13)
+
+      L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        maxZoom: 18,
+        attribution: '&copy; colaboradores de <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
+      }).addTo(mapa)
+
+      // Un círculo y no un alfiler: un alfiler dice "acá está el local", y lo
+      // único que se sabe es la localidad.
+      L.circle(centro, { radius: 1500, color: '#2d7a4f', fillColor: '#3a9e65', fillOpacity: 0.2 })
+        .addTo(mapa)
+        .bindTooltip(esc(nombre))
+    }
+
+    async function iniciar() {
+      const user = await cargarHeader()
+
+      if (!user || user.error) {
+        window.location.href = '/pages/login.html'
+        return
+      }
+
+      // Volver a la búsqueda que se estaba haciendo, no a una vacía.
+      if (document.referrer.includes('/pages/articulacion.html')) {
+        document.getElementById('link-volver').addEventListener('click', (evento) => {
+          evento.preventDefault()
+          history.back()
+        })
+      }
+
+      if (!['admin_empresa', 'tesorero', 'operador'].includes(user.rol)) {
+        mostrarError('Tu usuario no tiene acceso al buscador entre empresas.')
+        return
+      }
+      if (!moduloActivo('articulacion')) {
+        mostrarError('El módulo de Articulación no está activo en tu empresa. El administrador puede activarlo desde Módulos del sistema.')
+        return
+      }
+
+      const id = new URLSearchParams(location.search).get('id')
+      const res = await fetch(`/articulacion/empresas/${encodeURIComponent(id || '')}`)
+      const ficha = await res.json()
+
+      if (!res.ok) {
+        mostrarError(ficha.error)
+        return
+      }
+
+      document.title = `${ficha.nombre} - CooperApp`
+      document.getElementById('ficha-nombre').textContent = ficha.nombre
+
+      const donde = [ficha.localidad, ficha.provincia].filter(Boolean).join(', ') || 'Sin localidad cargada'
+      const distancia = ficha.distancia_km === null ? '' : ` · a ${String(ficha.distancia_km).replace('.', ',')} km de tu empresa`
+      document.getElementById('ficha-donde').innerHTML =
+        `<i class="fa-solid fa-location-dot me-1"></i>${esc(donde)}${esc(distancia)}`
+
+      document.getElementById('aviso-propia').classList.toggle('d-none', !ficha.esLaPropia)
+
+      pintarContacto(ficha.contacto)
+      pintarOfrece(ficha.ofrece)
+
+      document.getElementById('zona-ficha').classList.remove('d-none')
+      pintarMapa(ficha.ubicacion, ficha.nombre)
+    }
+
+    iniciar()
+  </script>
+</body>
+</html>

@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css">
+  <link rel="stylesheet" href="/styles/header.css">
+  <link rel="stylesheet" href="/styles/articulacion.css">
+  <title>Articulación - CooperApp</title>
+</head>
+<body>
+
+  <div id="header"></div>
+
+  <script src="/components/header.js"></script>
+
+  <div class="page-header">
+    <h4><i class="fa-solid fa-handshake me-2"></i>Buscar entre empresas</h4>
+    <small>Escribí lo que necesitás y te mostramos quién lo ofrece, de la empresa más cercana a la más lejana</small>
+  </div>
+
+  <div class="content">
+
+    <!-- Se muestra si el rol no llega (el superadmin, que no tiene empresa) -->
+    <div class="card-blanca text-center d-none" id="aviso-permiso">
+      <i class="fa-solid fa-lock fa-2x mb-3" style="color:#6c8a7a;"></i>
+      <p class="mb-0">Tu usuario no tiene acceso al buscador entre empresas.</p>
+    </div>
+
+    <!-- Se muestra si la empresa tiene el módulo apagado -->
+    <div class="card-blanca text-center d-none" id="aviso-modulo">
+      <i class="fa-solid fa-plug-circle-xmark fa-2x mb-3" style="color:#6c8a7a;"></i>
+      <p class="mb-1">El módulo de <strong>Articulación</strong> no está activo en tu empresa.</p>
+      <p class="mb-0 small">El administrador puede activarlo desde <em>Módulos del sistema</em>.</p>
+    </div>
+
+    <div class="d-none" id="zona-buscador">
+
+      <!-- Avisos de por qué a esta empresa no la encuentran, o no se ordena
+           por cercanía. Los arma mostrarEstadoPropio(). -->
+      <div id="avisos-propios"></div>
+
+      <form class="card-blanca buscador" id="form-buscar" novalidate>
+        <div class="row g-2">
+          <div class="col-12 col-md-7">
+            <label class="form-label fw-bold" for="buscar-texto" style="color:#2d7a4f;">¿Qué necesitás?</label>
+            <input type="search" class="form-control" id="buscar-texto" maxlength="100" placeholder="Ej: papel, cajas de cartón, fletes, telas" autocomplete="off">
+          </div>
+          <div class="col-12 col-md-5">
+            <label class="form-label fw-bold" for="buscar-rubro" style="color:#2d7a4f;">Rubro <span class="text-muted fw-normal">(opcional)</span></label>
+            <select class="form-select" id="buscar-rubro"></select>
+          </div>
+        </div>
+        <button type="submit" class="btn btn-buscar w-100 mt-3">
+          <i class="fa-solid fa-magnifying-glass me-2"></i>Buscar
+        </button>
+        <div id="buscar-error" class="text-danger small mt-2 d-none"></div>
+      </form>
+
+      <div id="resultados"></div>
+    </div>
+
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+
+  <script>
+
+    // Evita romper el HTML (y que se ejecute código) si un nombre trae comillas o etiquetas.
+    // Acá importa más que en ninguna otra pantalla: todo lo que se muestra lo
+    // escribió OTRA empresa.
+    function esc(texto) {
+      return String(texto).replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+    }
+
+    function distanciaTexto(km) {
+      if (km === null || km === undefined) return ''
+      if (km < 1) return 'en tu misma zona'
+      return `a ${String(km).replace('.', ',')} km`
+    }
+
+    // Lo que coincidió con la búsqueda, en una línea. Si son muchas, las
+    // primeras tres y "y N más": la ficha tiene la lista entera.
+    function textoCoincidencias(coincidencias) {
+      const primeras = coincidencias.slice(0, 3).map(c => esc(c.nombre)).join(', ')
+      const resto = coincidencias.length - 3
+      return resto > 0 ? `${primeras} <span class="mas">y ${resto} más</span>` : primeras
+    }
+
+    async function cargarRubros() {
+      const rubros = await fetch('/rubros').then(r => r.ok ? r.json() : [])
+      const generales = rubros.filter(r => r.id_rubro_padre === null)
+
+      // De general a específico: elegir un general trae todo lo de adentro.
+      document.getElementById('buscar-rubro').innerHTML =
+        '<option value="">Todos los rubros</option>' +
+        generales.map(g => `
+          <optgroup label="${esc(g.nombre)}">
+            <option value="${g.id_rubro}">${esc(g.nombre)} (todo)</option>
+            ${rubros.filter(r => r.id_rubro_padre === g.id_rubro)
+                    .map(r => `<option value="${r.id_rubro}">${esc(r.nombre)}</option>`).join('')}
+          </optgroup>`).join('')
+    }
+
+    // Por qué esta empresa puede no aparecer, o por qué la lista no viene
+    // ordenada por cercanía. Sin el aviso, las dos cosas se leen como fallas.
+    async function mostrarEstadoPropio(user) {
+      const res = await fetch('/articulacion/mi-estado')
+      if (!res.ok) return
+      const estado = await res.json()
+      const esAdmin = user.rol === 'admin_empresa'
+      const avisos = []
+
+      if (!estado.tieneLocalidad) {
+        avisos.push(esAdmin
+          ? '<i class="fa-solid fa-location-dot me-1"></i>Tu empresa no tiene localidad cargada, así que no podemos ordenar por cercanía. Elegila en <a href="/pages/perfil-empresa.html">Mi empresa</a>.'
+          : '<i class="fa-solid fa-location-dot me-1"></i>Tu empresa no tiene localidad cargada, así que no podemos ordenar por cercanía. El administrador la puede cargar en Mi empresa.')
+      }
+      if (!estado.visibles) {
+        avisos.push('<i class="fa-solid fa-eye-slash me-1"></i>Las otras empresas todavía no te encuentran: ningún producto ni servicio tuyo está marcado para <strong>Mostrar a otras empresas</strong>.')
+      }
+
+      document.getElementById('avisos-propios').innerHTML =
+        avisos.map(a => `<div class="aviso-suave">${a}</div>`).join('')
+    }
+
+    async function buscar() {
+      const texto = document.getElementById('buscar-texto').value.trim()
+      const rubro = document.getElementById('buscar-rubro').value
+      const errorDiv = document.getElementById('buscar-error')
+      const contenedor = document.getElementById('resultados')
+      errorDiv.classList.add('d-none')
+
+      if (texto.replace(/\s/g, '').length < 2 && !rubro) {
+        errorDiv.textContent = 'Escribí qué estás buscando (al menos 2 letras) o elegí un rubro.'
+        errorDiv.classList.remove('d-none')
+        return
+      }
+
+      // La búsqueda queda en la dirección: se puede volver atrás desde una
+      // ficha sin perderla, y el tablero entra acá con ?q=
+      const params = new URLSearchParams()
+      if (texto) params.set('q', texto)
+      if (rubro) params.set('id_rubro', rubro)
+      history.replaceState(null, '', `?${params}`)
+
+      contenedor.innerHTML = '<div class="vacio"><i class="fa-solid fa-spinner fa-spin me-2"></i>Buscando...</div>'
+
+      const res = await fetch(`/articulacion/buscar?${params}`)
+      const datos = await res.json()
+
+      if (!res.ok) {
+        contenedor.innerHTML = ''
+        errorDiv.textContent = datos.error
+        errorDiv.classList.remove('d-none')
+        return
+      }
+
+      if (!datos.resultados.length) {
+        contenedor.innerHTML = `<div class="vacio">
+          <i class="fa-solid fa-magnifying-glass fa-2x mb-2"></i>
+          <p class="mb-1">No encontramos empresas que ofrezcan eso.</p>
+          <p class="small mb-0">Probá con otra palabra (por ejemplo, "cajas" en vez de "embalaje") o elegí sólo el rubro.</p>
+        </div>`
+        return
+      }
+
+      const cuantas = datos.resultados.length
+      contenedor.innerHTML =
+        `<div class="contador">${cuantas === 1 ? '1 empresa' : `${cuantas} empresas`}${datos.conUbicacion ? ', de la más cercana a la más lejana' : ''}</div>` +
+        datos.resultados.map(e => `
+          <a class="tarjeta-empresa" href="/pages/empresa-ficha.html?id=${e.id_empresa}">
+            <div class="d-flex justify-content-between gap-2">
+              <div class="nombre">${esc(e.nombre)}</div>
+              <div class="distancia">${distanciaTexto(e.distancia_km)}</div>
+            </div>
+            <div class="donde"><i class="fa-solid fa-location-dot me-1"></i>${e.localidad ? esc(e.localidad) : 'Sin localidad cargada'}</div>
+            <div class="ofrece"><strong>Ofrece:</strong> ${textoCoincidencias(e.coincidencias)}</div>
+          </a>`).join('')
+    }
+
+    document.getElementById('form-buscar').addEventListener('submit', (evento) => {
+      evento.preventDefault()
+      buscar()
+    })
+
+    async function iniciar() {
+      const user = await cargarHeader()
+
+      if (!user || user.error) {
+        window.location.href = '/pages/login.html'
+        return
+      }
+
+      if (!['admin_empresa', 'tesorero', 'operador'].includes(user.rol)) {
+        document.getElementById('aviso-permiso').classList.remove('d-none')
+        return
+      }
+
+      if (!moduloActivo('articulacion')) {
+        document.getElementById('aviso-modulo').classList.remove('d-none')
+        return
+      }
+
+      document.getElementById('zona-buscador').classList.remove('d-none')
+
+      await cargarRubros()
+      mostrarEstadoPropio(user)
+
+      // Si se llega con una búsqueda en la dirección (desde el tablero, o
+      // volviendo de una ficha), se repite sola.
+      const params = new URLSearchParams(location.search)
+      if (params.get('q')) document.getElementById('buscar-texto').value = params.get('q')
+      if (params.get('id_rubro')) document.getElementById('buscar-rubro').value = params.get('id_rubro')
+      if (params.get('q') || params.get('id_rubro')) buscar()
+      else document.getElementById('buscar-texto').focus()
+    }
+
+    iniciar()
+  </script>
+</body>
+</html>

@@ -1,0 +1,115 @@
+/* Articulación: el buscador entre empresas (articulacion.html) y la ficha
+   de una empresa (empresa-ficha.html). Mobile first, como el resto. */
+
+/* ===== VARIABLES ===== */
+:root {
+  --verde-primario: #2d7a4f;
+  --verde-secundario: #3a9e65;
+  --verde-oscuro: #1a6b3a;
+  --bg-page: #f0f7f3;
+  --card-bg: #ffffff;
+  --card-shadow: 0 2px 12px rgba(0,0,0,0.07);
+  --texto-suave: #6c8a7a;
+}
+
+body {
+  background-color: var(--bg-page);
+  margin: 0;
+  padding: 0;
+  font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
+  color: #1a2e23;
+}
+
+/* ===== HEADER DE PAGINA ===== */
+.page-header {
+  background: linear-gradient(135deg, var(--verde-primario), var(--verde-secundario));
+  color: white;
+  padding: 16px;
+}
+.page-header h4 { margin: 0; font-weight: 700; }
+.page-header small { opacity: 0.85; }
+
+.content { padding: 16px; max-width: 900px; margin: 0 auto; }
+
+.card-blanca {
+  background: var(--card-bg);
+  border-radius: 12px;
+  box-shadow: var(--card-shadow);
+  padding: 16px;
+  margin-bottom: 16px;
+}
+
+/* ===== EL BUSCADOR =====
+   No usa los filtros plegables a propósito: acá la búsqueda ES la pantalla,
+   no un filtro que tapa los datos. Esconderla detrás de un botón en el
+   celular sería esconder lo único que se vino a hacer. */
+.buscador .form-control, .buscador .form-select { font-size: 1.05rem; }
+.buscador .btn-buscar {
+  background-color: var(--verde-primario);
+  color: white;
+  font-weight: 700;
+  border: none;
+}
+.buscador .btn-buscar:hover { background-color: var(--verde-oscuro); color: white; }
+
+.aviso-suave {
+  background: #fff8e6;
+  border-radius: 8px;
+  padding: 10px 14px;
+  font-size: 0.88rem;
+  color: #6b5216;
+  margin-bottom: 12px;
+}
+.aviso-suave a { color: #6b5216; font-weight: 600; }
+
+.contador { color: var(--texto-suave); font-size: 0.85rem; margin-bottom: 8px; }
+
+/* Cada resultado es una tarjeta entera clickeable: en el celular un botón
+   chiquito "Ver" es difícil de embocar. */
+.tarjeta-empresa {
+  display: block;
+  background: var(--card-bg);
+  border-radius: 12px;
+  box-shadow: var(--card-shadow);
+  padding: 14px 16px;
+  margin-bottom: 10px;
+  color: inherit;
+  text-decoration: none;
+  border: 1.5px solid transparent;
+}
+.tarjeta-empresa:hover { border-color: #c8e6d5; color: inherit; }
+.tarjeta-empresa .nombre { font-weight: 700; font-size: 1.05rem; color: var(--verde-oscuro); }
+.tarjeta-empresa .donde { color: var(--texto-suave); font-size: 0.85rem; }
+.tarjeta-empresa .distancia { font-weight: 700; color: var(--verde-primario); white-space: nowrap; }
+.tarjeta-empresa .ofrece { font-size: 0.88rem; margin-top: 6px; }
+.tarjeta-empresa .ofrece .mas { color: var(--texto-suave); }
+
+.vacio { text-align: center; color: var(--texto-suave); padding: 32px 16px; }
+
+/* ===== LA FICHA ===== */
+.ficha-titulo { font-weight: 700; font-size: 1.25rem; color: var(--verde-oscuro); margin: 0; }
+.seccion-titulo {
+  font-weight: 700;
+  color: var(--verde-primario);
+  font-size: 0.95rem;
+  margin-bottom: 8px;
+}
+.dato-contacto { margin-bottom: 6px; word-break: break-word; }
+.dato-contacto i { color: var(--verde-primario); width: 22px; }
+
+.grupo-rubro { margin-bottom: 12px; }
+.grupo-rubro .rubro { font-size: 0.8rem; font-weight: 700; color: var(--texto-suave); text-transform: uppercase; letter-spacing: 0.02em; }
+.item-ofrece { padding: 6px 0; border-bottom: 1px solid #eef3f0; }
+.item-ofrece:last-child { border-bottom: none; }
+.item-ofrece .descripcion { color: var(--texto-suave); font-size: 0.85rem; }
+.etiqueta-servicio { font-size: 0.72rem; background: #e4f2eb; color: var(--verde-oscuro); border-radius: 6px; padding: 1px 6px; margin-left: 4px; }
+
+/* El mapa es un extra: si no carga (sin internet), la ficha sirve igual. */
+#mapa { height: 260px; border-radius: 10px; }
+.nota-mapa { color: var(--texto-suave); font-size: 0.8rem; margin-top: 6px; }
+
+@media (min-width: 768px) {
+  .page-header { padding: 20px 24px; }
+  .content { padding: 24px; }
+  #mapa { height: 320px; }
+}

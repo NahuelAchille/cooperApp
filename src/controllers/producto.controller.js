@@ -1,4 +1,5 @@
 const productoModel = require('../models/producto.model')
+const rubroModel = require('../models/rubro.model')
 const categoriaProductoModel = require('../models/categoria-producto.model')
 const { UNIDADES_MEDIDA, CLAVES_UNIDADES } = require('../config/unidades-medida')
 const { flagServicio, rotulo } = require('../middlewares/catalogo.middleware')
@@ -113,6 +114,43 @@ const limpiarPrecio = (valor, es_servicio) => limpiarImporte(valor, es_servicio,
   El: 'El precio de venta',
   siEsCero: 'Si todavía no tiene precio, dejá el campo vacío en vez de poner 0'
 })
+
+// Articulacion: si las otras empresas lo ven en el buscador, y en que rubro de
+// la lista comun. Devuelve { visible_empresas, id_rubro } o { error }.
+//
+// UN CAMPO QUE NO VIENE NO SE TOCA. La pantalla sólo muestra la casilla y el
+// rubro si la empresa tiene prendido Articulacion; si lo apaga y despues edita
+// el nombre de un producto, el pedido llega sin estos campos, y sin esta
+// regla la edicion le borraria en silencio lo que habia elegido mostrar.
+// "actual" es el producto como esta guardado (null en un alta).
+const validarArticulacion = async (body, actual) => {
+
+  let visible_empresas = actual ? actual.visible_empresas : 0
+  if (body.visible_empresas !== undefined) {
+    visible_empresas = [true, 1, '1', 'true'].includes(body.visible_empresas) ? 1 : 0
+  }
+
+  let id_rubro = actual ? actual.id_rubro : null
+  if (body.id_rubro !== undefined) {
+    if (body.id_rubro === null || body.id_rubro === '') {
+      id_rubro = null
+    } else {
+      const rubro = await rubroModel.findRubroById(Number(body.id_rubro) || 0)
+      if (!rubro) {
+        return { error: 'No se encontró el rubro elegido' }
+      }
+      id_rubro = rubro.id_rubro
+    }
+  }
+
+  // Sin rubro, nadie lo encontraria buscando por rubro, y en la ficha de la
+  // empresa no tendria donde ir.
+  if (visible_empresas && !id_rubro) {
+    return { error: 'Para mostrarlo a otras empresas, elegí en qué rubro va' }
+  }
+
+  return { visible_empresas, id_rubro }
+}
 
 // Como se mide lo que se esta cargando. Es lo unico que separa de verdad a un
 // producto de un servicio, y por eso esta escrito en un solo lugar.
@@ -269,6 +307,11 @@ exports.crearProducto = async (req, res) => {
       return res.status(400).json({ error: clasificacion.error })
     }
 
+    const articulacion = await validarArticulacion(req.body, null)
+    if (articulacion.error) {
+      return res.status(400).json({ error: articulacion.error })
+    }
+
     const id_producto = await productoModel.createProducto({
       nombre,
       descripcion,
@@ -277,7 +320,9 @@ exports.crearProducto = async (req, res) => {
       id_empresa,
       es_servicio,
       costo_referencia: costo.valor,
-      precio_venta: precio.valor
+      precio_venta: precio.valor,
+      visible_empresas: articulacion.visible_empresas,
+      id_rubro: articulacion.id_rubro
     })
 
     res.status(201).json({ id_producto, message: `${r.Uno} creado correctamente` })
@@ -334,6 +379,11 @@ exports.actualizarProducto = async (req, res) => {
       return res.status(400).json({ error: clasificacion.error })
     }
 
+    const articulacion = await validarArticulacion(req.body, producto)
+    if (articulacion.error) {
+      return res.status(400).json({ error: articulacion.error })
+    }
+
     // La fecha del costo sólo se mueve si el valor cambió de verdad. Corregir
     // una falta de ortografía en el nombre no tiene por qué rejuvenecer un
     // costo de hace ocho meses, que es justo lo que la fecha delata.
@@ -347,7 +397,9 @@ exports.actualizarProducto = async (req, res) => {
       ...clasificacion,
       costo_referencia: costo.valor,
       costoCambio,
-      precio_venta: precio.valor
+      precio_venta: precio.valor,
+      visible_empresas: articulacion.visible_empresas,
+      id_rubro: articulacion.id_rubro
     })
 
     res.json({ message: `${r.Uno} actualizado correctamente` })

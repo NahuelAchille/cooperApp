@@ -27,10 +27,11 @@ const createConAdmin = async (empresa, admin) => {
     await conexion.beginTransaction()
 
     const [resultadoEmpresa] = await conexion.query(
-      `INSERT INTO empresas (nombre, email, cuit, federacion, domicilio, estado)
-       VALUES (?, ?, ?, ?, ?, 'pendiente')`,
+      `INSERT INTO empresas (nombre, email, cuit, federacion, domicilio, id_localidad, id_provincia, estado)
+       VALUES (?, ?, ?, ?, ?, ?, ?, 'pendiente')`,
       [empresa.nombre, empresa.email, empresa.cuit,
-       empresa.federacion || null, empresa.domicilio || null]
+       empresa.federacion || null, empresa.domicilio || null,
+       empresa.id_localidad || null, empresa.id_provincia || null]
     )
 
     const id_empresa = resultadoEmpresa.insertId
@@ -85,7 +86,8 @@ const findAll = async () => {
 const findById = async (id_empresa) => {
 
   const [rows] = await db.query(`
-    SELECT id_empresa, nombre, email, cuit, federacion, domicilio,
+    SELECT id_empresa, nombre, email, cuit, federacion, domicilio, telefono, id_localidad,
+           mostrar_email, mostrar_telefono, mostrar_domicilio,
            cantidadTrabajadores, cantidadDiversidad, cantidadHombre, cantidadMujer, estado
     FROM empresas
     WHERE id_empresa = ?
@@ -105,14 +107,24 @@ const findByEmailExcluyendo = async (email, id_empresa) => {
   return rows[0] || null
 }
 
-const update = async (id_empresa, { nombre, email, federacion, domicilio, cantidadTrabajadores, cantidadDiversidad, cantidadHombre, cantidadMujer }) => {
+// La provincia no se elige: sale de la localidad, asi las dos no pueden
+// contradecirse (Moron en la provincia de Cordoba).
+const update = async (id_empresa, { nombre, email, federacion, domicilio, telefono,
+                                    id_localidad, id_provincia,
+                                    mostrar_email, mostrar_telefono, mostrar_domicilio,
+                                    cantidadTrabajadores, cantidadDiversidad, cantidadHombre, cantidadMujer }) => {
 
   await db.query(`
     UPDATE empresas
-    SET nombre = ?, email = ?, federacion = ?, domicilio = ?,
+    SET nombre = ?, email = ?, federacion = ?, domicilio = ?, telefono = ?,
+        id_localidad = ?, id_provincia = ?,
+        mostrar_email = ?, mostrar_telefono = ?, mostrar_domicilio = ?,
         cantidadTrabajadores = ?, cantidadDiversidad = ?, cantidadHombre = ?, cantidadMujer = ?
     WHERE id_empresa = ?
-  `, [nombre, email, federacion, domicilio, cantidadTrabajadores, cantidadDiversidad, cantidadHombre, cantidadMujer, id_empresa])
+  `, [nombre, email, federacion, domicilio, telefono,
+      id_localidad, id_provincia,
+      mostrar_email, mostrar_telefono, mostrar_domicilio,
+      cantidadTrabajadores, cantidadDiversidad, cantidadHombre, cantidadMujer, id_empresa])
 }
 
 const updateEstado = async (id_empresa, estado) => {

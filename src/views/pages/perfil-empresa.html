@@ -113,7 +113,44 @@
           </div>
           <div class="col-md-6">
             <label class="form-label">Domicilio</label>
-            <input type="text" class="form-control" name="domicilio" placeholder="Calle, número, localidad">
+            <input type="text" class="form-control" name="domicilio" placeholder="Calle y número">
+          </div>
+          <!-- La localidad es lo que usa el buscador entre empresas para ordenar
+               de la más cercana a la más lejana. Es opcional: la lista no tiene
+               todas las del país, y nadie puede quedar trabado por eso. -->
+          <div class="col-md-6">
+            <label class="form-label">Localidad</label>
+            <select class="form-select" name="id_localidad" id="select-localidad"></select>
+            <div class="form-text">Con esto las empresas cercanas te encuentran primero.</div>
+          </div>
+          <div class="col-md-6">
+            <label class="form-label">Teléfono</label>
+            <input type="text" class="form-control" name="telefono" maxlength="30" placeholder="Ej: 11 4623-1180">
+          </div>
+        </div>
+
+        <!-- Qué datos de contacto aparecen en la ficha de la empresa cuando otra
+             la encuentra en el buscador de Articulación. La localidad se ve
+             siempre: sin ella no hay "cerca". -->
+        <p class="seccion-titulo">Qué ven las otras empresas en tu ficha</p>
+
+        <div class="mb-4">
+          <div class="form-check">
+            <input class="form-check-input" type="checkbox" name="mostrar_email" id="mostrar-email">
+            <label class="form-check-label" for="mostrar-email">El email de contacto</label>
+          </div>
+          <div class="form-check">
+            <input class="form-check-input" type="checkbox" name="mostrar_telefono" id="mostrar-telefono">
+            <label class="form-check-label" for="mostrar-telefono">El teléfono</label>
+          </div>
+          <div class="form-check">
+            <input class="form-check-input" type="checkbox" name="mostrar_domicilio" id="mostrar-domicilio">
+            <label class="form-check-label" for="mostrar-domicilio">El domicilio</label>
+          </div>
+          <div class="form-text">
+            Tu ficha aparece en el buscador de Articulación cuando marcás algún producto o servicio
+            para "Mostrar a otras empresas". La localidad se ve siempre.
+            <a href="#" id="link-mi-ficha" class="d-none">Ver mi ficha como la ven las demás</a>
           </div>
         </div>
 
@@ -220,11 +257,26 @@
       if (user.rol !== 'admin_empresa') {
 
         form.querySelectorAll('input').forEach(input => input.readOnly = true)
+        // readOnly no frena a un desplegable ni a una casilla: van deshabilitados
+        form.querySelectorAll('select, input[type="checkbox"]').forEach(campo => campo.disabled = true)
         document.getElementById('zona-botones').innerHTML =
           '<div class="nota-solo-lectura"><i class="fa-solid fa-eye me-1"></i>Sólo el administrador de la empresa puede modificar estos datos.</div>'
       }
 
       return user
+    }
+
+    // Evita romper el HTML (y que se ejecute código) si un nombre trae comillas o etiquetas
+    function esc(texto) {
+      return String(texto).replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+    }
+
+    // La lista de localidades es la misma para todos y no cambia: se pide una vez.
+    async function cargarLocalidades() {
+      const localidades = await fetch('/localidades').then(r => r.ok ? r.json() : [])
+      document.getElementById('select-localidad').innerHTML =
+        '<option value="">Sin elegir</option>' +
+        localidades.map(l => `<option value="${l.id_localidad}">${esc(l.nombre)} (${esc(l.provincia_nombre)})</option>`).join('')
     }
 
     // Trae los datos de la empresa y los pone en el formulario
@@ -243,6 +295,11 @@
       form.email.value                = empresa.email ?? ''
       form.federacion.value           = empresa.federacion ?? ''
       form.domicilio.value            = empresa.domicilio ?? ''
+      form.telefono.value             = empresa.telefono ?? ''
+      form.id_localidad.value         = empresa.id_localidad ?? ''
+      form.mostrar_email.checked      = !!empresa.mostrar_email
+      form.mostrar_telefono.checked   = !!empresa.mostrar_telefono
+      form.mostrar_domicilio.checked  = !!empresa.mostrar_domicilio
       form.cantidadTrabajadores.value = empresa.cantidadTrabajadores ?? ''
       form.cantidadMujer.value        = empresa.cantidadMujer ?? ''
       form.cantidadHombre.value       = empresa.cantidadHombre ?? ''
@@ -262,6 +319,12 @@
       errorDiv.classList.add('d-none')
 
       const datos = Object.fromEntries(new FormData(form))
+
+      // Una casilla destildada no viaja en el FormData: hay que mandarla
+      // explícita, si no el servidor la deja como estaba y no se puede apagar.
+      datos.mostrar_email     = form.mostrar_email.checked
+      datos.mostrar_telefono  = form.mostrar_telefono.checked
+      datos.mostrar_domicilio = form.mostrar_domicilio.checked
 
       if (!datos.nombre.trim() || !datos.email.trim()) {
         mostrarError('El nombre y el email son obligatorios.')
@@ -302,6 +365,16 @@
       const user = await prepararPantalla()
       if (!user || user.rol === 'superadmin') return
 
+      // La propia ficha del buscador sólo existe con Articulación prendido.
+      if (moduloActivo('articulacion') && user.empresa?.id) {
+        const link = document.getElementById('link-mi-ficha')
+        link.href = `/pages/empresa-ficha.html?id=${encodeURIComponent(user.empresa.id)}`
+        link.classList.remove('d-none')
+      }
+
+      // Primero las localidades: si la empresa llega antes, su localidad no
+      // tiene en qué opción quedar elegida.
+      await cargarLocalidades()
       cargarEmpresa()
     }
 

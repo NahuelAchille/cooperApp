@@ -2,6 +2,7 @@ const bcrypt = require('bcrypt')
 const userModel = require('../models/user.model')
 const empresaModel = require('../models/empresa.model')
 const { validarLargos, LARGOS, mensajeDeDuplicado } = require('../services/validacion.service')
+const { resolverLocalidad } = require('../services/ubicacion.service')
 
 const DUPLICADOS_REGISTRO = [['cuit', 'Ya existe una empresa con ese CUIT'],
                              ['dni', 'Ya existe un usuario con ese DNI'],
@@ -95,6 +96,13 @@ exports.registerEmpresa = async (req, res) => {
       return res.status(400).json({ error: 'Ya existe un usuario con ese DNI', campo: 'dni' })
     }
 
+    // Opcional: la lista no tiene todas las localidades del país, y nadie
+    // puede quedar sin registrarse por eso. Se completa después en Mi empresa.
+    const ubicacion = await resolverLocalidad(req.body.empresa_localidad)
+    if (ubicacion.error) {
+      return res.status(400).json({ error: ubicacion.error, campo: 'empresa_localidad' })
+    }
+
     const hashedPassword = await bcrypt.hash(password, 10)
 
     // Empresa y administrador se crean juntos o no se crea ninguno: si el alta
@@ -106,7 +114,8 @@ exports.registerEmpresa = async (req, res) => {
         email: empresa_email,
         cuit: empresa_cuit,
         federacion: empresa_federacion,
-        domicilio: empresa_domicilio
+        domicilio: empresa_domicilio,
+        ...ubicacion
       },
       {
         nombre, apellido, email, dni,

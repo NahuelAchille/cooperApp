@@ -4,7 +4,10 @@ const db = mysql.createPool({
   host: 'localhost',
   user: 'root',
   password: '',
-  database: 'cooperApp'
+  // DB_NAME es opcional y casi nunca hace falta: sirve para levantar una
+  // segunda copia de la app contra otra base (por ejemplo, para probar algo
+  // mientras otra persona audita la base de siempre). Sin ponerlo, es cooperApp.
+  database: process.env.DB_NAME || 'cooperApp'
 })
 
 // MariaDB de XAMPP viene SIN modo estricto. Sin el, la base no rechaza lo que

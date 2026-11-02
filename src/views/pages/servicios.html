@@ -164,6 +164,11 @@
             </div>
 
             <div id="aviso-clasificacion" class="alert alert-warning py-2 small mt-3 d-none"></div>
+
+            <!-- "Mostrar a otras empresas": sólo con Articulación prendido
+                 (lo arma components/articulacion-catalogo.js) -->
+            <div id="bloque-articulacion"></div>
+
             <div id="prod-error" class="text-danger small mt-2 d-none"></div>
           </form>
         </div>
@@ -201,6 +206,7 @@
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
   <!-- Los filtros, plegados en el celular (UX 28/09, H-05) -->
   <script src="/components/filtros-plegables.js"></script>
+  <script src="/components/articulacion-catalogo.js"></script>
 
   <script>
 
@@ -260,6 +266,7 @@
       if (puedeEditar) {
         document.getElementById('link-categorias').classList.remove('d-none')
         document.getElementById('btn-nuevo').classList.remove('d-none')
+        await BloqueArticulacion.preparar()
       }
 
       // El filtro de categorías las muestra TODAS, activas e inactivas: si una
@@ -327,6 +334,7 @@
           <td class="td-principal" data-label="Servicio">
             <div class="prod-nombre">${esc(p.nombre)}</div>
             ${p.descripcion ? `<div class="prod-descripcion">${esc(p.descripcion)}</div>` : ''}
+            ${p.visible_empresas && moduloActivo('articulacion') ? '<div class="badge-visible"><i class="fa-solid fa-handshake me-1"></i>Lo ven otras empresas</div>' : ''}
           </td>
           <td data-label="Categoría">${esc(p.categoria_nombre)}</td>
           <td data-label="Subcategoría">${p.subcategoria_nombre ? esc(p.subcategoria_nombre) : '<span class="sin-dato">—</span>'}</td>
@@ -503,6 +511,8 @@
         await cargarSubcategorias('')
       }
 
+      BloqueArticulacion.llenar(esEdicion ? producto : null)
+
       new bootstrap.Modal(document.getElementById('modalProducto')).show()
     }
 
@@ -522,6 +532,10 @@
       if (!datos.id_categoria_producto) {
         return mostrarError(errorDiv, 'Elegí una categoría.')
       }
+      const errorArticulacion = BloqueArticulacion.validar()
+      if (errorArticulacion) {
+        return mostrarError(errorDiv, errorArticulacion)
+      }
 
       boton.disabled = true
 
@@ -537,7 +551,10 @@
           nombre: datos.nombre,
           descripcion: datos.descripcion,
           id_categoria_producto: datos.id_categoria_producto,
-          id_subcategoria_producto: datos.id_subcategoria_producto || null
+          id_subcategoria_producto: datos.id_subcategoria_producto || null,
+          // Si Articulación está apagado no viaja nada, y el servidor deja
+          // lo que había: apagar el módulo no borra lo elegido.
+          ...BloqueArticulacion.datos()
         })
       })
       const resultado = await res.json()

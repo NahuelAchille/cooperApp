@@ -14,6 +14,9 @@ const stockRoutes = require('./src/routes/stock.routes')
 const servicioRoutes = require('./src/routes/servicio.routes')
 const categoriaServicioRoutes = require('./src/routes/categoria-servicio.routes')
 const reporteRoutes = require('./src/routes/reporte.routes')
+const rubroRoutes = require('./src/routes/rubro.routes')
+const localidadRoutes = require('./src/routes/localidad.routes')
+const articulacionRoutes = require('./src/routes/articulacion.routes')
 
 app.use(express.urlencoded({ extended: true }))
 app.use(express.json())
@@ -52,6 +55,12 @@ app.use('/servicios', servicioRoutes)
 
 app.use('/reportes', reporteRoutes)
 
+// Articulacion: el buscador entre empresas, y las dos listas comunes que usa
+// (rubros y localidades).
+app.use('/rubros', rubroRoutes)
+app.use('/localidades', localidadRoutes)
+app.use('/articulacion', articulacionRoutes)
+
 // Ultimo de todos: recoge lo que ningun controlador atajo.
 //
 // Sin esto contestaba el manejador por defecto de Express, que devuelve una
@@ -78,4 +87,7 @@ app.use((err, req, res, next) => {
   res.status(500).json({ error: 'Error del servidor' })
 })
 
-app.listen(3000, () => console.log('Servidor corriendo en puerto 3000'))
+// PORT es opcional, por el mismo motivo que DB_NAME en config/db.js: una
+// segunda copia de la app no puede usar el mismo puerto. Sin ponerlo, es 3000.
+const PUERTO = Number(process.env.PORT) || 3000
+app.listen(PUERTO, () => console.log(`Servidor corriendo en puerto ${PUERTO}`))

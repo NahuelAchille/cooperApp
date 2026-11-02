@@ -133,6 +133,9 @@ body {
 
 .prod-nombre { font-weight: 600; }
 .prod-descripcion { color: #6c8a7a; font-size: 0.82rem; }
+/* Lo que la empresa eligió mostrar en el buscador entre empresas
+   (Articulación). Servicios usa esta misma hoja. */
+.badge-visible { color: #2d7a4f; font-size: 0.76rem; font-weight: 600; margin-top: 2px; }
 .fila-inactiva .prod-nombre { text-decoration: line-through; opacity: 0.6; }
 
 /* La subcategoría es opcional: cuando no tiene, se marca con un guion suave

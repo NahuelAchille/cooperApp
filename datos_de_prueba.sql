@@ -2,7 +2,7 @@
 -- CooperApp · DATOS DE PRUEBA
 -- =============================================================================
 --
--- Carga 4 empresas con 27 usuarios en total, para poder probar el sistema
+-- Carga 5 empresas con 28 usuarios en total, para poder probar el sistema
 -- con algo parecido a la realidad. NO es parte del sistema: es sólo data de
 -- prueba, por eso está separado de database.sql.
 --
@@ -10,7 +10,7 @@
 --   "C:\xampp\mysql\bin\mysql.exe" -u root < database.sql
 --   "C:\xampp\mysql\bin\mysql.exe" -u root < datos_de_prueba.sql
 --
--- Se puede volver a correr cuando quieras: arranca borrando estas 4
+-- Se puede volver a correr cuando quieras: arranca borrando estas 5
 -- empresas y sus usuarios, así resetea los datos de prueba sin tocar
 -- el superadmin ni nada que hayas creado por fuera.
 --
@@ -20,7 +20,7 @@
 --   todos los demás         ->  prueba123
 --
 -- QUÉ TRAE PARA PROBAR
---   · 3 empresas activas y 1 pendiente (para probar la aprobación)
+--   · 4 empresas activas y 1 pendiente (para probar la aprobación)
 --   · 1 administrador por empresa, más tesoreros y operadores
 --   · 3 usuarios con contraseña temporal sin cambiar
 --   · 2 usuarios dados de baja
@@ -42,60 +42,71 @@ USE cooperApp;
 DELETE FROM movimientos_stock WHERE id_empresa IN (
   SELECT id_empresa FROM empresas WHERE email IN (
     'contacto@laesperanza.com.ar', 'contacto@elamanecer.com.ar',
-    'contacto@metaloeste.com.ar',  'contacto@huertanorte.com.ar'));
+    'contacto@metaloeste.com.ar',  'contacto@huertanorte.com.ar',
+    'contacto@papeleracastelar.com.ar'));
 
 DELETE FROM movimientos WHERE id_empresa IN (
   SELECT id_empresa FROM empresas WHERE email IN (
     'contacto@laesperanza.com.ar', 'contacto@elamanecer.com.ar',
-    'contacto@metaloeste.com.ar',  'contacto@huertanorte.com.ar'));
+    'contacto@metaloeste.com.ar',  'contacto@huertanorte.com.ar',
+    'contacto@papeleracastelar.com.ar'));
 
 DELETE FROM tipos_movimiento WHERE id_categoria IN (
   SELECT id_categoria FROM categorias_movimiento WHERE id_empresa IN (
     SELECT id_empresa FROM empresas WHERE email IN (
       'contacto@laesperanza.com.ar', 'contacto@elamanecer.com.ar',
-      'contacto@metaloeste.com.ar',  'contacto@huertanorte.com.ar')));
+      'contacto@metaloeste.com.ar',  'contacto@huertanorte.com.ar',
+    'contacto@papeleracastelar.com.ar')));
 
 DELETE FROM categorias_movimiento WHERE id_empresa IN (
   SELECT id_empresa FROM empresas WHERE email IN (
     'contacto@laesperanza.com.ar', 'contacto@elamanecer.com.ar',
-    'contacto@metaloeste.com.ar',  'contacto@huertanorte.com.ar'));
+    'contacto@metaloeste.com.ar',  'contacto@huertanorte.com.ar',
+    'contacto@papeleracastelar.com.ar'));
 
 DELETE FROM motivos_stock WHERE id_empresa IN (
   SELECT id_empresa FROM empresas WHERE email IN (
     'contacto@laesperanza.com.ar', 'contacto@elamanecer.com.ar',
-    'contacto@metaloeste.com.ar',  'contacto@huertanorte.com.ar'));
+    'contacto@metaloeste.com.ar',  'contacto@huertanorte.com.ar',
+    'contacto@papeleracastelar.com.ar'));
 
 -- Catalogo: primero los productos, despues su clasificacion
 -- (subcategorias -> categorias).
 DELETE FROM productos WHERE id_empresa IN (
   SELECT id_empresa FROM empresas WHERE email IN (
     'contacto@laesperanza.com.ar', 'contacto@elamanecer.com.ar',
-    'contacto@metaloeste.com.ar',  'contacto@huertanorte.com.ar'));
+    'contacto@metaloeste.com.ar',  'contacto@huertanorte.com.ar',
+    'contacto@papeleracastelar.com.ar'));
 
 DELETE FROM subcategorias_producto WHERE id_categoria_producto IN (
   SELECT id_categoria_producto FROM categorias_producto WHERE id_empresa IN (
     SELECT id_empresa FROM empresas WHERE email IN (
       'contacto@laesperanza.com.ar', 'contacto@elamanecer.com.ar',
-      'contacto@metaloeste.com.ar',  'contacto@huertanorte.com.ar')));
+      'contacto@metaloeste.com.ar',  'contacto@huertanorte.com.ar',
+    'contacto@papeleracastelar.com.ar')));
 
 DELETE FROM categorias_producto WHERE id_empresa IN (
   SELECT id_empresa FROM empresas WHERE email IN (
     'contacto@laesperanza.com.ar', 'contacto@elamanecer.com.ar',
-    'contacto@metaloeste.com.ar',  'contacto@huertanorte.com.ar'));
+    'contacto@metaloeste.com.ar',  'contacto@huertanorte.com.ar',
+    'contacto@papeleracastelar.com.ar'));
 
 DELETE FROM empresa_modulos WHERE id_empresa IN (
   SELECT id_empresa FROM empresas WHERE email IN (
     'contacto@laesperanza.com.ar', 'contacto@elamanecer.com.ar',
-    'contacto@metaloeste.com.ar',  'contacto@huertanorte.com.ar'));
+    'contacto@metaloeste.com.ar',  'contacto@huertanorte.com.ar',
+    'contacto@papeleracastelar.com.ar'));
 
 DELETE FROM usuarios WHERE id_empresa IN (
   SELECT id_empresa FROM empresas WHERE email IN (
     'contacto@laesperanza.com.ar', 'contacto@elamanecer.com.ar',
-    'contacto@metaloeste.com.ar',  'contacto@huertanorte.com.ar'));
+    'contacto@metaloeste.com.ar',  'contacto@huertanorte.com.ar',
+    'contacto@papeleracastelar.com.ar'));
 
 DELETE FROM empresas WHERE email IN (
   'contacto@laesperanza.com.ar', 'contacto@elamanecer.com.ar',
-  'contacto@metaloeste.com.ar',  'contacto@huertanorte.com.ar');
+  'contacto@metaloeste.com.ar',  'contacto@huertanorte.com.ar',
+    'contacto@papeleracastelar.com.ar');
 
 -- =============================================================================
 -- 1 · Alimentos La Esperanza S.R.L.  (activa · 7 empleados · alimentos)
@@ -751,6 +762,104 @@ INSERT INTO movimientos_stock (id_producto, id_motivo_stock, cantidad, descripci
   (@p_chapa, @m_venta_metal, 4, 'Venta a cliente',        CURDATE() - INTERVAL 7 DAY, @empresa, @operador, @mov_venta_chapa),
   -- Sin el $: el reporte la cuenta como "sin el $ cargado".
   (@p_cano,  @m_venta_metal, 10, 'Venta sin cobrar aún',  CURDATE() - INTERVAL 6 DAY, @empresa, @operador, NULL);
+
+-- =============================================================================
+-- ARTICULACIÓN: el buscador entre empresas
+-- =============================================================================
+-- Para que se pueda probar el ejemplo que lo pensó: escribir "papel" y ver
+-- quién lo ofrece, de la empresa más cercana a la más lejana.
+--
+--   · Cada empresa tiene su localidad y un teléfono.
+--   · Las cuatro activas tienen prendido el módulo de Articulación.
+--   · Algunos productos y servicios se muestran a las demás empresas, con su
+--     rubro de la lista común. OTROS NO, a propósito: mostrar es una decisión
+--     de cada empresa (el Queso cremoso de La Esperanza, por ejemplo, no está).
+--   · Metalúrgica del Oeste muestra su domicilio y El Amanecer esconde su
+--     teléfono, para ver en la ficha que cada una elige qué se ve.
+
+-- ---------------------------------------------- 5 · Papelera Castelar S.R.L. --
+-- Una empresa chica que existe sólo para el ejemplo del papel: no tiene
+-- finanzas ni stock cargados, sólo su catálogo.
+INSERT INTO empresas
+  (nombre, email, cuit, federacion, domicilio, estado,
+   cantidadTrabajadores, cantidadMujer, cantidadHombre, cantidadDiversidad)
+VALUES
+  ('Papelera Castelar S.R.L.', 'contacto@papeleracastelar.com.ar',
+   30711223344, NULL, 'Arias 2150, Castelar', 'activa',
+   4, 2, 2, 0);
+
+INSERT INTO usuarios
+  (nombre, apellido, email, password_hash, dni, id_rol, activo, debe_cambiar_password, id_empresa)
+VALUES
+  ('Gustavo', 'Pérez', 'gustavo@papeleracastelar.com.ar', '$2b$10$PjeltbH8E0BboqNDV//HI.yHxwvN8uJtQ9umbfnOc0u7Ye9wO3TnK', '25987654', 1, 1, 0,
+   (SELECT id_empresa FROM empresas WHERE email = 'contacto@papeleracastelar.com.ar'));
+
+SET @empresa := (SELECT id_empresa FROM empresas WHERE email = 'contacto@papeleracastelar.com.ar');
+
+INSERT INTO categorias_producto (nombre, id_empresa, activo) VALUES
+  ('Papel',  @empresa, 1),
+  ('Cartón', @empresa, 1);
+
+SET @cat_papel  := (SELECT id_categoria_producto FROM categorias_producto WHERE id_empresa = @empresa AND nombre = 'Papel');
+SET @cat_carton := (SELECT id_categoria_producto FROM categorias_producto WHERE id_empresa = @empresa AND nombre = 'Cartón');
+
+INSERT INTO productos (nombre, descripcion, unidad_medida, stock_minimo, id_categoria_producto, id_empresa, activo) VALUES
+  ('Resma de papel A4 75 g',      'Caja de 10 resmas de 500 hojas',      'caja',    0, @cat_papel,  @empresa, 1),
+  ('Bolsas de papel kraft',       'Paquete de 100, con manija',          'paquete', 0, @cat_papel,  @empresa, 1),
+  ('Rollo de papel para envolver','Bobina de 40 cm de ancho',            'unidad',  0, @cat_papel,  @empresa, 1),
+  ('Cajas de cartón corrugado',   'Medidas estándar y a pedido',         'unidad',  0, @cat_carton, @empresa, 1);
+
+-- ---------------------------------------------- localidad y teléfono --
+UPDATE empresas e
+JOIN (
+  SELECT 'contacto@laesperanza.com.ar' AS email, 'Ituzaingó' AS localidad, '11 4623-1180' AS telefono UNION ALL
+  SELECT 'contacto@elamanecer.com.ar',           'Morón',                  '11 4489-2210'             UNION ALL
+  SELECT 'contacto@metaloeste.com.ar',           'Merlo',                  '0220 448-7730'            UNION ALL
+  SELECT 'contacto@huertanorte.com.ar',          'San Miguel',             '11 4451-9022'             UNION ALL
+  SELECT 'contacto@papeleracastelar.com.ar',     'Castelar',               '11 4627-3345'
+) d ON d.email = e.email
+JOIN localidades l ON l.nombre = d.localidad
+SET e.id_localidad = l.id_localidad,
+    e.id_provincia = l.id_provincia,
+    e.telefono     = d.telefono;
+
+UPDATE empresas SET mostrar_domicilio = 1 WHERE email = 'contacto@metaloeste.com.ar';
+UPDATE empresas SET mostrar_telefono  = 0 WHERE email = 'contacto@elamanecer.com.ar';
+
+-- ---------------------------------------------- módulos --
+INSERT INTO empresa_modulos (id_empresa, id_modulo, activo)
+SELECT e.id_empresa, m.id_modulo, 1
+FROM empresas e JOIN modulos m
+WHERE (e.email IN ('contacto@laesperanza.com.ar', 'contacto@elamanecer.com.ar',
+                   'contacto@metaloeste.com.ar',  'contacto@papeleracastelar.com.ar')
+       AND m.clave = 'articulacion')
+   OR (e.email = 'contacto@papeleracastelar.com.ar' AND m.clave = 'productos');
+
+-- ---------------------------------------------- qué se muestra, y en qué rubro --
+UPDATE productos p
+JOIN empresas e ON e.id_empresa = p.id_empresa
+JOIN (
+  SELECT 'contacto@laesperanza.com.ar'      AS email, 'Fideos secos 500g'            AS producto, 'Almacén y secos'           AS rubro UNION ALL
+  SELECT 'contacto@laesperanza.com.ar',               'Arroz largo fino',                         'Almacén y secos'                    UNION ALL
+  SELECT 'contacto@laesperanza.com.ar',               'Bolsa de pan',                             'Panificados'                        UNION ALL
+  SELECT 'contacto@laesperanza.com.ar',               'Agua mineral 2L',                          'Bebidas'                            UNION ALL
+  SELECT 'contacto@elamanecer.com.ar',                'Tela algodón blanca',                      'Telas'                              UNION ALL
+  SELECT 'contacto@elamanecer.com.ar',                'Tela algodón azul',                        'Telas'                              UNION ALL
+  SELECT 'contacto@elamanecer.com.ar',                'Remera lisa talle M',                      'Indumentaria'                       UNION ALL
+  SELECT 'contacto@elamanecer.com.ar',                'Ambo de trabajo',                          'Ropa de trabajo'                    UNION ALL
+  SELECT 'contacto@metaloeste.com.ar',                'Chapa galvanizada N°20',                   'Chapa y perfiles'                   UNION ALL
+  SELECT 'contacto@metaloeste.com.ar',                'Caño estructural 40x40',                   'Caños y tubos'                      UNION ALL
+  SELECT 'contacto@metaloeste.com.ar',                'Soldadura a domicilio',                    'Soldadura y corte'                  UNION ALL
+  SELECT 'contacto@metaloeste.com.ar',                'Corte de chapa a medida',                  'Soldadura y corte'                  UNION ALL
+  SELECT 'contacto@metaloeste.com.ar',                'Plegado de chapa',                         'Piezas a medida'                    UNION ALL
+  SELECT 'contacto@papeleracastelar.com.ar',          'Resma de papel A4 75 g',                   'Papel de impresión y oficina'       UNION ALL
+  SELECT 'contacto@papeleracastelar.com.ar',          'Bolsas de papel kraft',                    'Bolsas y envases'                   UNION ALL
+  SELECT 'contacto@papeleracastelar.com.ar',          'Rollo de papel para envolver',             'Bolsas y envases'                   UNION ALL
+  SELECT 'contacto@papeleracastelar.com.ar',          'Cajas de cartón corrugado',                'Cartón y cajas'
+) v ON v.email = e.email AND v.producto = p.nombre
+JOIN rubros r ON r.nombre = v.rubro AND r.id_rubro_padre IS NOT NULL
+SET p.visible_empresas = 1,
+    p.id_rubro         = r.id_rubro;
 
 -- ------------------------------------------------------------ comprobación --
 SELECT c.nombre AS empresa, c.estado, COUNT(u.id) AS empleados

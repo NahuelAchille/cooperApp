@@ -32,7 +32,8 @@ const LARGOS = {
     ['nombre', 'El nombre de la empresa', 100],
     ['email', 'El email', 150],
     ['domicilio', 'El domicilio', 255],
-    ['federacion', 'La cámara o federación', 255]
+    ['federacion', 'La cámara o federación', 255],
+    ['telefono', 'El teléfono', 30]
   ],
   usuario: [
     ['nombre', 'El nombre', 100],

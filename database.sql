@@ -48,10 +48,18 @@ CREATE TABLE provincias (
   FOREIGN KEY (id_pais) REFERENCES pais(id_pais)
 );
 
+-- Las coordenadas son las del CENTRO de la localidad, aproximadas. Sirven
+-- para ordenar el buscador entre empresas por cercania (Articulacion) sin
+-- depender de ningun servicio externo: la empresa elige su localidad de una
+-- lista y la distancia se calcula entre localidades. Es aproximado a
+-- proposito -- dos empresas de la misma localidad quedan igual de cerca --
+-- porque marcar un pin en un mapa es mucho pedir a este publico.
 CREATE TABLE localidades (
   id_localidad INT AUTO_INCREMENT PRIMARY KEY,
   nombre VARCHAR(100),
   id_provincia INT NOT NULL,
+  latitud  DECIMAL(9,6) NULL,
+  longitud DECIMAL(9,6) NULL,
   FOREIGN KEY (id_provincia) REFERENCES provincias(id_provincia)
 );
 
@@ -88,6 +96,14 @@ CREATE TABLE empresas (
   -- pertenece a alguna. Nunca fue obligatorio.
   federacion VARCHAR(255),
   domicilio VARCHAR(255),
+  telefono VARCHAR(30),
+  -- Que datos de contacto ven las OTRAS empresas en su ficha del buscador
+  -- (Articulacion). El email y el telefono vienen prendidos: son el contacto
+  -- comercial, y una ficha sin contacto no sirve para nada. El domicilio viene
+  -- apagado, porque puede ser una casa particular; la localidad se ve siempre.
+  mostrar_email     TINYINT(1) NOT NULL DEFAULT 1,
+  mostrar_telefono  TINYINT(1) NOT NULL DEFAULT 1,
+  mostrar_domicilio TINYINT(1) NOT NULL DEFAULT 0,
   id_pais INT,
   id_localidad INT,
   id_provincia INT,
@@ -196,6 +212,34 @@ CREATE TABLE movimientos (
   FOREIGN KEY (id_tipo)        REFERENCES tipos_movimiento(id_tipo),
   FOREIGN KEY (id_empresa) REFERENCES empresas(id_empresa),
   FOREIGN KEY (id_usuario)     REFERENCES usuarios(id)
+);
+
+
+-- =============================================
+-- RUBROS (Articulacion)
+-- =============================================
+--
+-- La lista que usa el buscador entre empresas, de general a especifico (ej:
+-- "Papel, cartón y embalaje" > "Cartón y cajas"). Es UNA SOLA para todas las
+-- empresas y la define el sistema, igual que el catalogo de modulos.
+--
+-- No sirven para esto las categorias de producto de cada empresa: cada una
+-- arma las suyas a su manera ("Alimentos", "Comestibles", "Almacen"), y un
+-- buscador entre empresas necesita que todas hablen el mismo idioma.
+--
+-- Dos niveles en una sola tabla: los generales tienen id_rubro_padre en NULL.
+-- Un producto puede colgarse de un general (si ninguno especifico le calza)
+-- o de uno especifico.
+--
+-- Ningun rubro se llama "Servicios": chocaria con el modulo de Servicios, el
+-- mismo choque que obligo a renombrar la categoria de dinero a "Gastos fijos".
+CREATE TABLE rubros (
+  id_rubro       INT AUTO_INCREMENT PRIMARY KEY,
+  nombre         VARCHAR(80) NOT NULL,
+  id_rubro_padre INT NULL,
+  orden          SMALLINT NOT NULL DEFAULT 0,
+  FOREIGN KEY (id_rubro_padre) REFERENCES rubros(id_rubro),
+  UNIQUE (id_rubro_padre, nombre)
 );
 
 
@@ -313,11 +357,19 @@ CREATE TABLE productos (
   -- No es el costo de arriba: aquel es lo que te cuesta a vos, este es lo que
   -- le cobras al cliente. Un servicio no lleva ninguno de los dos.
   precio_venta             DECIMAL(12,2) NULL,
+  -- Articulacion: si las OTRAS empresas lo ven en el buscador, y en que rubro
+  -- de la lista comun. Lo que se ofrece a otras empresas sale de este mismo
+  -- catalogo (decision del usuario, 02/11/2026): asi nada se carga dos veces.
+  -- Las demas ven solo el nombre, la descripcion y el rubro: nunca el stock,
+  -- el costo ni el precio. Para mostrarlo hace falta el rubro.
+  visible_empresas         TINYINT(1) NOT NULL DEFAULT 0,
+  id_rubro                 INT NULL,
   activo                   TINYINT(1) DEFAULT 1,
   creado_en                DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
   FOREIGN KEY (id_categoria_producto)    REFERENCES categorias_producto(id_categoria_producto),
   FOREIGN KEY (id_subcategoria_producto) REFERENCES subcategorias_producto(id_subcategoria_producto),
   FOREIGN KEY (id_empresa)               REFERENCES empresas(id_empresa),
+  FOREIGN KEY (id_rubro)                 REFERENCES rubros(id_rubro),
   UNIQUE (id_empresa, es_servicio, nombre)
 );
 
@@ -500,7 +552,134 @@ INSERT INTO modulos (clave, nombre, descripcion, opcional, activo_por_defecto, o
 -- se lee como "lo estoy apretando mal". Ahora existe y da un reporte de
 -- verdad, asi que la razon de apagarlo ya no corre.
 ('reportes',     'Reportes',     'Reportes por período, categoría, producto y servicio, con descarga.',                        1, 1, 4),
-('articulacion', 'Articulación', 'Publicar necesidades y ofertas, y encontrar coincidencias con otras empresas.',              1, 0, 5);
+('articulacion', 'Articulación', 'Buscar qué empresas cercanas ofrecen lo que necesitás, y mostrar lo tuyo a las demás.',      1, 0, 5);
+
+-- =============================================
+-- UBICACION: la lista de localidades para el buscador entre empresas
+-- =============================================
+--
+-- Arranca con el Gran Buenos Aires, CABA y La Plata, que es donde estan las
+-- empresas con las que trabaja el grupo. Ampliarla es agregar filas.
+--
+-- Las coordenadas son el centro APROXIMADO de cada localidad: alcanzan para
+-- ordenar "de la mas cercana a la mas lejana", que es para lo unico que se
+-- usan. No son una direccion.
+INSERT INTO pais (id_pais, nombre) VALUES (1, 'Argentina');
+
+INSERT INTO provincias (id_provincia, nombre, id_pais) VALUES
+  (1, 'Buenos Aires', 1),
+  (2, 'Ciudad Autónoma de Buenos Aires', 1);
+
+INSERT INTO localidades (nombre, id_provincia, latitud, longitud) VALUES
+  ('Ciudad de Buenos Aires', 2, -34.603700, -58.381600),
+  ('Avellaneda',             1, -34.662000, -58.365000),
+  ('Berazategui',            1, -34.763000, -58.212000),
+  ('Caseros',                1, -34.605000, -58.564000),
+  ('Castelar',               1, -34.650000, -58.644000),
+  ('Escobar',                1, -34.348000, -58.795000),
+  ('Ezeiza',                 1, -34.854000, -58.523000),
+  ('Florencio Varela',       1, -34.827000, -58.395000),
+  ('General Rodríguez',      1, -34.608000, -58.952000),
+  ('González Catán',         1, -34.770000, -58.630000),
+  ('Haedo',                  1, -34.644000, -58.593000),
+  ('Hurlingham',             1, -34.588600, -58.639000),
+  ('Isidro Casanova',        1, -34.700000, -58.585000),
+  ('Ituzaingó',              1, -34.658300, -58.666700),
+  ('José C. Paz',            1, -34.515000, -58.768000),
+  ('La Plata',               1, -34.921000, -57.955000),
+  ('Laferrere',              1, -34.747000, -58.588000),
+  ('Lanús',                  1, -34.700000, -58.392000),
+  ('Lomas de Zamora',        1, -34.760000, -58.400000),
+  ('Luján',                  1, -34.570000, -59.105000),
+  ('Merlo',                  1, -34.665000, -58.727600),
+  ('Monte Grande',           1, -34.815000, -58.468000),
+  ('Moreno',                 1, -34.650000, -58.790000),
+  ('Morón',                  1, -34.653400, -58.619800),
+  ('Paso del Rey',           1, -34.645000, -58.760000),
+  ('Pilar',                  1, -34.458000, -58.914000),
+  ('Quilmes',                1, -34.720000, -58.254000),
+  ('Ramos Mejía',            1, -34.640000, -58.565000),
+  ('San Antonio de Padua',   1, -34.668000, -58.702000),
+  ('San Isidro',             1, -34.471000, -58.528000),
+  ('San Justo',              1, -34.683000, -58.550000),
+  ('San Martín',             1, -34.575000, -58.537000),
+  ('San Miguel',             1, -34.542000, -58.712000),
+  ('Tigre',                  1, -34.426000, -58.580000),
+  ('Vicente López',          1, -34.526000, -58.475000),
+  ('William C. Morris',      1, -34.585000, -58.661000);
+
+-- =============================================
+-- RUBROS: la lista comun del buscador entre empresas
+-- =============================================
+--
+-- Primero los generales, despues los especificos de cada uno. La idea es que
+-- cubra lo que una PyME compra y vende todos los dias, no que sea completa:
+-- ampliarla es agregar filas. Incluye espacio, vehiculo y formacion, que eran
+-- las necesidades que nombraba la validacion de idea.
+INSERT INTO rubros (nombre, orden) VALUES
+  ('Alimentos y bebidas',          1),
+  ('Papel, cartón y embalaje',     2),
+  ('Textil y confección',          3),
+  ('Metalurgia',                   4),
+  ('Madera y muebles',             5),
+  ('Construcción',                 6),
+  ('Plásticos',                    7),
+  ('Química y limpieza',           8),
+  ('Electricidad y electrónica',   9),
+  ('Gráfica e imprenta',          10),
+  ('Transporte y logística',      11),
+  ('Mantenimiento y reparación',  12),
+  ('Formación y asesoramiento',   13),
+  ('Espacios y equipamiento',     14);
+
+-- Los especificos se cuelgan de su general buscandolo por nombre, para no
+-- depender de en que orden quedaron los ids.
+INSERT INTO rubros (nombre, id_rubro_padre, orden)
+SELECT h.nombre, p.id_rubro, h.orden
+FROM rubros p
+JOIN (
+  SELECT 'Alimentos y bebidas' AS padre, 'Almacén y secos' AS nombre, 1 AS orden UNION ALL
+  SELECT 'Alimentos y bebidas',          'Frescos y perecederos',     2 UNION ALL
+  SELECT 'Alimentos y bebidas',          'Bebidas',                   3 UNION ALL
+  SELECT 'Alimentos y bebidas',          'Panificados',               4 UNION ALL
+  SELECT 'Papel, cartón y embalaje',     'Papel de impresión y oficina', 1 UNION ALL
+  SELECT 'Papel, cartón y embalaje',     'Cartón y cajas',            2 UNION ALL
+  SELECT 'Papel, cartón y embalaje',     'Bolsas y envases',          3 UNION ALL
+  SELECT 'Papel, cartón y embalaje',     'Etiquetas',                 4 UNION ALL
+  SELECT 'Textil y confección',          'Telas',                     1 UNION ALL
+  SELECT 'Textil y confección',          'Indumentaria',              2 UNION ALL
+  SELECT 'Textil y confección',          'Ropa de trabajo',           3 UNION ALL
+  SELECT 'Textil y confección',          'Blanco y mantelería',       4 UNION ALL
+  SELECT 'Metalurgia',                   'Chapa y perfiles',          1 UNION ALL
+  SELECT 'Metalurgia',                   'Caños y tubos',             2 UNION ALL
+  SELECT 'Metalurgia',                   'Piezas a medida',           3 UNION ALL
+  SELECT 'Metalurgia',                   'Soldadura y corte',         4 UNION ALL
+  SELECT 'Madera y muebles',             'Madera',                    1 UNION ALL
+  SELECT 'Madera y muebles',             'Muebles',                   2 UNION ALL
+  SELECT 'Madera y muebles',             'Pallets',                   3 UNION ALL
+  SELECT 'Construcción',                 'Materiales',                1 UNION ALL
+  SELECT 'Construcción',                 'Pinturas',                  2 UNION ALL
+  SELECT 'Construcción',                 'Herramientas',              3 UNION ALL
+  SELECT 'Plásticos',                    'Envases plásticos',         1 UNION ALL
+  SELECT 'Plásticos',                    'Piezas plásticas',          2 UNION ALL
+  SELECT 'Química y limpieza',           'Artículos de limpieza',     1 UNION ALL
+  SELECT 'Química y limpieza',           'Insumos químicos',          2 UNION ALL
+  SELECT 'Electricidad y electrónica',   'Materiales eléctricos',     1 UNION ALL
+  SELECT 'Electricidad y electrónica',   'Reparación de equipos',     2 UNION ALL
+  SELECT 'Gráfica e imprenta',           'Impresión',                 1 UNION ALL
+  SELECT 'Gráfica e imprenta',           'Diseño gráfico',            2 UNION ALL
+  SELECT 'Transporte y logística',       'Fletes',                    1 UNION ALL
+  SELECT 'Transporte y logística',       'Almacenamiento',            2 UNION ALL
+  SELECT 'Transporte y logística',       'Mensajería',                3 UNION ALL
+  SELECT 'Mantenimiento y reparación',   'Mantenimiento de máquinas', 1 UNION ALL
+  SELECT 'Mantenimiento y reparación',   'Mantenimiento edilicio',    2 UNION ALL
+  SELECT 'Formación y asesoramiento',    'Capacitación',              1 UNION ALL
+  SELECT 'Formación y asesoramiento',    'Asesoría contable y legal', 2 UNION ALL
+  SELECT 'Espacios y equipamiento',      'Alquiler de espacios',      1 UNION ALL
+  SELECT 'Espacios y equipamiento',      'Alquiler de máquinas',      2 UNION ALL
+  SELECT 'Espacios y equipamiento',      'Vehículos',                 3
+) h ON h.padre = p.nombre
+WHERE p.id_rubro_padre IS NULL;
 
 -- Usuario superadmin (contraseña: password)
 -- El superadmin administra la plataforma, no una empresa: id_empresa queda en NULL.
