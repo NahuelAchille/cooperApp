@@ -104,8 +104,11 @@ const create = async ({ id_tipo, monto, descripcion, fecha, id_empresa, id_usuar
 // y el otro encuentra que ya no hay nada que cambiar. Mirarlo antes desde
 // JavaScript no alcanza, porque los dos leen "no anulado" y los dos contestan
 // que lo anularon ellos (QA Sprints 09-10, B1).
-const anular = async (id_movimiento, id_empresa) => {
-  const [result] = await db.query(
+//
+// Acepta una conexion para anularse adentro de otra transaccion: al anular
+// una venta desde el stock, su cobro se anula en el mismo paso.
+const anular = async (id_movimiento, id_empresa, ejecutor = db) => {
+  const [result] = await ejecutor.query(
     'UPDATE movimientos SET anulado = 1 WHERE id_movimiento = ? AND id_empresa = ? AND anulado = 0',
     [id_movimiento, id_empresa]
   )

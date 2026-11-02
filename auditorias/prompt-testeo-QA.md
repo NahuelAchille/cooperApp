@@ -103,9 +103,27 @@ Reportarlo otra vez gasta lugar en el informe sin agregar nada:
   grupo a correr `npm install`.
 - El registro de una empresa NO avisa por correo cuando se aprueba: el proyecto
   es 100% local a propósito y el aviso es por teléfono.
-- Anular un movimiento de stock NO anula su movimiento de dinero: es a
-  propósito (el cobro pudo ser real aunque la mercadería se haya cargado mal, y
-  un operador no tiene permiso para tocar finanzas). La app lo avisa.
+- **Anular un movimiento de stock SÍ anula su movimiento de dinero**, en la
+  misma transacción, lo haga quien lo haga (incluido el operador). Decisión del
+  grupo del 02/11/2026, por el C1 de `informe-QA-venta-compra.md`: hasta ahí
+  era al revés, pero con la venta en un paso el monto sale de cantidad × precio
+  y el operador crea la plata, así que dejarla viva inflaba el balance. Lo
+  contrario NO pasa: anular la plata desde Movimientos deja vivo el stock, y la
+  venta queda *"Sin registrar el cobro"*. Las ventas anuladas **antes** del
+  arreglo siguen con la plata viva y a finanzas le muestran *"El cobro sigue en
+  Movimientos"*: es un resto conocido, no un bug nuevo.
+- **El operador registra la plata de sus ventas y sus compras** (decisión del
+  grupo, 25 y 26/10/2026). Es lo único de finanzas que puede hacer: sigue sin
+  entrar a Movimientos, al balance ni a Reportes. Que cree un ingreso no es una
+  escalada de privilegios; que pueda hacer cualquier otra cosa con la plata, sí.
+- **Las ventas y las compras van sólo por su formulario**
+  (`POST /productos/stock/ventas|compras`). El genérico de entradas y salidas
+  las rechaza, también armando el pedido a mano. Las viejas *"Sin registrar el
+  cobro"* se completan desde el historial, como antes.
+- **El precio de venta es opcional y se puede cambiar al vender** (descuentos):
+  se guarda lo cobrado, no el precio del producto. En la compra, la casilla del
+  costo viene tildada si lo pagado es distinto del costo, a propósito (con
+  inflación, lo último que se pagó es el costo real).
 - No hay paginado en ningún listado. Se sabe; con el volumen de una PyME chica
   todavía no molesta.
 - Productos y servicios **comparten las mismas tablas** (`productos` y
@@ -204,10 +222,12 @@ STOCK (Sprint 08) — acá la existencia se calcula, no se guarda: miralo con lu
   y después intentá crearlo OTRA VEZ para el mismo movimiento de stock (por la
   API, no por la pantalla). Tiene que rebotar: ese vínculo es lo único que impide
   cargar la misma venta dos veces.
-- Al anular un movimiento de stock, el de dinero NO se anula solo: verificá que
-  efectivamente siga vivo y que la app lo avise.
-- El operador NO tiene acceso a finanzas: probá que no pueda crear el movimiento
-  de dinero armando el pedido a mano.
+- Al anular un movimiento de stock, el de dinero SE ANULA JUNTO (desde el
+  02/11): verificá EN LA TABLA que los dos queden anulados, y que si el stock no
+  se pudo anular, la plata tampoco.
+- El operador NO tiene acceso a finanzas, salvo la plata de sus ventas y
+  compras: probá que no pueda crear el movimiento de dinero por el camino viejo
+  (`.../movimientos/:id/dinero`) armando el pedido a mano.
 
 SERVICIOS (Sprint 09) — el que comparte tablas con otro módulo
 Un servicio es un producto sin stock: viven en las MISMAS tablas (`productos` y
@@ -309,6 +329,43 @@ LA DESCARGA (HU-54)
   archivo vacío. Un archivo vacío que se baja igual es peor que un error,
   porque no se nota.
 - Formato y vista inventados en la dirección.
+
+LA VENTA Y LA COMPRA EN UN SOLO PASO (25-26/10, corregidas el 02/11)
+Es lo único del sistema donde el operador toca plata, y donde dos tablas
+(`movimientos_stock` y `movimientos`) tienen que moverse siempre juntas.
+- **Siempre juntas, en la tabla.** Cada venta o compra deja dos filas atadas
+  (`movimientos_stock.id_movimiento`), con la misma fecha y el mismo usuario.
+  Buscá con un `SELECT` cualquier fila de stock **anulada con su plata viva**, o
+  plata de una venta **sin su fila de stock**: las dos cosas son CRÍTICAS,
+  porque inflan el balance sin que nadie lo vea.
+- **Anular desde Stock** una venta y una compra, como operador y como admin: la
+  plata se tiene que ir con la mercadería, y el resumen de Movimientos tiene que
+  bajar exactamente ese monto. Una compra cuya mercadería ya se vendió no se
+  puede anular, y en ese caso **la plata tampoco** se tiene que haber tocado.
+- **Anular y cargar el cobro a la vez** sobre la misma venta vieja *"Sin
+  registrar el cobro"* (Promise.all: uno anula desde Stock, otro carga el
+  dinero). Corré varias vueltas: nunca puede quedar el stock anulado con un
+  cobro vivo.
+- **El operador no ganó nada más** que esas dos rutas: 403 en `/movimientos`,
+  `/categorias`, `/reportes`, en el cargar dinero viejo
+  (`.../movimientos/:id/dinero`) y en cambiar el destino de un motivo.
+- **El total en centavos**: `0,1 × 3` tiene que guardar `0,30`, y la pantalla
+  mostrar el mismo total que se guarda. Un total que da $0 (0,01 × 0,01) rebota.
+- **El destino de la plata del motivo** (`motivos_stock.id_tipo`): de otra
+  empresa, de la otra naturaleza, inexistente, dado de baja. Y que con la
+  categoría dada de baja el mensaje diga eso, no *"falta"*.
+- **La casilla del costo**: sólo el booleano `true` la activa; si lo pagado es
+  igual al costo, ni la fecha del costo se mueve; una compra rechazada no
+  cambia el costo. Con **dos compras a la vez** del mismo producto, el costo
+  tiene que quedar en el precio de la última que entró (id más alto).
+- **Precios y cantidades raros**: 0, negativo, 0,004, texto, `true`,
+  `"Infinity"`, más de $ 9.999.999.999,99 por unidad (tiene que decir
+  *"demasiado grande"*, no *"Error al registrar"*).
+- **El formulario genérico** (`POST /productos/stock/movimientos`) con un motivo
+  de venta o de compra, armado a mano: tiene que rebotar.
+- **Un motivo de venta con nombre raro** (`<img onerror=...>`, `=HYPERLINK(...)`):
+  la descripción de la plata arranca con ese nombre, así que miralo en
+  Movimientos, en el toast, en el cartel de anular y en el CSV.
 
 FLUJOS COMPLETOS
 - Registro de empresa → aprobación → alta de usuarios → carga de movimientos.
@@ -435,5 +492,6 @@ encima.
 | 13/09/2026 | Sprint 06 | 12 (1 crítico, 3 altos, 4 medios, 4 bajos) | 10 corregidos · 1 falso positivo (M1) · 3 al backlog (HU-80, 81, 82). Se sumó un hallazgo que el informe no formalizó: sesiones vivas tras dar de baja a un usuario |
 | 16/09/2026 | **Sprints 07 y 08** (juntos: el 07 nunca se había corrido) | 8 (2 críticos, 1 alto, 3 medios, 2 bajos), todos confirmados ejecutándolos. Informe en `informes-QA/informe-QA-sprints-07-08.md` | **Los 8 corregidos**, ninguno al backlog, + 2 encontrados al corregir. Los dos críticos eran el mismo error de concurrencia (consultar-decidir-escribir) y se cerraron con una transacción que traba la fila del producto. Detalle al final del informe |
 | 28/09/2026 | **Sprints 09 y 10 juntos** (Servicios completo · Reportes completo) — era **HU-50** | 5 (0 críticos, 1 alto, 2 medios, 2 bajos), todos confirmados ejecutándolos. Informe en `informes-QA/informe-QA-sprints-09-10.md` | **28/09: los 5 corregidos**, ninguno al backlog, + 1 encontrado al corregir (el PDF agrupado tampoco traía los totales). A1 era el escape de fórmulas pegándole a los números del sistema; B1, el mismo patrón consultar-decidir-escribir, cerrado con un `UPDATE ... AND anulado = 0`. Detalle al final del informe. **Lo que se atacó a fondo aguantó**: los 13 intentos de cruzar los dos catálogos rebotan y los totales de los reportes cierran contra `SELECT` en las cinco vistas. El único hallazgo con un número mal es del **archivo, no del sistema**: el escape contra fórmulas de Excel también le pega a los resultados negativos del CSV, que quedan como texto y Excel no los suma |
+| 02/11/2026 | **La venta y la compra en un solo paso** (commit `89e2bcb`, 25-26/10; hecho fuera de sprint, HU-90 y HU-91) | 6 (1 crítico, 5 bajos), todos confirmados ejecutándolos. Informe en `informes-QA/informe-QA-venta-compra.md` | **02/11: los 6 corregidos**, ninguno al backlog, + 1 encontrado al corregir (anular y cargar el cobro a la vez podía dejar un cobro vivo en una venta anulada). **C1 lo decidió el grupo antes del código**: anular una venta o una compra anula también su plata, en la misma transacción; reemplaza a la decisión vieja de que no la anulaba. B1 era otra vez el patrón consultar-decidir-escribir (el costo leído fuera del candado). Detalle al final del informe |
 
 *(Completar después de cada corrida.)*

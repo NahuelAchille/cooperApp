@@ -138,6 +138,19 @@ const setActivoProducto = async (id_producto, id_empresa, activo) => {
 // aparte de updateProducto porque no toca nada más, y recibe la conexión para
 // entrar en la misma transacción que la compra: si la compra no se guarda, el
 // costo tampoco cambia.
+// El costo como esta AHORA en la base. La compra lo lee adentro del candado
+// del producto (FOR UPDATE, con la conexion de la transaccion): leido antes,
+// dos compras simultaneas decidian con el mismo costo viejo y la segunda no
+// guardaba el suyo (QA venta-compra, B1).
+const costoActual = async (id_producto, id_empresa, ejecutor = db) => {
+  const [rows] = await ejecutor.query(
+    'SELECT costo_referencia FROM productos WHERE id_producto = ? AND id_empresa = ? FOR UPDATE',
+    [id_producto, id_empresa]
+  )
+  if (!rows.length || rows[0].costo_referencia === null) return null
+  return Number(rows[0].costo_referencia)
+}
+
 const actualizarCosto = async (id_producto, id_empresa, costo, ejecutor = db) => {
   await ejecutor.query(
     'UPDATE productos SET costo_referencia = ?, costo_actualizado_en = NOW() WHERE id_producto = ? AND id_empresa = ?',
@@ -147,5 +160,5 @@ const actualizarCosto = async (id_producto, id_empresa, costo, ejecutor = db) =>
 
 module.exports = {
   findProductos, findProductoById, createProducto, updateProducto, setActivoProducto,
-  actualizarCosto
+  costoActual, actualizarCosto
 }

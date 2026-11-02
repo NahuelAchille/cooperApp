@@ -127,6 +127,8 @@ const findMovimientos = async (id_empresa, filtros = {}) => {
            -- saber si sigue vivo. Si se anulo, la venta volvio a quedar sin
            -- cobro y la marca tiene que decirlo.
            m.anulado AS dinero_anulado,
+           -- Para que el cartel de anular diga cuanta plata se va con la venta.
+           m.monto AS dinero_monto,
            p.id_producto, p.nombre AS producto_nombre, p.unidad_medida,
            mo.id_motivo_stock, mo.nombre AS motivo_nombre,
            mo.efecto_stock, mo.efecto_dinero, mo.id_tipo AS motivo_id_tipo,
@@ -272,7 +274,7 @@ const registrarDineroDeMovimiento = async (id_movimiento_stock, id_empresa, crea
     await conexion.beginTransaction()
 
     const [filas] = await conexion.query(`
-      SELECT ms.id_movimiento, m.anulado AS dinero_anulado
+      SELECT ms.anulado, ms.id_movimiento, m.anulado AS dinero_anulado
       FROM movimientos_stock ms
       LEFT JOIN movimientos m ON m.id_movimiento = ms.id_movimiento
       WHERE ms.id_movimiento_stock = ? AND ms.id_empresa = ?
@@ -282,6 +284,14 @@ const registrarDineroDeMovimiento = async (id_movimiento_stock, id_empresa, crea
     if (!filas.length) {
       await conexion.rollback()
       return { error: 'No se encontró el movimiento de stock' }
+    }
+
+    // Se vuelve a mirar aca, con la fila trabada: si alguien anulo la venta
+    // mientras tanto, colgarle un cobro ahora seria plata de algo que no paso.
+    // La anulacion se lleva la plata atada, asi que despues no la veria.
+    if (filas[0].anulado) {
+      await conexion.rollback()
+      return { error: 'Ese movimiento de stock está anulado' }
     }
 
     // Ya tiene dinero cargado Y ese movimiento sigue vivo: no va otro.

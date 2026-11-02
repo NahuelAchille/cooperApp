@@ -1,6 +1,6 @@
 ===========================================================
  CooperApp - USUARIOS DE PRUEBA
- Actualizado: 27/09/2026  (Reportes: el reporte por periodo, HU-51)
+ Actualizado: 02/11/2026  (la venta y la compra en un solo paso)
 ===========================================================
 
 La app corre en http://localhost:3000
@@ -11,11 +11,36 @@ corriendo ese archivo (ver el final de este documento).
 
 OJO: el esquema de la base cambio varias veces en el Sprint 07 y 08
 (productos, stock y motivos), el 16/09 se saco la columna "matricula"
-de la tabla empresas y se agrego "baja_en_cascada", y el 17/09 se
+de la tabla empresas y se agrego "baja_en_cascada", el 17/09 se
 agrego "es_servicio" en productos y en categorias_producto, y
-"id_servicio" en movimientos. Si venis de una version anterior hay que
-BORRAR la base y volver a crearla, no alcanza con reimportar. Los
-comandos estan al final.
+"id_servicio" en movimientos, y el 25/10 se agrego "precio_venta" en
+productos e "id_tipo" en motivos_stock. Si venis de una version
+anterior hay que BORRAR la base y volver a crearla, no alcanza con
+reimportar. Los comandos estan al final.
+
+CAMBIOS DEL 25/10 AL 02/11 - LA VENTA Y LA COMPRA EN UN SOLO PASO:
+  - En Stock hay dos botones nuevos: "Registrar una venta" y
+    "Registrar una compra" (y uno de cada uno en cada fila, y en
+    las acciones rapidas del tablero). Piden QUE, CUANTO, A CUANTO,
+    fecha y detalle, y cargan JUNTOS la mercaderia y la plata.
+  - EL OPERADOR AHORA REGISTRA LA PLATA DE SUS VENTAS Y SUS COMPRAS
+    (decision del grupo). NO ES UN ERROR que Silvia cargue un
+    ingreso. Sigue sin entrar a Movimientos ni ver el balance: lo
+    unico de plata que puede hacer es esto.
+  - Cada producto tiene un PRECIO DE VENTA opcional, que aparece ya
+    escrito al vender y se puede cambiar (un descuento). En la
+    compra aparece escrito el COSTO.
+  - Cada motivo que mueve plata dice EN QUE CATEGORIA CAE esa plata
+    (Configuracion -> Motivos de stock). Por eso la venta no
+    pregunta categoria.
+  - El boton viejo de entradas y salidas ahora se llama "Otra
+    entrada o salida": es para perdidas, consumo y ajustes. Las
+    ventas y las compras ya no van por ahi (ni por la pantalla ni
+    armando el pedido a mano).
+  - ANULAR una venta o una compra desde el historial de Stock anula
+    TAMBIEN su plata (decision del grupo, 02/11). El cartel dice
+    cuanta plata se va antes de confirmar.
+  - Hay que RECREAR LA BASE (dos columnas nuevas y datos nuevos).
 
 CAMBIOS DEL 27/09 - REPORTES (HU-51):
   - Reportes ya NO es un boton muerto: tiene su pantalla, con el
@@ -68,7 +93,7 @@ CAMBIOS DEL 16/09 POR LA AUDITORIA DE QA:
     sin que el stock quede en negativo: una entra y la otra recibe
     el aviso de que no alcanza.
   - Si se anula el movimiento de dinero de una venta, la venta vuelve
-    a figurar como "Falta el $" y se puede cargar de nuevo.
+    a figurar como "Sin registrar el cobro" y se puede cargar de nuevo.
   - Anular el unico movimiento de un producto lo deja como estaba
     ("Sin cargar"), ya no queda en rojo para siempre.
   - Reactivar una categoria ya NO revive las subcategorias (ni los
@@ -102,7 +127,9 @@ CAMBIOS DEL 16/09 POR LA AUDITORIA DE QA:
                  NO entra al catalogo ni al stock.
 
  operador        El deposito: catalogo y stock. Carga productos
-                 y registra entradas y salidas. NO ve la plata.
+                 y registra entradas y salidas. NO ve Movimientos
+                 ni el balance, PERO registra la plata de las
+                 ventas y las compras que hace (desde el 25/10).
 
 
 ===========================================================
@@ -265,7 +292,7 @@ CAMBIOS DEL 16/09 POR LA AUDITORIA DE QA:
    Cosas para probar:
      - Registrar una compra: el numero sube en el momento.
      - Intentar vender 999 de algo: lo frena y dice cuanto hay.
-     - Pestana "Movimientos": el historial completo, filtrable
+     - Pestana "Entradas y salidas": el historial completo, filtrable
        por producto, motivo y fechas, con quien lo cargo.
      - El boton del relojito de cada fila lleva al historial de
        ESE producto: ahi se ve como se llego al numero
@@ -275,11 +302,44 @@ CAMBIOS DEL 16/09 POR LA AUDITORIA DE QA:
    sumar los movimientos. Por eso el historial siempre explica
    el numero que se ve.
 
+ --- VENTA Y COMPRA EN UN SOLO PASO ---
+
+   Como Silvia (operador) o Marta, en "Stock". Tambien desde el
+   tablero ("Registrar una venta" abre stock.html?vender=1).
+
+   Precios cargados en La Esperanza: Arroz $ 2.600, Queso
+   $ 12.500, Jamon $ 17.000, etc. "Bolsa de pan" y "Gaseosa" NO
+   tienen precio: la venta lo pide a mano.
+
+   Que conviene probar:
+     - Vender 1,5 kg de Queso: el precio aparece escrito y el total
+       se calcula solo. Al guardar quedan DOS cosas: la salida en
+       Stock y el ingreso en Movimientos (Ventas -> Venta
+       minorista), con la descripcion "Venta: 1,5 kg de Queso..."
+     - Cambiar el precio al vender (un descuento): se guarda lo
+       cobrado, el precio del producto no cambia.
+     - Comprar Arroz a otro precio que $ 1.800: aparece TILDADA la
+       casilla "Guardar $ X como el costo de este producto". Si la
+       dejas, el costo del producto pasa a ser lo que pagaste (con
+       inflacion, lo ultimo que pagaste es el costo real). Si pagas
+       lo mismo, la casilla ni aparece.
+     - Anular una venta desde "Entradas y salidas": el cartel dice
+       "Tambien se anula su cobro de $ X". Despues, como Marta, en
+       Movimientos ese ingreso aparece anulado.
+     - Como Marta: Configuracion -> Categorias de movimientos, dar
+       de baja "Ventas" y tratar de vender. El formulario avisa que
+       la categoria esta dada de baja y no deja guardar.
+     - Como Roberto (tesorero): no entra a Stock, asi que no vende.
+       En Movimientos, al tocar "Entro", Marta ve el aviso
+       "Vendiste mercaderia? Cargala desde Registrar una venta";
+       Roberto no lo ve.
+
  --- MOTIVOS DE STOCK (solo admin) ---
 
-   Como Marta, en el menu del usuario -> "Motivos de stock".
+   Como Marta, en Configuracion -> "Motivos de stock".
    Cada motivo dice que le hace al stock y que le hace al dinero.
-   Perdida y Robo sacan mercaderia pero NO mueven plata.
+   Perdida y Robo sacan mercaderia pero NO mueven plata. Venta y
+   Compra, ademas, dicen EN QUE CATEGORIA cae la plata.
 
    Para probar:
      - Crear uno con Entrada + Ingreso: lo rechaza (si entra
@@ -375,10 +435,11 @@ CAMBIOS DEL 16/09 POR LA AUDITORIA DE QA:
        reportes.
      - En "Por producto", la Chapa aparece con $ 96.000 y las
        demas en cero, y cada una avisa cuantos movimientos quedaron
-       "sin el $ cargado". No es un error: el sistema no conoce los
-       precios, asi que el movimiento de dinero se OFRECE y se
-       puede decir que no. Los datos de prueba traen una venta con
-       el $ cargado y otra sin, justamente para que se vea.
+       "sin el $ cargado". No es un error: son ventas de ANTES del
+       25/10, cuando la plata se cargaba en un segundo paso que se
+       podia saltear. Las de ahora nacen con su plata. Los datos de
+       prueba traen una venta con el $ cargado y otra sin,
+       justamente para que se vea.
      - Como Marta (La Esperanza no tiene el modulo de Servicios):
        el boton "Por servicio" no le aparece.
 

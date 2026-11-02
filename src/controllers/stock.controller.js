@@ -45,7 +45,8 @@ const formatearCantidad = (numero) => {
 // Valida el monto del movimiento de dinero. Devuelve { valor } o { error }.
 // Mismo criterio que en movimientos: redondea antes de comparar contra cero.
 // "El" cambia las palabras del mensaje: la venta lo usa para el precio.
-const parsearMonto = (valor, El = 'El monto') => {
+// "tope" es lo maximo que entra en la columna donde va a terminar el numero.
+const parsearMonto = (valor, El = 'El monto', tope = 999999999999.99) => {
 
   if (valor === undefined || valor === null || valor === '' || typeof valor === 'boolean') {
     return { error: `${El} es obligatorio` }
@@ -60,7 +61,7 @@ const parsearMonto = (valor, El = 'El monto') => {
   if (redondeado <= 0) {
     return { error: `${El} tiene que ser mayor que cero` }
   }
-  if (redondeado > 999999999999.99) {  // no entra en DECIMAL(14,2)
+  if (redondeado > tope) {  // por defecto, DECIMAL(14,2)
     return { error: `${El} es demasiado grande` }
   }
 
@@ -148,6 +149,18 @@ exports.registrarMovimiento = async (req, res) => {
       return res.status(400).json({ error: 'Ese motivo está dado de baja: elegí uno activo' })
     }
 
+    // Las ventas y las compras van por su propio camino, que carga la
+    // mercaderia y la plata juntas. Por aca quedaban a medias ("Sin registrar
+    // el cobro"). La pantalla ya no las ofrecia, pero el pedido se puede armar
+    // a mano: la regla tiene que estar en el servidor (QA venta-compra, B3).
+    // Se reconocen por lo que hacen, igual que alla, no por el nombre.
+    const clase = ['venta', 'compra'].find(c => esMotivoDe(c)(motivo))
+    if (clase) {
+      return res.status(400).json({
+        error: `"${motivo.nombre}" es un motivo ${OPERACIONES[clase].de}: se registra con el botón "Registrar una ${clase}", que carga la mercadería y ${OPERACIONES[clase].laPlata} juntos.`
+      })
+    }
+
     const cantidad = parsearCantidad(req.body.cantidad)
     if (cantidad.error) {
       return res.status(400).json({ error: cantidad.error })
@@ -205,26 +218,13 @@ exports.registrarMovimiento = async (req, res) => {
     // pantalla muestra como quedo el producto sin volver a pedir el listado.
     const { id_movimiento_stock, existencia } = resultado
 
-    // Si el motivo mueve plata, se le ofrece a la pantalla registrar tambien
-    // el movimiento de dinero, con lo que ya se sabe. NO se crea solo: la
-    // persona decide, porque el sistema no conoce el monto (no hay precios
-    // cargados) y porque una venta puede haberse cobrado de otra manera.
-    //
-    // Solo se ofrece a quien despues va a poder confirmarlo. Al operador no
-    // tiene sentido proponerselo: no maneja la plata y se comeria un rechazo.
-    const propuesta = (motivo.efecto_dinero !== 'ninguno' && puedeCargarDinero(req.session.user))
-      ? {
-          naturaleza: motivo.efecto_dinero,
-          id_tipo: motivo.id_tipo,   // si el motivo ya sabe dónde cae, va elegido
-          fecha: revision.fecha,
-          descripcion: `${motivo.nombre}: ${formatearCantidad(cantidad.valor)} ${producto.unidad_medida} de ${producto.nombre}`
-        }
-      : null
-
+    // Antes, si el motivo movia plata, aca se le proponia a la pantalla cargar
+    // el movimiento de dinero en un segundo paso. Ya no hace falta: los unicos
+    // motivos que mueven plata son los de venta y compra (entrada + ingreso y
+    // salida + egreso no se pueden guardar), y esos rebotan arriba.
     res.status(201).json({
       id_movimiento_stock,
       existencia,
-      propuesta,
       message: `Movimiento registrado. ${producto.nombre} queda en ${formatearCantidad(existencia)}.`
     })
 
@@ -233,10 +233,6 @@ exports.registrarMovimiento = async (req, res) => {
     res.status(500).json({ error: 'Error al registrar el movimiento de stock' })
   }
 }
-
-// Quien puede cargar movimientos de dinero. Mismo criterio que las rutas de
-// /movimientos: el operador queda afuera.
-const puedeCargarDinero = (user) => ['admin_empresa', 'tesorero'].includes(user.rol)
 
 // Los pesos como se leen en Argentina: $ 37.500,00.
 const formatearPlata = (numero) => numero.toLocaleString('es-AR', { style: 'currency', currency: 'ARS' })
@@ -259,6 +255,7 @@ const OPERACIONES = {
     loQueHace: 'saque mercadería y genere un ingreso',
     categorias: 'ingresos',
     las: 'las ventas',
+    Las: 'Las ventas',
     laPlata: 'su cobro',
     noSePuede: 'no se puede vender',
     Precio: 'El precio'
@@ -272,6 +269,7 @@ const OPERACIONES = {
     loQueHace: 'sume mercadería y genere un egreso',
     categorias: 'egresos',
     las: 'las compras',
+    Las: 'Las compras',
     laPlata: 'su pago',
     noSePuede: 'no se puede comprar',
     Precio: 'El costo'
@@ -346,7 +344,20 @@ const registrarOperacion = async (clase, req, res) => {
     // Se vuelve a mirar el tipo entero, no solo que este cargado: entre que el
     // admin lo configuro y hoy, la categoria pudo darse de baja.
     const tipo = motivo.id_tipo ? await categoriaModel.findTipoById(motivo.id_tipo, id_empresa) : null
-    if (!tipo || !tipo.activo || !tipo.categoria_activa || tipo.naturaleza !== op.efecto_dinero) {
+
+    // Si está elegida pero dada de baja, se dice eso: "falta decir" mandaba a
+    // buscar algo que ya estaba hecho (QA venta-compra, B4). Mismas palabras
+    // que la pantalla de Motivos.
+    if (tipo && tipo.naturaleza === op.efecto_dinero && (!tipo.activo || !tipo.categoria_activa)) {
+      const destino = `${tipo.categoria_nombre} › ${tipo.nombre}`
+      return res.status(400).json({
+        error: esAdmin
+          ? `${op.Las} de "${motivo.nombre}" van a ${destino}, que está dada de baja. Reactivala, o elegí otra categoría en Configuración › Motivos de stock.`
+          : `${op.Las} de "${motivo.nombre}" van a ${destino}, que está dada de baja. Pedile al administrador que lo arregle en Motivos de stock.`
+      })
+    }
+
+    if (!tipo || tipo.naturaleza !== op.efecto_dinero) {
       return res.status(400).json({
         error: esAdmin
           ? `Falta decir en qué categoría de ${op.categorias} van ${op.las} de "${motivo.nombre}". Elegila en Configuración › Motivos de stock y volvé a intentar.`
@@ -359,7 +370,12 @@ const registrarOperacion = async (clase, req, res) => {
       return res.status(400).json({ error: cantidad.error })
     }
 
-    const precio = parsearMonto(req.body.precio_unitario, op.Precio)
+    // El precio por unidad tiene el mismo tope que el precio de venta y el
+    // costo del producto, DECIMAL(12,2): en la compra puede terminar guardado
+    // como costo. Con el tope del monto (DECIMAL(14,2)) pasaba este control y
+    // reventaba al guardar el costo, con un "Error al registrar la compra"
+    // que no decia que pasaba (QA venta-compra, B2).
+    const precio = parsearMonto(req.body.precio_unitario, op.Precio, 9999999999.99)
     if (precio.error) {
       return res.status(400).json({ error: precio.error })
     }
@@ -374,16 +390,6 @@ const registrarOperacion = async (clase, req, res) => {
       return res.status(400).json({ error: `El total de ${op.la} es demasiado grande` })
     }
     const total = centavos / 100
-
-    // Sólo en la compra: lo que se pagó por unidad pasa a ser el costo del
-    // producto (el que valoriza las pérdidas), si la persona lo deja tildado y
-    // si de verdad cambió. Con inflacion, es la forma de que el costo no quede
-    // viejo sin que nadie tenga que acordarse de editarlo. Si el valor es el
-    // mismo no se toca, para no rejuvenecer la fecha del costo sin motivo.
-    const costoAnterior = producto.costo_referencia === null ? null : Number(producto.costo_referencia)
-    const actualizarCosto = clase === 'compra' &&
-                            req.body.actualizar_costo === true &&
-                            costoAnterior !== precio.valor
 
     const revision = validarFechaDeCarga(req.body.fecha)
     if (revision.error) {
@@ -416,6 +422,19 @@ const registrarOperacion = async (clase, req, res) => {
           }
         }
 
+        // Sólo en la compra: lo que se pagó por unidad pasa a ser el costo del
+        // producto (el que valoriza las pérdidas), si la persona lo deja tildado
+        // y si de verdad cambió. Con inflacion, es la forma de que el costo no
+        // quede viejo sin que nadie tenga que acordarse de editarlo. Si el valor
+        // es el mismo no se toca, para no rejuvenecer la fecha del costo.
+        //
+        // El costo se lee ACA, con el producto trabado, y no al principio: dos
+        // compras simultaneas leian el mismo costo viejo, y la que entraba
+        // segunda creia que su precio ya estaba guardado y no lo guardaba.
+        const actualizarCosto = clase === 'compra' &&
+                                req.body.actualizar_costo === true &&
+                                await productoModel.costoActual(producto.id_producto, id_empresa, conexion) !== precio.valor
+
         if (actualizarCosto) {
           await productoModel.actualizarCosto(producto.id_producto, id_empresa, precio.valor, conexion)
         }
@@ -440,7 +459,7 @@ const registrarOperacion = async (clase, req, res) => {
           id_movimiento
         }, conexion)
 
-        return { id_movimiento_stock, id_movimiento }
+        return { id_movimiento_stock, id_movimiento, actualizarCosto }
       }
     )
 
@@ -448,7 +467,7 @@ const registrarOperacion = async (clase, req, res) => {
       return res.status(400).json({ error: resultado.error })
     }
 
-    const { id_movimiento_stock, id_movimiento, existencia } = resultado
+    const { id_movimiento_stock, id_movimiento, existencia, actualizarCosto } = resultado
 
     const comoQueda = op.efecto_stock === 'salida'
       ? `Quedan ${formatearCantidad(existencia)}${unidad}.`
@@ -585,10 +604,16 @@ exports.anularMovimiento = async (req, res) => {
         // este momento, otro pedido pudo haberlo anulado. Sin esto, dos
         // anulaciones simultaneas contestaban las dos "movimiento anulado",
         // como si cada una hubiera hecho el trabajo.
-        const [[actual]] = await conexion.query(
-          'SELECT anulado FROM movimientos_stock WHERE id_movimiento_stock = ? AND id_empresa = ?',
-          [id, id_empresa]
-        )
+        //
+        // Lo mismo con la plata: se lee aca, con la fila trabada (FOR UPDATE),
+        // porque alguien de finanzas pudo estar atandole el cobro justo ahora.
+        const [[actual]] = await conexion.query(`
+          SELECT ms.anulado, ms.id_movimiento, m.monto, m.anulado AS dinero_anulado
+          FROM movimientos_stock ms
+          LEFT JOIN movimientos m ON m.id_movimiento = ms.id_movimiento
+          WHERE ms.id_movimiento_stock = ? AND ms.id_empresa = ?
+          FOR UPDATE
+        `, [id, id_empresa])
 
         if (!actual || actual.anulado) {
           return { error: 'Ese movimiento ya estaba anulado' }
@@ -604,7 +629,28 @@ exports.anularMovimiento = async (req, res) => {
         }
 
         await stockModel.anularMovimiento(id, id_empresa, conexion)
-        return {}
+
+        // La plata atada se anula EN EL MISMO PASO (decision del grupo,
+        // 02/11/2026, por el hallazgo C1 de QA). Antes no se tocaba, con dos
+        // razones que dejaron de valer cuando la venta y la compra pasaron a
+        // hacerse en un paso:
+        //   - "el cobro pudo ser real aunque la mercaderia se cargo mal": no,
+        //     el monto sale de cantidad por precio, asi que si la cantidad
+        //     estaba mal, la plata tambien. Y la unica forma de volver a cargar
+        //     la venta es el formulario nuevo, que crea su propia plata: dejar
+        //     viva la vieja la cuenta dos veces, siempre.
+        //   - "el operador no toca finanzas": ahora crea la plata de sus ventas
+        //     y compras, y no podia deshacerla. Quedaba inflando el balance sin
+        //     que nadie se enterara.
+        // Una venta es una sola cosa: si no paso, no paso ni la mercaderia ni
+        // la plata. Anular la plata sola desde Movimientos sigue igual.
+        let dineroAnulado = null
+        if (actual.id_movimiento && !actual.dinero_anulado) {
+          await movimientoModel.anular(actual.id_movimiento, id_empresa, conexion)
+          dineroAnulado = Number(actual.monto)
+        }
+
+        return { dineroAnulado }
       }
     )
 
@@ -612,15 +658,11 @@ exports.anularMovimiento = async (req, res) => {
       return res.status(400).json({ error: resultado.error })
     }
 
-    const { existencia } = resultado
+    const { existencia, dineroAnulado } = resultado
 
-    // El movimiento de dinero NO se anula solo: puede necesitar permisos que
-    // esta persona no tiene (un operador no toca finanzas) y el cobro pudo
-    // haber sido real aunque la mercaderia se haya cargado mal. Se avisa.
-    // Solo se avisa si el movimiento de dinero sigue vigente: si ya estaba
-    // anulado, no hay nada que dar de baja.
-    const avisoDinero = (movimiento.id_movimiento && !movimiento.dinero_anulado)
-      ? ' Ojo: este movimiento tenía un movimiento de dinero asociado, que sigue vigente. Si también hay que darlo de baja, se anula desde Movimientos.'
+    const queEra = movimiento.efecto_dinero === 'ingreso' ? 'cobro' : 'pago'
+    const avisoDinero = dineroAnulado !== null
+      ? ` También se anuló su ${queEra} de ${formatearPlata(dineroAnulado)}.`
       : ''
 
     res.json({

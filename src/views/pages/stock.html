@@ -712,6 +712,14 @@
             ? `<span class="marca-dinero hecho" title="Ya tiene su movimiento de dinero"><i class="fa-solid fa-circle-check me-1"></i>${queFalta === 'cobro' ? 'Cobro' : 'Pago'} registrado</span>`
             : `<span class="marca-dinero falta" title="Este movimiento genera dinero y todavía no se registró"><i class="fa-solid fa-circle-exclamation me-1"></i>Sin registrar el ${queFalta}</span>`
 
+        // Un movimiento anulado cuya plata sigue viva. Desde el 02/11 la
+        // anulación se lleva la plata, así que sólo quedan los anulados antes
+        // de ese arreglo (QA venta-compra, C1): sin esta marca no los
+        // encontraba nadie, y la plata de una venta que no pasó sigue en el balance.
+        const marcaHuerfana = (m.id_movimiento && !m.dinero_anulado && puedeDinero)
+          ? `<span class="marca-dinero falta" title="La venta o compra se anuló, pero su plata no: anulala desde Movimientos"><i class="fa-solid fa-circle-exclamation me-1"></i>El ${queFalta} sigue en Movimientos</span>`
+          : ''
+
         return `
           <tr class="${m.anulado ? 'fila-anulada' : ''}">
             <td class="fecha-mov" data-label="Fecha">${formatearFecha(m.fecha)}</td>
@@ -723,7 +731,7 @@
               <span class="badge-motivo ${entra ? 'entrada' : 'salida'}">
                 <i class="fa-solid ${entra ? 'fa-arrow-down' : 'fa-arrow-up'} me-1"></i>${esc(m.motivo_nombre)}
               </span>
-              ${m.anulado ? '' : marcaDinero}
+              ${m.anulado ? marcaHuerfana : marcaDinero}
             </td>
             <td class="text-end td-destacado" data-label="Cantidad">
               <span class="cantidad-mov ${entra ? 'entrada' : 'salida'}">
@@ -914,17 +922,10 @@
       cargarExistencias()
       if (!document.getElementById('vista-movimientos').classList.contains('d-none')) cargarMovimientos()
 
-      // Si el motivo mueve plata, el servidor devuelve la propuesta y acá se
-      // ofrece el segundo paso. El movimiento de stock YA quedó guardado: si
-      // la persona cierra el modal, no se pierde nada, sólo queda marcado en
-      // el historial que falta cargar el dinero.
-      if (resultado.propuesta) {
-        const movimiento = {
-          id_movimiento_stock: resultado.id_movimiento_stock,
-          motivo_nombre: motivos.find(m => String(m.id_motivo_stock) === datos.id_motivo_stock)?.nombre || ''
-        }
-        abrirModalDinero(movimiento, resultado.propuesta)
-      }
+      // Acá antes se abría el segundo paso del dinero. Con la venta y la
+      // compra afuera de este formulario (también en el servidor, QA B3), lo
+      // que pasa por acá no mueve plata. El cartel del dinero sigue, para
+      // completar las ventas viejas "Sin registrar el cobro" del historial.
     })
 
     function mostrarError(div, mensaje) {
@@ -958,6 +959,7 @@
         loQueHace: 'saque mercadería y genere un ingreso',
         categorias: 'ingresos',
         las: 'las ventas',
+        Las: 'Las ventas',
         faltaProducto: 'Elegí qué vendiste.',
         faltaPrecio: 'Escribí a cuánto lo vendiste.',
         // El precio que aparece escrito es el de venta del producto
@@ -981,6 +983,7 @@
         loQueHace: 'sume mercadería y genere un egreso',
         categorias: 'egresos',
         las: 'las compras',
+        Las: 'Las compras',
         faltaProducto: 'Elegí qué compraste.',
         faltaPrecio: 'Escribí cuánto pagaste por unidad.',
         // En la compra, lo que aparece escrito es el costo del producto
@@ -1080,7 +1083,14 @@
           : `Tu empresa no tiene ningún motivo ${op.de} activo. Pedile al administrador que lo cree.`
       } else {
         const elegido = opMotivos.find(m => String(m.id_motivo_stock) === document.getElementById('op-motivo').value)
-        if (elegido && (!elegido.id_tipo || !elegido.tipo_activo)) {
+        if (elegido && elegido.id_tipo && !elegido.tipo_activo) {
+          // Elegida pero dada de baja: decir "falta" mandaba a buscar algo que
+          // ya estaba hecho (QA venta-compra, B4). Mismas palabras que Motivos.
+          const destino = `${esc(elegido.tipo_categoria_nombre)} › ${esc(elegido.tipo_nombre)}`
+          problema = esAdmin
+            ? `${op.Las} de "${esc(elegido.nombre)}" van a ${destino}, que está dada de baja. Reactivala, o elegí otra categoría.`
+            : `${op.Las} de "${esc(elegido.nombre)}" van a ${destino}, que está dada de baja. Pedile al administrador que lo arregle.`
+        } else if (elegido && !elegido.id_tipo) {
           problema = esAdmin
             ? `Falta decir en qué categoría de ${op.categorias} van ${op.las} de "${esc(elegido.nombre)}".`
             : `Falta configurar en qué categoría van ${op.las} de "${esc(elegido.nombre)}". Pedile al administrador que lo complete.`
@@ -1341,10 +1351,12 @@
       // saber antes de confirmar.
       let aviso = '<i class="fa-solid fa-circle-info me-1"></i>No se borra: queda en el historial marcado como anulado, y la existencia se recalcula sola.'
 
-      // Sólo si el movimiento de dinero sigue vigente: si ya está anulado, no
-      // hay nada que dar de baja y el aviso confundiría.
+      // La plata atada se anula junto con la mercadería (decisión del grupo,
+      // 02/11): se dice cuánta, porque es lo que va a dejar de estar en el
+      // balance. Si ya estaba anulada, no hay nada que avisar.
       if (movimiento.id_movimiento && !movimiento.dinero_anulado) {
-        aviso += '<br><i class="fa-solid fa-triangle-exclamation me-1"></i>Este movimiento tiene un <strong>movimiento de dinero asociado</strong>, que NO se anula solo. Si también hay que darlo de baja, se hace desde Movimientos.'
+        const queEra = movimiento.efecto_dinero === 'ingreso' ? 'cobro' : 'pago'
+        aviso += `<br><i class="fa-solid fa-triangle-exclamation me-1"></i>También se anula su <strong>${queEra} de ${formatearPlata(movimiento.dinero_monto)}</strong>.`
       }
 
       document.getElementById('anular-aviso').innerHTML = aviso
