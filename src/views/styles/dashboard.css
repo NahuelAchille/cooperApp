@@ -435,11 +435,15 @@
    (UX final, bug). Ocupan el ancho que hay y el contenido se acomoda adentro. */
 #dashboard-main > * { align-self: stretch; min-width: 0; }
 #dashboard-charts > .dashboard-block { min-width: 0; }
-.dashboard-table td { overflow-wrap: anywhere; }
-/* "Movimientos recientes" en el celular: sin la categoría, que es lo que
-   menos sirve de un vistazo; así entran la descripción, el monto y la fecha. */
+.dashboard-table td { overflow-wrap: break-word; }
+/* "Movimientos recientes": la descripción, el monto y la fecha. La categoría
+   se sacó porque no entraba: en una notebook el bloque mide unos 380 px y la
+   tabla cortaba los montos y las fechas a la mitad ("+$ 350." / "000,00").
+   Un número no se parte nunca: si falta lugar, se achica la descripción. */
+.dashboard-table .monto,
+.dashboard-table .fecha { white-space: nowrap; }
+.dashboard-table .fecha { text-align: right; color: #4a6356; }
 @media (max-width: 767px) {
-  #tabla-recientes td:nth-child(2) { display: none; }
   /* Tenía min-width: 360px, que no entra en el bloque de 331 px. */
   .dashboard-table { min-width: 0; }
 }

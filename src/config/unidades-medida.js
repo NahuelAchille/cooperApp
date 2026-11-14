@@ -22,7 +22,7 @@ const UNIDADES_MEDIDA = [
 const CLAVES_UNIDADES = UNIDADES_MEDIDA.map(u => u.clave)
 
 // "6 bolsas", no "6 bolsa" (UX final). kg, g y ml no cambian. La pantalla de
-// Stock tiene la misma lista de plurales.
+// La pantalla tiene la misma lista de plurales, en views/components/unidades.js.
 const nombreUnidad = (cantidad, clave) => {
   if (!clave) return ''
   if (Number(cantidad) === 1) return clave

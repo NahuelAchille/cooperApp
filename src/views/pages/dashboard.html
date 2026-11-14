@@ -14,6 +14,7 @@
 <body>
     <div id="header"></div>
     <script src="/components/header.js"></script>
+    <script src="/components/unidades.js"></script>
     <script>
 
     // ================= DATOS REALES DEL DASHBOARD =================
@@ -87,7 +88,9 @@
 
         // "Ver reporte" llevaba a Movimientos aunque la empresa tuviera Reportes.
         if (moduloActivo('reportes')) {
-            document.querySelector('#btn-reporte a').href = '/pages/reportes.html'
+            const link = document.querySelector('#btn-reporte a')
+            link.href = '/pages/reportes.html'
+            link.textContent = 'Ver reportes'
         }
 
         if (user.rol === 'admin_empresa') cargarPrimerosPasos()
@@ -131,7 +134,6 @@
         if (rolDeDeposito && hayProductos) {
             document.getElementById('btn-venta').classList.remove('d-none')
             document.getElementById('btn-compra').classList.remove('d-none')
-            document.getElementById('btn-stock').classList.remove('d-none')
             document.getElementById('link-ver-stock').classList.remove('d-none')
             cargarFaltantes()
         } else {
@@ -188,7 +190,7 @@
         tbody.innerHTML = faltantes.slice(0, 5).map(p => `
             <tr>
                 <td>${esc(p.nombre)}</td>
-                <td class="text-end">${formatCantidad(p.existencia)} ${esc(p.unidad_medida)}</td>
+                <td class="text-end">${formatCantidad(p.existencia)} ${esc(nombreUnidad(p.existencia, p.unidad_medida))}</td>
                 <td class="text-end">
                     <span class="badge-stock ${p.sinStock ? 'sin' : 'bajo'}">
                         ${p.negativo ? 'Revisar' : p.sinStock ? 'Sin stock' : 'Reponer'}
@@ -257,9 +259,8 @@
             return `
                 <tr>
                     <td class="${esIngreso ? 'positivo' : 'negativo'}">${esc(m.descripcion || m.tipo_nombre)}</td>
-                    <td>${esc(m.categoria_nombre)}</td>
                     <td class="monto ${esIngreso ? 'positivo' : 'negativo'}">${signo}${formatMoneda(m.monto)}</td>
-                    <td>${fecha}</td>
+                    <td class="fecha">${fecha}</td>
                 </tr>`
         }).join('')
     }
@@ -324,17 +325,20 @@
     </script>
 
     <nav id="secondary-nav">
-        <h2>Acciones Rápidas</h2>
+        <h2>Acciones rápidas</h2>
             <ul>
                 <!-- La venta y la compra van primero: es lo que más se hace.
                      Abren el formulario de una vez, sin pasar por la lista de
                      stock. -->
                 <li id="btn-venta" class="d-none"><a href="/pages/stock.html?vender=1">+ Registrar una venta</a></li>
                 <li id="btn-compra" class="d-none"><a href="/pages/stock.html?comprar=1">+ Registrar una compra</a></li>
-                <li id="btn-ingreso" class="d-none"><a href="/pages/movimientos.html?nuevo=ingreso">+ Registrar ingreso</a></li>
-                <li id="btn-egreso" class="d-none"><a href="/pages/movimientos.html?nuevo=egreso">- Registrar egreso</a></li>
-                <li id="btn-stock" class="d-none"><a href="/pages/stock.html">Otra entrada o salida</a></li>
-                <li id="btn-reporte" class="d-none"><a href="/pages/movimientos.html">Ver reporte</a></li>
+                <!-- Entró / Salió, como en todo el resto de la app (antes decía
+                     "Registrar ingreso / egreso"). "Otra entrada o salida" se
+                     sacó de acá: es para pérdidas y ajustes, que no son lo de
+                     todos los días, y sigue en Stock. -->
+                <li id="btn-ingreso" class="d-none"><a href="/pages/movimientos.html?nuevo=ingreso">+ Entró plata</a></li>
+                <li id="btn-egreso" class="d-none"><a href="/pages/movimientos.html?nuevo=egreso">− Salió plata</a></li>
+                <li id="btn-reporte" class="d-none"><a href="/pages/movimientos.html">Ver movimientos</a></li>
             </ul>
     </nav>
     <main id="dashboard-main">

@@ -224,6 +224,8 @@ para probar algo sin pisar la base de otra persona. Casi nunca hacen falta.
 | [`docs/modelo-de-datos.md`](docs/modelo-de-datos.md) | **El modelo de datos**: qué guarda cada tabla, cómo se relacionan, cómo se calculan el stock y el balance, y cómo cambiar el esquema sin romper nada |
 | [`usuario de prueba.txt`](usuario%20de%20prueba.txt) | Todos los usuarios de prueba, qué tiene cada empresa y qué probar |
 | [`auditorias/`](auditorias/) | Las auditorías de calidad (QA) y de experiencia de uso (UX): los prompts para correrlas y los informes de cada sprint |
+| `Funcionalidades implementadas` (`.docx` y `.pdf`) | Qué hace la app, módulo por módulo, con capturas |
+| [`capturas-pantalla/`](capturas-pantalla/) | Capturas de todas las pantallas, con los datos de prueba |
 | `Backlog_CooperApp_2026.xlsx` | El backlog: historias, tareas y sprints |
 | `ABZ.CooperApp Validación de idea - versión 2 (empresas)` (`.pdf` y `.docx`) | **La validación de idea vigente** (noviembre de 2026): el producto para empresas, qué cambió respecto de la primera y por qué. El `.docx` es para editarla |
 | `ABZ.CooperAppValidaciónDeIdeaDeProductoDeSoftware (1).pdf` | La primera validación de idea (agosto de 2026), cuando el producto era para cooperativas. Se conserva como historia |

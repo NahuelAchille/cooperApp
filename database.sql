@@ -526,9 +526,9 @@ SELECT 3, id_permiso FROM permisos WHERE nombre IN (
 
 -- Catalogo de modulos
 INSERT INTO modulos (clave, nombre, descripcion, opcional, activo_por_defecto, orden) VALUES
-('movimientos',  'Movimientos',  'Registro de ingresos y egresos de dinero. Es la base del sistema y no se puede desactivar.', 0, 1, 1),
+('movimientos',  'Movimientos',  'La plata: lo que entró y lo que salió. Es la base del sistema y no se puede desactivar.', 0, 1, 1),
 ('productos',    'Productos',    'Catálogo de productos, categorías propias y control de stock.',                              1, 0, 2),
-('servicios',    'Servicios',    'Servicios que la empresa presta o contrata y que generan ingresos o egresos.',               1, 0, 3),
+('servicios',    'Servicios',    'Servicios que la empresa presta o contrata, y la plata que entra o sale por cada uno.',     1, 0, 3),
 -- Reportes volvio a venir prendido de fabrica el 27/09/2026. Se habia apagado
 -- el 16/09 porque la pantalla todavia no existia y un boton que no hace nada
 -- se lee como "lo estoy apretando mal". Ahora existe y da un reporte de

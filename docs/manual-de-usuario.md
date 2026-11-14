@@ -118,7 +118,7 @@ Es la parte de **Movimientos**: todo lo que entró y salió de la caja.
 *Administrador o tesorero.*
 
 1. Andá a **Movimientos** y tocá **Nuevo movimiento** (o, desde el panel de inicio,
-   **Registrar ingreso** o **Registrar egreso**).
+   **Entró plata** o **Salió plata**).
 2. Contestá **¿Qué pasó con la plata?**: **Entró** o **Salió**.
 3. Elegí **de qué fue** en la lista, que está agrupada por categoría (por ejemplo,
    *Luz*, dentro de *Gastos fijos*). Abajo te dice en qué categoría cae lo que elegiste.
@@ -199,7 +199,7 @@ Un producto que ya no vendés no se borra: se **da de baja** y lo podés
 *Administrador u operador.* Descuenta la mercadería **y** registra la plata que
 entró, en un solo paso.
 
-1. Andá a **Stock** y tocá **Registrar una venta** (o el botón del carrito en la
+1. Andá a **Stock** y tocá **Registrar una venta** (o **Vender** en la
    fila del producto, o desde el panel de inicio).
 2. Contestá **¿Qué vendiste?**, **cuánto** y el **precio por unidad**. Si el producto
    tiene precio cargado, ya aparece escrito; si cobraste otro (un descuento), cambialo.
@@ -217,7 +217,7 @@ cuánto hay.
 
 *Administrador u operador.* Suma la mercadería **y** registra la plata que salió.
 
-1. En **Stock**, tocá **Registrar una compra** (o el botón del camión en la fila).
+1. En **Stock**, tocá **Registrar una compra** (o **Comprar** en la fila del producto).
 2. Contestá **¿Qué compraste?**, **cuánto** y **lo que pagaste por unidad**. Aparece
    escrito el costo que tenía el producto.
 3. Si pagaste un precio distinto, aparece tildada la casilla **Desde ahora, … nos

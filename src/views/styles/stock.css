@@ -334,16 +334,23 @@ body {
    Arriba, Vender y Comprar lado a lado y grandes: es lo de todos los días, y
    antes la venta quedaba última de cuatro botones apilados. Lo demás, más
    chico abajo. En cada tarjeta, Comprar y Vender con texto y de 44 px. */
-.btn-mini .texto-boton { display: none; }
+/* En la computadora, el mismo orden: Vender, Comprar y Otra entrada o salida
+   adelante; Productos y Motivos, que son atajos a otras pantallas, más chicos
+   al final. Antes la venta quedaba sola en un segundo renglón, última de cinco.
+   Y Comprar y Vender con texto también acá: sobra lugar, y el camión y el
+   changuito solos no se adivinan. */
+.acciones-header { justify-content: flex-end; align-items: center; }
+.acciones-header #btn-vender  { order: 1; }
+.acciones-header #btn-comprar { order: 2; }
+.acciones-header #btn-nuevo   { order: 3; }
+.acciones-header > a          { order: 4; font-size: 0.875rem; padding: 4px 10px; }
+.btn-mini .texto-boton { display: inline; margin-left: 6px; }
 
 @media (max-width: 767px) {
-  .acciones-header { width: 100%; }
-  .acciones-header #btn-vender  { order: 1; flex: 1 1 calc(50% - 4px); }
-  .acciones-header #btn-comprar { order: 2; flex: 1 1 calc(50% - 4px); }
-  .acciones-header #btn-nuevo   { order: 3; flex: 1 1 100%; font-size: 0.875rem; }
-  .acciones-header > a          { order: 4; font-size: 0.875rem; padding: 4px 10px; }
-
-  .btn-mini .texto-boton { display: inline; margin-left: 6px; }
+  .acciones-header { width: 100%; justify-content: flex-start; }
+  .acciones-header #btn-vender  { flex: 1 1 calc(50% - 4px); }
+  .acciones-header #btn-comprar { flex: 1 1 calc(50% - 4px); }
+  .acciones-header #btn-nuevo   { flex: 1 1 100%; font-size: 0.875rem; }
   /* Un "tr" más en el selector: tabla-mobile.css carga después y lo dejaba en 38 px. */
   .tabla-tarjetas tbody tr td.td-acciones .btn-mini { min-height: 44px; min-width: 44px; }
 }

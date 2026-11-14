@@ -16,6 +16,7 @@
   <div id="header"></div>
 
   <script src="/components/header.js"></script>
+  <script src="/components/unidades.js"></script>
 
   <div class="page-header">
     <div>
@@ -197,7 +198,7 @@
   </div>
 
   <!-- Modal registrar movimiento -->
-  <div class="modal fade" id="modalMovimiento" tabindex="-1" aria-hidden="true">
+  <div class="modal fade" data-bs-backdrop="static" id="modalMovimiento" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
       <div class="modal-content">
         <div class="modal-header">
@@ -260,7 +261,7 @@
        Pide sólo lo que la persona sabe en el mostrador: qué, cuánto y a
        cuánto. El motivo y la categoría de la plata ya están decididos de antes
        (los configura el administrador una vez, en Motivos de stock). -->
-  <div class="modal fade" id="modalOperacion" tabindex="-1" aria-hidden="true">
+  <div class="modal fade" data-bs-backdrop="static" id="modalOperacion" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
       <div class="modal-content">
         <div class="modal-header">
@@ -349,7 +350,7 @@
 
 
   <!-- Modal: registrar el movimiento de DINERO de un movimiento de stock (HU-45) -->
-  <div class="modal fade" id="modalDinero" tabindex="-1" aria-hidden="true">
+  <div class="modal fade" data-bs-backdrop="static" id="modalDinero" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
       <div class="modal-content">
         <div class="modal-header">
@@ -395,7 +396,7 @@
   </div>
 
   <!-- Modal: anular un movimiento de stock (HU-46) -->
-  <div class="modal fade" id="modalAnular" tabindex="-1" aria-hidden="true">
+  <div class="modal fade" data-bs-backdrop="static" id="modalAnular" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
       <div class="modal-content">
         <div class="modal-header">
@@ -609,8 +610,8 @@
               <button class="btn-mini" data-accion="historial" data-id="${item.id_producto}" title="Ver el historial de este producto">
                 <i class="fa-solid fa-clock-rotate-left"></i>
               </button>
-              <!-- En el celular dicen "Comprar" y "Vender" (UX F-15): el camión
-                   solo no se adivina. -->
+              <!-- Dicen "Comprar" y "Vender" (UX F-15, y desde el 14/11 también
+                   en la computadora): el camión solo no se adivina. -->
               <button class="btn-mini" data-accion="comprar" data-id="${item.id_producto}" title="Registrar una compra de este producto">
                 <i class="fa-solid fa-truck-ramp-box"></i><span class="texto-boton">Comprar</span>
               </button>
@@ -1028,13 +1029,8 @@
 
     // Qué motivo es de cada clase: por lo que hace, no por cómo se llama.
     // Mismo criterio que el servidor.
-    // Plurales de las unidades (UX final): "hay 6 bolsas", no "hay 6 bolsa".
-    // Es la misma lista que src/config/unidades-medida.js.
-    const PLURALES = { unidad: 'unidades', litro: 'litros', metro: 'metros', caja: 'cajas', paquete: 'paquetes', bolsa: 'bolsas' }
-    function nombreUnidad(cantidad, clave) {
-      if (!clave) return ''
-      return Number(cantidad) === 1 ? clave : (PLURALES[clave] || clave)
-    }
+    // Plurales de las unidades ("hay 6 bolsas"): nombreUnidad viene de
+    // /components/unidades.js, compartido con el panel de inicio.
     // "6 bolsas", ya escapado para ir adentro de innerHTML.
     function cuanto(cantidad, clave) {
       return `${formatearCantidad(cantidad)} ${esc(nombreUnidad(cantidad, clave))}`.trim()
