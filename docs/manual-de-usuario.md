@@ -253,7 +253,11 @@ hace falta, un cartel:
 
 El panel de inicio también muestra cuántos productos hay que reponer. La pestaña
 **Entradas y salidas** es el historial: qué entró, qué salió, por qué y quién lo
-cargó.
+cargó. En cada venta dice cuánto se **cobró**, y en cada compra cuánto se **pagó**.
+
+> El operador ve lo que se cobró o pagó en cada venta o compra, pero no los totales de
+> la empresa: el panel de inicio no le muestra plata, y Movimientos y Reportes no le
+> aparecen.
 
 ### Me equivoqué en una venta o una compra
 

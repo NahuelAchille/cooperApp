@@ -548,8 +548,10 @@ ahora 375/375 · encabezado de dos renglones: F-20 · etiquetas sin `for`: F-21.
 - **Renombrar *Ajuste positivo / negativo*** a *"Corrección: había más / menos"*: el propio informe
   lo marca *a validar con usuarios*, y cambia datos sembrados que el manual y los Primeros pasos
   nombran.
-- **Que el operador vea lo cobrado en sus ventas** (parte de F-08): es decisión del grupo. Hoy ya lo
-  ve en el cartel de anular y en el formulario de corregir.
+- ~~**Que el operador vea lo cobrado en sus ventas** (parte de F-08)~~: **decidido por el grupo el
+  14/11/2026, y hecho**: en *Entradas y salidas* cada venta o compra dice *"Cobrado: $ X"* o
+  *"Pagado: $ X"*, también para el operador. Es el monto de cada operación, **nunca un total**: el
+  panel, Movimientos y Reportes siguen siendo sólo de finanzas.
 - **La regla de 14 px para todo dato**: se aplicó a los badges (13 px); el resto queda para el
   backlog, como el plan sugería.
 

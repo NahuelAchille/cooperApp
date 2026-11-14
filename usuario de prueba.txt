@@ -47,6 +47,11 @@ CAMBIOS DEL 25/10 AL 02/11 - LA VENTA Y LA COMPRA EN UN SOLO PASO:
     (decision del grupo). NO ES UN ERROR que Silvia cargue un
     ingreso. Sigue sin entrar a Movimientos ni ver el balance: lo
     unico de plata que puede hacer es esto.
+  - En Stock > Entradas y salidas, cada venta o compra dice
+    "Cobrado: $ X" o "Pagado: $ X", TAMBIEN para el operador
+    (decision del grupo, 14/11). Ve la plata de cada operacion,
+    NUNCA un total: ni casilleros del panel, ni Movimientos, ni
+    Reportes.
   - Cada producto tiene un PRECIO DE VENTA opcional, que aparece ya
     escrito al vender y se puede cambiar (un descuento). En la
     compra aparece escrito el COSTO.

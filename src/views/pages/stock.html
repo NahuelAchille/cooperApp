@@ -728,15 +728,22 @@
         // marca existe para avisar.
         const tieneDinero = m.id_movimiento && !m.dinero_anulado
 
-        // Sólo la ve quien puede resolverla. El operador no entra a finanzas:
-        // mostrarle "falta" en cinco de cada ocho filas es avisarle de algo que
-        // no puede arreglar. Y dice qué falta en castellano, cobro o pago,
-        // en vez de "Falta el $" (UX 28/09).
+        // Cuánta plata movió esa venta o compra lo ve TODO el que entra acá,
+        // también el operador (decisión del grupo, 14/11/2026): esa plata la
+        // cargó él, y sin verla tenía que corregir un precio mal tipeado de
+        // memoria. Es el monto de UNA operación, nunca un total: los totales
+        // de la empresa (el panel, Movimientos, Reportes) siguen siendo de
+        // finanzas.
+        //
+        // "Sin registrar el cobro" lo ve sólo quien puede resolverlo: al
+        // operador le avisaría de algo que no puede arreglar (UX 28/09).
         const queFalta = m.efecto_dinero === 'ingreso' ? 'cobro' : 'pago'
-        const marcaDinero = !mueveDinero || !puedeDinero ? ''
+        const marcaDinero = !mueveDinero ? ''
           : tieneDinero
-            ? `<span class="marca-dinero hecho" title="Ya tiene su movimiento de dinero"><i class="fa-solid fa-circle-check me-1"></i>${queFalta === 'cobro' ? 'Cobro' : 'Pago'} registrado</span>`
-            : `<span class="marca-dinero falta" title="Este movimiento genera dinero y todavía no se registró"><i class="fa-solid fa-circle-exclamation me-1"></i>Sin registrar el ${queFalta}</span>`
+            ? `<span class="marca-dinero hecho" title="Lo que ${queFalta === 'cobro' ? 'se cobró' : 'se pagó'} en esta ${queFalta === 'cobro' ? 'venta' : 'compra'}"><i class="fa-solid fa-circle-check me-1"></i>${queFalta === 'cobro' ? 'Cobrado' : 'Pagado'}: ${formatearPlata(m.dinero_monto)}</span>`
+            : puedeDinero
+              ? `<span class="marca-dinero falta" title="Este movimiento genera dinero y todavía no se registró"><i class="fa-solid fa-circle-exclamation me-1"></i>Sin registrar el ${queFalta}</span>`
+              : ''
 
         // Un movimiento anulado cuya plata sigue viva. Desde el 02/11 la
         // anulación se lleva la plata, así que sólo quedan los anulados antes

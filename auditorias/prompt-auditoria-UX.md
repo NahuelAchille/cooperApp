@@ -106,8 +106,11 @@ ve; los casilleros dicen **Entró / Salió / Resultado**; *Anular y corregir* no
 guardar; el gris de texto es uno solo (`#4a6356`, 6,5:1) y ningún badge baja de 13 px.
 
 **Lo que sigue abierto a propósito** (anotado en el informe final): renombrar *Ajuste positivo /
-negativo* (*a validar con usuarios*), que el operador vea lo cobrado en sus ventas (decisión del
-grupo) y la regla de 14 px para todo dato (backlog). Si los ves, sumá lo que observes, no los
+negativo* (*a validar con usuarios*) y la regla de 14 px para todo dato (backlog).
+
+**Decidido por el grupo (14/11/2026)**: el operador **ve lo cobrado o pagado en cada venta o compra**
+(en *Entradas y salidas*), pero **ningún total de la empresa**: ni los casilleros del panel, ni
+Movimientos, ni Reportes. No lo reportes como falta de información. Si los ves, sumá lo que observes, no los
 vuelvas a describir.
 
 ---
