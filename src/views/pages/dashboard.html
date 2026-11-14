@@ -81,7 +81,20 @@
                 `<tr><td class="text-muted">${hayModulo
                     ? 'Tu usuario no tiene acceso a los movimientos.'
                     : 'El módulo de Movimientos no está activo en tu empresa.'}</td></tr>`
+            // Los tres casilleros de la plata quedaban en "—" sin explicar por
+            // qué: se leia como que el sistema no anda (HU-88).
+            const motivo = hayModulo ? 'Sin acceso' : 'Módulo no activo'
+            ;['kpi-ingresos', 'kpi-egresos', 'kpi-balance'].forEach(id => {
+                document.getElementById(id).closest('.dashboard-kpi').querySelector('h5').textContent = motivo
+            })
         }
+
+        // "Ver reporte" llevaba a Movimientos aunque la empresa tuviera Reportes.
+        if (moduloActivo('reportes')) {
+            document.querySelector('#btn-reporte a').href = '/pages/reportes.html'
+        }
+
+        if (user.rol === 'admin_empresa') cargarPrimerosPasos()
 
         // El listado de usuarios trae datos personales, asi que solo lo ve el
         // administrador: para los demas el indicador queda en blanco.
@@ -243,6 +256,49 @@
         }).join('')
     }
 
+    // Primeros pasos de una empresa nueva (HU-88). Sólo para el administrador,
+    // que es el único que puede hacer todo lo que se le sugiere.
+    //
+    // "Nueva" = todavía no cargó ningún movimiento, ni de plata ni de stock.
+    // Apenas carga el primero el cuadro desaparece para siempre: no es una
+    // lista de tareas que persiga a la persona, es la ayuda para arrancar.
+    // Los pasos dependen de los módulos prendidos: no se sugiere cargar
+    // productos a una empresa que no usa Productos.
+    async function cargarPrimerosPasos() {
+        const hayProductos = moduloActivo('productos')
+        const [movimientos, existencias, usuarios, empresa] = await Promise.all([
+            fetch('/movimientos?limit=1').then(r => r.ok ? r.json() : []),
+            hayProductos ? fetch('/productos/stock').then(r => r.ok ? r.json() : []) : [],
+            fetch('/users').then(r => r.ok ? r.json() : []),
+            fetch('/empresas/mi-empresa').then(r => r.ok ? r.json() : {})
+        ])
+
+        const yaCargoPlata = Array.isArray(movimientos) && movimientos.length > 0
+        const yaCargoStock = Array.isArray(existencias) && existencias.some(p => Number(p.cantidad_movimientos) > 0)
+        if (yaCargoPlata || yaCargoStock) return
+
+        const activos = Array.isArray(usuarios) ? usuarios.filter(u => u.activo).length : 0
+        const pasos = [
+            { texto: 'Elegí qué partes del sistema vas a usar', link: '/pages/configuracion-modulos.html',
+              ayuda: 'Productos, Servicios, Reportes, Articulación. Las podés prender o apagar cuando quieras.' },
+            hayProductos && { texto: 'Cargá tus productos', link: '/pages/productos.html', hecho: existencias.length > 0 },
+            hayProductos && { texto: 'Cargá lo que ya tenés en el depósito', link: '/pages/stock.html',
+              ayuda: 'Con "Otra entrada o salida" y el motivo Ajuste positivo.' },
+            { texto: 'Cargá lo primero que entró o salió de la caja', link: '/pages/movimientos.html?nuevo=ingreso' },
+            moduloActivo('articulacion') && { texto: 'Cargá tu localidad para aparecer en el buscador entre empresas',
+              link: '/pages/perfil-empresa.html', hecho: !!empresa.id_localidad },
+            { texto: 'Dá de alta a las personas que trabajan con vos', link: '/pages/usuarios.html', hecho: activos > 1,
+              ayuda: 'Si trabajás solo, salteá este paso.' }
+        ].filter(Boolean)
+
+        document.getElementById('pasos-lista').innerHTML = pasos.map(p => `
+            <li class="${p.hecho ? 'hecho' : ''}">
+                <a href="${p.link}">${p.hecho ? '<i class="fa-solid fa-circle-check me-1"></i>' : ''}${p.texto}</a>
+                ${p.ayuda ? `<small>${p.ayuda}</small>` : ''}
+            </li>`).join('')
+        document.getElementById('primeros-pasos').classList.remove('d-none')
+    }
+
     // Cuenta de usuarios activos de la empresa.
     async function cargarUsuarios() {
         const res = await fetch('/users')
@@ -273,6 +329,16 @@
             </ul>
     </nav>
     <main id="dashboard-main">
+        <!-- Primeros pasos (HU-88): lo ve sólo el administrador de una empresa
+             que todavía no cargó nada. Una empresa recién aprobada entraba a un
+             panel lleno de ceros y guiones, sin saber por dónde empezar. -->
+        <section class="dashboard-block d-none" id="primeros-pasos">
+            <div class="dashboard-block-header">
+                <h3><i class="fa-solid fa-flag-checkered me-2"></i>Primeros pasos</h3>
+            </div>
+            <p class="pasos-intro">Para que el sistema empiece a servirte. Este cuadro desaparece cuando cargues tu primer movimiento.</p>
+            <ol class="pasos-lista" id="pasos-lista"></ol>
+        </section>
         <section id="dashboard-kpis">
             <section class="dashboard-kpi" id="dashboard-kpis-1">
                 <h3>Ingresos del mes</h3>

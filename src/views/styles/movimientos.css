@@ -340,3 +340,8 @@ body {
 @media (min-width: 1024px) {
   .content { padding: 32px; }
 }
+
+/* El listado vacío: dice si no hay nada cargado o si los filtros no encuentran
+   nada, y ofrece lo que hay que hacer en cada caso (HU-88). Igual que en Stock
+   y en Productos. */
+.tabla-vacia { padding: 32px 20px; text-align: center; color: #8aa596; font-size: 0.9rem; }

@@ -551,11 +551,21 @@
         lista.length === 1 ? '1 producto' : `${lista.length} productos`
 
       if (!lista.length) {
+        // Tres casos distintos, cada uno con lo que hay que hacer (HU-88):
+        // no hay productos en el catalogo, los filtros no encuentran nada, o
+        // no falta nada. Antes los dos primeros iban en una sola frase.
+        const hayFiltros = armarConsulta() !== ''
         tbody.innerHTML = `<tr class="fila-aviso"><td colspan="6"><div class="tabla-vacia">${
-          soloFaltantes
+          hayFiltros
+            ? `No hay productos con estos filtros.
+               <div class="mt-2"><button type="button" class="btn btn-sm btn-limpiar" data-limpiar>
+                 <i class="fa-solid fa-eraser me-1"></i>Limpiar filtros</button></div>`
+          : soloFaltantes
             ? '¡Bien! No hay productos por debajo del mínimo.'
-            : 'No hay productos que coincidan. Si todavía no cargaste ninguno, hacelo desde <strong>Productos</strong>.'
+            : `Todavía no hay productos en el catálogo.
+               <div class="mt-2">Cargalos desde <a href="/pages/productos.html">Productos</a>: después vas a ver acá cuánto hay de cada uno.</div>`
         }</div></td></tr>`
+        tbody.querySelector('[data-limpiar]')?.addEventListener('click', () => document.getElementById('btn-limpiar').click())
         return
       }
 
@@ -683,9 +693,14 @@
       if (!movimientos.length) {
         tbody.innerHTML = `<tr class="fila-aviso"><td colspan="7"><div class="tabla-vacia">${
           consulta
-            ? 'No hay movimientos que coincidan con los filtros.'
-            : 'Todavía no se registró ninguna entrada ni salida.'
+            ? `No hay entradas ni salidas con estos filtros.
+               <div class="mt-2"><button type="button" class="btn btn-sm btn-limpiar" data-limpiar>
+                 <i class="fa-solid fa-eraser me-1"></i>Limpiar filtros</button></div>`
+            : `Todavía no se registró ninguna entrada ni salida.
+               <div class="mt-2">Si ya tenías mercadería, cargala con <strong>Otra entrada o salida</strong>
+               y el motivo <em>Ajuste positivo</em>. Si la vas a comprar, con <strong>Registrar una compra</strong>.</div>`
         }</div></td></tr>`
+        tbody.querySelector('[data-limpiar]')?.addEventListener('click', () => document.getElementById('btn-limpiar-mov').click())
         return
       }
 

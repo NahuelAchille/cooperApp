@@ -83,6 +83,10 @@ La empresa queda **esperando aprobación**: todavía no podés entrar. Cuando el
 administrador de la plataforma la aprueba, ya podés ingresar con tu email y tu
 contraseña.
 
+La primera vez, el panel de inicio te muestra un cuadro de **Primeros pasos** con lo
+que conviene hacer para arrancar, cada cosa con su link. Lo que ya hiciste aparece
+tachado, y el cuadro desaparece cuando cargás tu primer movimiento.
+
 > Si falta un dato o hay algo mal escrito, el formulario no se cierra: te marca en
 > rojo qué campo corregir.
 

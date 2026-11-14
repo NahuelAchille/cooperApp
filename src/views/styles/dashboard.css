@@ -411,3 +411,15 @@
 }
 .badge-stock.sin  { background-color: #fde8e8; color: #a01c1c; }
 .badge-stock.bajo { background-color: #fdf0dc; color: #b5650a; }
+
+/* ===== PRIMEROS PASOS (HU-88) =====
+   Lo ve el administrador de una empresa que todavía no cargó nada. */
+#primeros-pasos { border-left: 4px solid var(--verde-primario); width: 100%; box-sizing: border-box; }
+.pasos-intro { margin: 0; color: #5f6b66; font-size: 0.9rem; }
+.pasos-lista { margin: 0; padding-left: 22px; display: flex; flex-direction: column; gap: 10px; }
+.pasos-lista li { line-height: 1.35; }
+.pasos-lista a { color: var(--verde-primario); font-weight: 700; text-decoration: none; }
+.pasos-lista a:hover { text-decoration: underline; }
+.pasos-lista small { display: block; color: #7a8a80; }
+/* Lo que ya hizo se ve tachado y en gris: queda a la vista lo que falta. */
+.pasos-lista li.hecho a { color: #7a8a80; text-decoration: line-through; font-weight: 600; }

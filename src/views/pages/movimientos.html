@@ -598,7 +598,22 @@
       const tbody = document.getElementById('tabla-movimientos')
 
       if (!Array.isArray(movimientos) || !movimientos.length) {
-        tbody.innerHTML = '<tr class="fila-aviso"><td colspan="8" class="text-center py-4 text-muted">No hay movimientos para los filtros elegidos.</td></tr>'
+        // No es lo mismo no haber cargado nada que no encontrar nada con los
+        // filtros puestos (HU-88). Antes decia siempre "para los filtros
+        // elegidos", tambien a una empresa recien aprobada que no habia tocado
+        // ningun filtro: le echaba la culpa a algo que no hizo. "Ver anulados"
+        // no cuenta como filtro: no esconde nada.
+        const filtros = new URLSearchParams(query)
+        filtros.delete('incluirAnulados')
+        tbody.innerHTML = `<tr class="fila-aviso"><td colspan="8"><div class="tabla-vacia">${
+          filtros.toString()
+            ? `No hay movimientos con estos filtros.
+               <div class="mt-2"><button type="button" class="btn btn-sm btn-limpiar" data-limpiar>
+                 <i class="fa-solid fa-eraser me-1"></i>Limpiar filtros</button></div>`
+            : `Todavía no cargaste ningún movimiento.
+               <div class="mt-2">Tocá <strong>Nuevo movimiento</strong> para cargar lo primero que entró o salió.</div>`
+        }</div></td></tr>`
+        tbody.querySelector('[data-limpiar]')?.addEventListener('click', () => document.getElementById('btn-limpiar').click())
         return
       }
 
