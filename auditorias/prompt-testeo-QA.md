@@ -4,6 +4,10 @@
 > Creado el 13/09/2026, al cerrar el Sprint 06.
 > Actualizado el 16/09/2026: se sumaron Productos y Stock, la regresión contra
 > los informes anteriores, y la usabilidad pasó a la auditoría de UX.
+> Actualizado el 14/11/2026, al cerrar el cuatrimestre: el proyecto quedó completo y lo
+> hereda otro equipo; se sumó lo que se unificó ese día (validaciones, ayudas de pantalla,
+> hoja de estilos común, Productos y Servicios en una página), la tablet y las
+> herramientas para recorrer todas las pantallas de una vez.
 
 ---
 
@@ -33,7 +37,8 @@ Y ni una ni otra reemplazan la validación real: que una persona que no es de si
 entienda la pantalla se prueba sentándola adelante y mirándola sin ayudarla.
 
 **Mantenimiento** (esto se olvidó entre el Sprint 06 y el 08, y se notó): cuando se sume
-un módulo nuevo (Articulación), **agregalo a la sección "Qué probar"**.
+un módulo nuevo (por ejemplo RRHH, que quedó para el año próximo), **agregalo a la sección
+"Qué probar"**.
 Si no, el testeo siguiente prueba a fondo lo viejo y pasa por arriba lo recién escrito, que
 es justo lo que menos se miró. Lo mismo con la lista de "lo que ya está decidido": cada
 hallazgo que se manda al backlog se agrega ahí, para que el informe siguiente no lo repita.
@@ -48,11 +53,15 @@ leíste CLAUDE.md, que tiene el contexto completo: leelo antes de empezar.
 
 ## Tu objetivo
 
-Encontrar errores AHORA, antes de que se construya más encima. El proyecto va
-a seguir creciendo (Servicios, Reportes, Articulación) sobre lo que ya existe,
-así que cualquier cosa torcida en los cimientos se va a multiplicar. Y crece
-copiando: Servicios se escribe a partir de Productos, así que un error que hoy
-está en uno solo mañana está en dos.
+Encontrar errores AHORA. Los módulos del cuatrimestre están terminados y el
+proyecto lo continúa otro equipo el año próximo: lo que quede torcido lo van a
+heredar sin saberlo, y van a construir encima.
+
+Desde el 14/11/2026 hay piezas COMPARTIDAS por todas las pantallas
+(components/util.js, styles/comun.css, el encabezado) y validaciones del
+servidor escritas una sola vez (validacion.service.js). Eso evita corregir
+cada cosa diez veces, pero tiene la contracara: un error en una de esas piezas
+aparece en TODOS lados a la vez. Miralas con lupa.
 
 ## Regla más importante: NO ARREGLES NADA
 
@@ -84,7 +93,9 @@ Marcá claramente cuáles confirmaste y cuáles no.
 - Empresas, de PyMEs a grandes. Cada empresa ve SÓLO sus datos.
 - Cuatro roles: admin_empresa, tesorero, operador, superadmin.
 - Gente que no es de sistemas. Un mensaje de error confuso es un error real.
-- Se usa desde el celular: probá todo en 375 px de ancho.
+- Se usa desde el celular y la tablet: probá todo en 375 px y en 800 px. Hasta
+  1023 px la app se ve como en el celular (menú desplegable y tablas como
+  tarjetas); de 1024 para arriba, como en la computadora.
 - Maneja PLATA. Un número mal calculado o un movimiento que se pierde es lo
   más grave que puede pasar, más que cualquier problema visual.
 
@@ -133,9 +144,9 @@ Reportarlo otra vez gasta lugar en el informe sin agregar nada:
 - Un servicio **no tiene unidad de medida ni stock mínimo**: se guardan en NULL
   y en 0 a propósito, porque no se guarda en ningún lado. Que la API los ignore
   si se los mandan es lo correcto, no un bug.
-- El panel *"Cuánto deja cada servicio"* **no toma los filtros de naturaleza,
-  categoría ni servicio**, sólo el período. Es a propósito: un resultado
-  necesita lo que entró y lo que salió. El panel lo avisa en pantalla.
+- *"Cuánto deja cada servicio"* vive **sólo en Reportes**, vista *Por servicio*
+  (el panel de Movimientos se sacó el 14/11). Toma sólo el período, a propósito:
+  un resultado necesita lo que entró y lo que salió.
 - El servicio de un movimiento es su **origen, no su clasificación**. La
   categoría y el tipo siguen siendo obligatorios. Que un movimiento no tenga
   servicio es el caso normal.
@@ -171,6 +182,14 @@ Reportarlo otra vez gasta lugar en el informe sin agregar nada:
   - **El buscador no usa los filtros plegables**: la búsqueda es la pantalla.
   - **El mapa muestra un círculo, no un alfiler**, y si no hay internet la
     ficha funciona igual sin él.
+- **Lo que cambió en la revisión del 14/11/2026 (tandas 1 a 4)**, a propósito:
+  - **Productos y Servicios son una sola página** (`productos.html`), servida también como
+    `servicios.html` (`app.js`); lo mismo sus categorías. Atacá igual los cruces entre catálogos.
+  - **Unidad, caja, paquete y bolsa no aceptan decimales** en el stock; kg, litro y metro sí.
+  - **Un detalle o una descripción de más de 255 caracteres se rechaza**, no se corta.
+  - **Sin sesión, al login; con la contraseña temporal, a cambiarla**, desde `header.js`.
+  - Las ayudas de pantalla viven en `components/util.js` y los estilos comunes en
+    `styles/comun.css`: un error ahí se ve en TODAS las pantallas.
 - **Corregir un movimiento (desde la auditoría final, 14/11/2026)**, lo que es a propósito:
   - **Los movimientos no se editan: se anulan y se carga el bueno.** *Anular y corregir*
     no anula nada hasta guardar: el servidor anula el viejo y crea el nuevo en una sola
@@ -181,8 +200,9 @@ Reportarlo otra vez gasta lugar en el informe sin agregar nada:
     producto. *Sólo anular* la plata desde Movimientos sigue dejando vivo el stock.
   - **"Cuánto deja cada servicio" vive sólo en Reportes** (H-16): el panel de Movimientos y
     `GET /movimientos/resumen-por-servicio` se sacaron a propósito.
-  - **El CUIT y el DNI se guardan sin separadores** y los montos sólo aceptan números
-    comunes (`aNumero` en `validacion.service.js`): `1e3` o `0x10` rebotan.
+  - **El CUIT y el DNI se guardan sin separadores** y todos los números (montos,
+    cantidades, stock mínimo, costo, precio) sólo aceptan números comunes
+    (`leerDecimal` en `validacion.service.js`): `1e3` o `0x10` rebotan.
   - ***Habilitar de nuevo* no pide confirmación**, como *Aprobar*: se deshace.
 
 Si encontrás una forma NUEVA de explotar alguna de estas, eso sí reportalo.
@@ -249,10 +269,13 @@ STOCK (Sprint 08) — acá la existencia se calcula, no se guarda: miralo con lu
 - Los cuatro estados de existencia: "sin cargar" (nunca tuvo movimientos) tiene
   que distinguirse de "sin stock" (tuvo y quedó en cero), en el listado, en el
   filtro de faltantes y en el dashboard, con el mismo criterio en los tres.
-- El vínculo stock → dinero: registrá una venta, aceptá el movimiento de dinero,
-  y después intentá crearlo OTRA VEZ para el mismo movimiento de stock (por la
-  API, no por la pantalla). Tiene que rebotar: ese vínculo es lo único que impide
-  cargar la misma venta dos veces.
+- El vínculo stock → dinero: desde el 25/10 la venta y la compra nacen con su
+  plata. Lo que queda del camino viejo es "Completar la plata" de una venta
+  anterior que dice *"Sin registrar el cobro"* (en los datos de prueba, la
+  compra de pan de La Esperanza y una venta de Metalúrgica). Completala y
+  después intentá completarla OTRA VEZ para el mismo movimiento de stock (por la
+  API, no por la pantalla). Tiene que rebotar: ese vínculo es lo único que
+  impide cobrar la misma venta dos veces.
 - Al anular un movimiento de stock, el de dinero SE ANULA JUNTO (desde el
   02/11): verificá EN LA TABLA que los dos queden anulados, y que si el stock no
   se pudo anular, la plata tampoco.
@@ -264,6 +287,9 @@ SERVICIOS (Sprint 09) — el que comparte tablas con otro módulo
 Un servicio es un producto sin stock: viven en las MISMAS tablas (`productos` y
 `categorias_producto`), separados por la columna `es_servicio`. Eso es lo que hay
 que atacar: todo lugar donde un id de producto pueda pasar por uno de servicio.
+Desde el 14/11 son también la MISMA PÁGINA: `app.js` entrega `productos.html`
+cuando se pide `servicios.html` (y lo mismo con las categorías), y la página se
+arma según la dirección. Entrá por las DOS direcciones con cada rol.
 - Editar un PRODUCTO desde `/servicios/:id`, y un SERVICIO desde `/productos/:id`.
   Lo mismo con `/:id/estado`. Que sea de la empresa NO alcanza: tiene que ser
   además del mismo lado del catálogo.
@@ -278,7 +304,9 @@ que atacar: todo lugar donde un id de producto pueda pasar por uno de servicio.
 - El nombre único es por catálogo: un producto y un servicio PUEDEN llamarse
   igual; dos servicios no. Probá los dos casos.
 - Roles: acá están al revés que en Productos. El catálogo lo arma el admin, el
-  TESORERO sólo lee y el OPERADOR no entra. Probá los tres por API.
+  TESORERO sólo lee y el OPERADOR no entra. Probá los tres por API **y en la
+  pantalla**: como la página es la misma que Productos, un error en el objeto
+  que decide quién ve y quién edita le mostraría botones a quien no corresponde.
 
 EL SERVICIO DE UN MOVIMIENTO DE DINERO (HU-48 y HU-49)
 - Vincular un movimiento a un id de PRODUCTO en vez de un servicio: no se debe.
@@ -288,11 +316,11 @@ EL SERVICIO DE UN MOVIMIENTO DE DINERO (HU-48 y HU-49)
   (sus movimientos existen) pero NO en el alta. Verificá los dos.
 - Apagar el módulo de servicios con movimientos ya vinculados: el dato tiene que
   seguir viéndose, no desaparecer. Apagar un módulo esconde, no borra.
-- El panel "Cuánto deja cada servicio": compará sus números contra un SELECT
-  hecho a mano, servicio por servicio, con y sin período. Es una cuenta nueva.
+- Reportes, vista *Por servicio* ("cuánto deja cada uno"): compará sus números
+  contra un SELECT hecho a mano, servicio por servicio, con y sin período.
 - Un servicio SIN movimientos en el período tiene que aparecer igual, en cero.
   Si desaparece, es un bug: es justamente el que hay que mirar.
-- Un servicio dado de baja aparece en el panel sólo si en el período movió algo.
+- Un servicio dado de baja aparece en esa vista sólo si en el período movió algo.
 - Fechas del período: el borde exacto (un movimiento del mismo día que "desde"
   o que "hasta") tiene que entrar.
 
@@ -429,6 +457,33 @@ abra de más. Rutas: `GET /articulacion/buscar`, `/articulacion/empresas/:id`,
 - **La distancia**: compará una contra un cálculo a mano (Haversine) entre los
   centros de las dos localidades.
 
+LO QUE SE JUNTÓ EL 14/11/2026 — un error acá se ve en todas las pantallas
+- **Validaciones del servidor** (`validacion.service.js`: `leerDecimal` y sus
+  topes, `limpiarNombre`, `esEmailValido`, DNI y CUIT; `config/roles.js`).
+  Atacá CADA campo numérico con la misma lista: vacío, 0, negativo, 0,001,
+  0,004, `1e3`, `0x10`, " 10 ", "10,5" (con coma), `true`, `[1]`, `{}`,
+  "Infinity", el tope de la columna y uno más. Los campos: monto de un
+  movimiento, cantidad, precio y costo de una venta o compra, stock mínimo,
+  costo y precio de un producto. Cada uno tiene que rebotar o guardar lo mismo
+  que los demás ante el mismo valor.
+- **Lo que se cuenta va entero**: unidad, caja, paquete y bolsa no aceptan 1,5
+  en el stock; kg, litro y metro sí. Probá venta, compra y "otra entrada o
+  salida", y la corrección de una venta.
+- **Textos largos**: una descripción o un detalle de más de 255 caracteres se
+  rechaza con un mensaje, no se corta (en Movimientos, en Stock y en la plata
+  de una venta vieja).
+- **La sesión desde el encabezado** (`header.js` + `/users/me`): sin sesión,
+  cada pantalla va al login; con la contraseña temporal, a cambiarla. Probá
+  también el caso de la sesión abierta cuando el admin le vuelve a alguien a la
+  contraseña inicial, y con un usuario al que dan de baja mientras navega.
+- **Ayudas de pantalla y estilos compartidos** (`components/util.js`,
+  `styles/comun.css`): una página que vuelva a declarar `esc` o `formatMoneda`
+  se queda SIN JavaScript entero. Abrí todas las pantallas con la consola
+  abierta. `esc()` es una sola ahora: un XSS que pase ahí pasa en todas.
+- **Datos de prueba**: desde el 14/11 las ventas y compras de La Esperanza
+  tienen su plata. Verificá que la plata de Movimientos y lo que dice Stock
+  ("Cobrado: $ X") sean la misma, fila por fila.
+
 FLUJOS COMPLETOS
 - Registro de empresa → aprobación → alta de usuarios → carga de movimientos.
 - Rechazo de una empresa: ¿se puede revertir? ¿qué pasa con sus usuarios?
@@ -505,6 +560,15 @@ Ser honesto sobre lo que no probaste vale más que inflar la lista.
   de perseguir un fantasma.
 - Al re-ejecutar datos_de_prueba.sql cambian los ids autoincrementales. No
   uses ids fijos en tus scripts de prueba: buscalos cada vez.
+- **Las cookies de `localhost` se comparten entre puertos.** Si levantás una
+  segunda copia de la app (`DB_NAME` y `PORT`) para no pisar a nadie, entrá
+  por `127.0.0.1` en una de las dos, o una sesión pisa a la otra.
+- **Para recorrer todas las pantallas de una vez** hay un script en
+  `pp2/scripts-capturas/revisar-pantallas.js`: entra con cada usuario en un Edge
+  sin ventana, en el ancho que le digas, y junta los errores de JavaScript, de
+  consola y el scroll horizontal. Los casos se escriben en una lista (mirá
+  `LEEME.txt`). No reemplaza mirar la pantalla, pero en un minuto dice dónde
+  mirar.
 - Para importar el esquema hay que borrar la base primero (database.sql no
   tiene DROP).
 - LAS FECHAS SE VERIFICAN EN LA TABLA, NUNCA EN LA PANTALLA. El driver devuelve
@@ -519,16 +583,16 @@ Ser honesto sobre lo que no probaste vale más que inflar la lista.
 Arrancá levantando MariaDB de XAMPP, recreando la base desde cero con los dos
 .sql, y poniendo la app a andar.
 
-Para probar la descarga en PDF hace falta correr UNA VEZ `npm install` en la
-carpeta cooperApp: pdfkit no viaja en el repo. Sin eso la app anda igual y el
-CSV también; sólo el botón del PDF avisa que falta. Para leer los PDF que
-generes ya está instalado `pypdf` en el Python del sistema (la ruta completa
-está en CLAUDE.md, sección 4: Python no está en el PATH).
+Antes de levantar la app, corré `npm install` en la carpeta cooperApp:
+`node_modules` no viaja en el repo (desde el 14/11/2026). Después, `npm start`.
+Para leer los PDF que generes ya está instalado `pypdf` en el Python del
+sistema (la ruta completa está en CLAUDE.md, sección 4: Python no está en el
+PATH).
 
 Después, en este orden: primero la regresión de lo ya reportado (es rápida y te
 deja ver qué patrones se repiten), después seguridad y aislamiento, que es lo
-más crítico, y después el módulo más nuevo, que es el que menos ojos tuvo
-encima.
+más crítico, y después lo que cambió más recientemente (mirá la bitácora de
+CLAUDE.md), que es lo que menos ojos tuvo encima.
 ````
 
 ---
@@ -555,6 +619,6 @@ encima.
 | 16/09/2026 | **Sprints 07 y 08** (juntos: el 07 nunca se había corrido) | 8 (2 críticos, 1 alto, 3 medios, 2 bajos), todos confirmados ejecutándolos. Informe en `informes-QA/informe-QA-sprints-07-08.md` | **Los 8 corregidos**, ninguno al backlog, + 2 encontrados al corregir. Los dos críticos eran el mismo error de concurrencia (consultar-decidir-escribir) y se cerraron con una transacción que traba la fila del producto. Detalle al final del informe |
 | 28/09/2026 | **Sprints 09 y 10 juntos** (Servicios completo · Reportes completo) — era **HU-50** | 5 (0 críticos, 1 alto, 2 medios, 2 bajos), todos confirmados ejecutándolos. Informe en `informes-QA/informe-QA-sprints-09-10.md` | **28/09: los 5 corregidos**, ninguno al backlog, + 1 encontrado al corregir (el PDF agrupado tampoco traía los totales). A1 era el escape de fórmulas pegándole a los números del sistema; B1, el mismo patrón consultar-decidir-escribir, cerrado con un `UPDATE ... AND anulado = 0`. Detalle al final del informe. **Lo que se atacó a fondo aguantó**: los 13 intentos de cruzar los dos catálogos rebotan y los totales de los reportes cierran contra `SELECT` en las cinco vistas. El único hallazgo con un número mal es del **archivo, no del sistema**: el escape contra fórmulas de Excel también le pega a los resultados negativos del CSV, que quedan como texto y Excel no los suma |
 | 02/11/2026 | **La venta y la compra en un solo paso** (commit `89e2bcb`, 25-26/10; hecho fuera de sprint, HU-90 y HU-91) | 6 (1 crítico, 5 bajos), todos confirmados ejecutándolos. Informe en `informes-QA/informe-QA-venta-compra.md` | **02/11: los 6 corregidos**, ninguno al backlog, + 1 encontrado al corregir (anular y cargar el cobro a la vez podía dejar un cobro vivo en una venta anulada). **C1 lo decidió el grupo antes del código**: anular una venta o una compra anula también su plata, en la misma transacción; reemplaza a la decisión vieja de que no la anulaba. B1 era otra vez el patrón consultar-decidir-escribir (el costo leído fuera del candado). Detalle al final del informe |
-| 14/11/2026 | **Auditoría final, sistema completo** (HU-67), con foco en lo que nunca pasó por QA: Articulación, el superadmin rehecho, lo que se sacó, HU-87 y HU-88 | 6 (1 crítico, 1 alto, 1 medio, 3 bajos), todos confirmados ejecutándolos. Informe en `informes-QA/informe-QA-final.md` | *(pendiente de corregir)*. **C1**: *Anular y corregir* (HU-87) vuelve a cargar la plata de una venta sin atarla, la venta queda *"Sin registrar el cobro"* y se puede cobrar dos veces. **A1**: el registro da *"Error del servidor"* con el CUIT escrito con guiones. **M1**: el DNI con puntos se guarda con puntos (saltea el duplicado y la contraseña temporal queda con puntos). **Lo nuevo de Articulación y del superadmin aguantó entero**: nada privado sale hacia otra empresa, cada condición de "quién aparece" esconde, y 0 inyecciones de XSS en las pantallas nuevas. La regresión de los cuatro informes anteriores dio bien |
+| 14/11/2026 | **Auditoría final, sistema completo** (HU-67), con foco en lo que nunca pasó por QA: Articulación, el superadmin rehecho, lo que se sacó, HU-87 y HU-88 | 6 (1 crítico, 1 alto, 1 medio, 3 bajos), todos confirmados ejecutándolos. Informe en `informes-QA/informe-QA-final.md` | **14/11: los 6 corregidos**, ninguno al backlog (ver el final del informe). Después vino una revisión grande en cuatro tandas (bitácora de CLAUDE.md, 14/11 (13) a (15)) que todavía no pasó por QA. Lo que encontró el informe: **C1**: *Anular y corregir* (HU-87) vuelve a cargar la plata de una venta sin atarla, la venta queda *"Sin registrar el cobro"* y se puede cobrar dos veces. **A1**: el registro da *"Error del servidor"* con el CUIT escrito con guiones. **M1**: el DNI con puntos se guarda con puntos (saltea el duplicado y la contraseña temporal queda con puntos). **Lo nuevo de Articulación y del superadmin aguantó entero**: nada privado sale hacia otra empresa, cada condición de "quién aparece" esconde, y 0 inyecciones de XSS en las pantallas nuevas. La regresión de los cuatro informes anteriores dio bien |
 
 *(Completar después de cada corrida.)*

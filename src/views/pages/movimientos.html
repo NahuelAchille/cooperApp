@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css">
+  <link rel="stylesheet" href="/styles/comun.css">
   <link rel="stylesheet" href="/styles/header.css">
   <link rel="stylesheet" href="/styles/movimientos.css">
   <link rel="stylesheet" href="/styles/tabla-mobile.css">
@@ -15,6 +16,7 @@
 
   <div id="header"></div>
 
+  <script src="/components/util.js"></script>
   <script src="/components/header.js"></script>
 
   <div class="page-header">
@@ -303,36 +305,15 @@
   <script>
 
     let usuarioActual = null
-    let categorias = []   // categorias activas (para filtros y para el alta)
+    let categorias = []   // todas las categorías, también las de baja: sólo para el filtro
     let servicios = []    // el catálogo de servicios, si la empresa lo tiene
     let tiposActivos = [] // los tipos que se pueden usar al cargar, con su categoría
     let movimientosEnPantalla = [] // lo último listado, para copiar uno al corregirlo
 
     // --- Utilidades ---
-    const formatoMoneda = new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'ARS', minimumFractionDigits: 2 })
-    const formatMoneda = (n) => formatoMoneda.format(Number(n) || 0)
 
-    // Neutraliza el HTML que pueda venir en un texto cargado por el usuario.
-    // Sin esto, una descripcion como <img src=x onerror=...> se ejecutaria al
-    // meterla en innerHTML.
-    function esc(texto) {
-      return String(texto).replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
-    }
 
-    // Fecha de hoy en hora local, como AAAA-MM-DD. No se usa toISOString()
-    // porque trabaja en UTC y despues de las 21:00 devolveria la de mañana.
-    function fechaDeHoy() {
-      const hoy = new Date()
-      return `${hoy.getFullYear()}-${String(hoy.getMonth() + 1).padStart(2, '0')}-${String(hoy.getDate()).padStart(2, '0')}`
-    }
 
-    function mostrarToast(mensaje) {
-      const toast = document.createElement('div')
-      toast.style = 'position:fixed;top:24px;left:50%;transform:translateX(-50%);background:#2d7a4f;color:white;padding:14px 24px;border-radius:10px;z-index:9999;font-weight:500;box-shadow:0 4px 16px rgba(0,0,0,0.2)'
-      toast.innerHTML = `<i class="fa-solid fa-circle-check me-2"></i>${esc(mensaje)}`
-      document.body.appendChild(toast)
-      setTimeout(() => toast.remove(), 6000)
-    }
 
     // Lee los filtros actuales y arma el querystring para el backend
     function queryFiltros() {
@@ -422,9 +403,12 @@
       tiposActivos = res.ok ? await res.json() : []
     }
 
-    // Trae las categorias activas: sirven para el filtro y para el alta
+    // Trae TODAS las categorías, también las dadas de baja: es sólo para el
+    // filtro (el alta usa tiposActivos). Un movimiento viejo de una categoría
+    // dada de baja sigue en la lista y en los totales, y hay que poder
+    // encontrarlo (mismo criterio que el filtro de Productos y Reportes).
     async function cargarCategorias() {
-      const res = await fetch('/categorias?soloActivas=true')
+      const res = await fetch('/categorias')
       categorias = res.ok ? await res.json() : []
       poblarFiltroCategorias()
     }
@@ -486,7 +470,7 @@
         visibles.map(c => {
           // Con naturaleza filtrada la flecha sobra; sin filtrar ayuda a distinguir.
           const flecha = naturaleza ? '' : (c.naturaleza === 'ingreso' ? '↓ ' : '↑ ')
-          return `<option value="${c.id_categoria}">${flecha}${esc(c.nombre)}</option>`
+          return `<option value="${c.id_categoria}">${flecha}${esc(c.nombre)}${c.activo ? '' : ' (de baja)'}</option>`
         }).join('')
     }
 
@@ -504,12 +488,13 @@
       document.getElementById('total-egresos').textContent = formatMoneda(resumen.total_egresos)
       const balanceEl = document.getElementById('total-balance')
       balanceEl.textContent = formatMoneda(resumen.balance)
-      balanceEl.className = 'valor ' + (resumen.balance >= 0 ? 'positivo' : 'negativo')
+      // En cero no es ni a favor ni en contra: sin color (como en Reportes).
+      balanceEl.className = 'valor ' + (resumen.balance > 0 ? 'positivo' : resumen.balance < 0 ? 'negativo' : '')
 
       // De qué período son estos números (UX F-03).
       const desde = document.getElementById('filtro-desde').value
       const hasta = document.getElementById('filtro-hasta').value
-      const enFecha = (f) => new Date(f + 'T00:00:00').toLocaleDateString('es-AR')
+      const enFecha = (f) => formatearFecha(f)
       document.getElementById('resumen-periodo').textContent =
           desde && hasta ? `Del ${enFecha(desde)} al ${enFecha(hasta)}`
         : desde          ? `Desde el ${enFecha(desde)}`
@@ -555,7 +540,7 @@
         const signo = esIngreso ? '+' : '-'
         return `
           <tr class="${m.anulado ? 'fila-anulada' : ''}">
-            <td data-label="Fecha">${new Date(m.fecha).toLocaleDateString('es-AR')}</td>
+            <td data-label="Fecha">${formatearFecha(m.fecha)}</td>
             <!-- El servicio va acá abajo y no en una columna propia: la tabla
                  ya tiene ocho y acaba de pasar por el trabajo de que entre en
                  el celular. Además se lee mejor junto a la descripción, que
@@ -673,8 +658,12 @@
       if (tipo && tipo.destino_de_stock) {
         const queEs = tipo.naturaleza === 'ingreso' ? 'una venta de mercadería' : 'una compra de mercadería'
         const desde = tipo.naturaleza === 'ingreso' ? 'Registrar una venta' : 'Registrar una compra'
+        // El tesorero no entra a Stock: no se le dice que cargue desde ahí.
+        const veStock = usuarioActual?.rol === 'admin_empresa' && moduloActivo('productos')
         ayuda += `<div class="aviso-stock mt-1"><i class="fa-solid fa-boxes-stacked me-1"></i>Si esto es ${queEs}, ` +
-          `se carga desde Stock con <strong>${desde}</strong> y la plata se carga sola. ` +
+          (veStock
+            ? `se carga desde Stock con <strong>${desde}</strong> y la plata se carga sola. `
+            : 'la carga el depósito desde Stock y la plata entra sola. ') +
           'Antes de seguir, fijate en la lista que no esté ya cargada.</div>'
       }
       document.getElementById('mov-tipo-ayuda').innerHTML = ayuda

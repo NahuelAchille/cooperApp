@@ -66,15 +66,6 @@
 /* Lo que esta esperando: se marca la fila para que la decision se vea. */
 .fila-pendiente td { background-color: #fffbea; }
 
-/* Estado: los mismos tres colores que Usuarios, con la palabra adentro. */
-.badge-estado {
-  font-size: 0.8125rem;
-  padding: 4px 10px;
-  border-radius: 20px;
-  font-weight: 600;
-  white-space: nowrap;
-}
-
 /* ===== BOTONES ===== */
 /* Aprobar es la accion que se vino a hacer: va llena. Las demas, de borde,
    como en Usuarios (.btn-accion). */

@@ -1,59 +1,6 @@
-/* ===== VARIABLES ===== */
-:root {
-  --verde-primario: #2d7a4f;
-  --verde-secundario: #2f8456;
-  --verde-oscuro: #1a6b3a;
-  --bg-page: #f0f7f3;
-  --card-bg: #ffffff;
-  --card-shadow: 0 2px 12px rgba(0,0,0,0.07);
-  --danger: #a01c1c;
-}
-
-body {
-  background-color: var(--bg-page);
-  margin: 0;
-  padding: 0;
-  font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
-  color: #1a2e23;
-}
-
-/* ===== HEADER DE PAGINA ===== */
-.page-header {
-  background: linear-gradient(135deg, var(--verde-primario), var(--verde-secundario));
-  color: white;
-  padding: 16px;
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-  align-items: flex-start;
-}
-.page-header h4 { margin: 0; font-weight: 700; }
-.page-header small { opacity: 0.8; }
-
-.acciones-header { display: flex; gap: 8px; flex-wrap: wrap; }
-
-.btn-nuevo {
-  background-color: white;
-  color: var(--verde-primario);
-  border: none;
-  border-radius: 8px;
-  font-weight: 700;
-  padding: 8px 16px;
-}
-.btn-nuevo:hover { background-color: #e4f2eb; color: var(--verde-oscuro); }
-
-.btn-secundario {
-  background: transparent;
-  color: white;
-  border: 1.5px solid rgba(255,255,255,0.6);
-  border-radius: 8px;
-  font-weight: 600;
-  padding: 8px 16px;
-}
-.btn-secundario:hover { background-color: rgba(255,255,255,0.15); color: white; }
-
-/* ===== CONTENIDO ===== */
-.content { padding: 16px; }
+/* Los colores, la letra, la franja del título, los botones de la franja, el
+   margen del contenido, los avisos y las píldoras de estado vienen de
+   comun.css (14/11/2026). Acá queda sólo lo propio de esta pantalla. */
 
 /* ===== FILTROS ===== */
 .card-filtros {
@@ -142,16 +89,6 @@ body {
    en vez de dejar la celda vacía, que se lee como un error. */
 .sin-dato { color: #4a6356; }
 
-.badge-estado {
-  font-size: 0.8125rem;
-  padding: 3px 9px;
-  border-radius: 20px;
-  font-weight: 600;
-  white-space: nowrap;
-}
-.badge-activo   { background-color: #d1f5e0; color: var(--verde-oscuro); }
-.badge-inactivo { background-color: #fde8e8; color: var(--danger); }
-
 .badge-unidad {
   background-color: #eef4f1;
   color: #4a6b5a;
@@ -191,36 +128,17 @@ body {
   box-shadow: 0 0 0 3px rgba(45,122,79,0.15);
 }
 
-/* Avisos de "sin permiso" y "modulo apagado" */
-.aviso-permiso {
-  background: var(--card-bg);
-  border-radius: 12px;
-  box-shadow: var(--card-shadow);
-  padding: 40px 20px;
-  text-align: center;
-  color: #4a6356;
-}
-
 /* ===== RESPONSIVE ===== */
 @media (min-width: 768px) {
-  .page-header {
-    flex-direction: row;
-    justify-content: space-between;
-    align-items: center;
-    padding: 20px 32px;
-    gap: 20px;
-  }
   /* Los botones en una fila; el que cede lugar es el subtítulo, que puede
      bajar de renglón sin perder nada. Antes era al revés y en Servicios, a
      1024 px, "Nuevo servicio" caía abajo solo (UX 28/09, H-15). */
   .page-header > div:first-child { flex: 1 1 auto; min-width: 0; }
   .acciones-header { flex-wrap: nowrap; flex-shrink: 0; }
-  .content { padding: 24px; }
   .filtros-grid { grid-template-columns: 1fr 1fr; }
 }
 
 @media (min-width: 1024px) {
-  .content { padding: 32px; }
   /* La búsqueda se lleva el doble de ancho que cada desplegable. */
   .filtros-grid { grid-template-columns: 2fr 1fr 1fr 1fr; }
 }

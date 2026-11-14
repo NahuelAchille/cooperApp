@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css">
+  <link rel="stylesheet" href="/styles/comun.css">
   <!-- El mapa: Leaflet + OpenStreetMap. No pide clave ni tarjeta (Google
        Maps sí, y choca con que el proyecto corre local). Necesita internet
        para dibujar el mapa, igual que Bootstrap por CDN. -->
@@ -17,6 +18,7 @@
 
   <div id="header"></div>
 
+  <script src="/components/util.js"></script>
   <script src="/components/header.js"></script>
 
   <div class="page-header">
@@ -72,12 +74,8 @@
 
   <script>
 
-    // Todo lo que se muestra acá lo escribió OTRA empresa: va escapado siempre.
-    function esc(texto) {
-      return String(texto).replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
-    }
 
-    function mostrarError(texto) {
+    function avisarError(texto) {
       document.getElementById('aviso-error-texto').textContent = texto
       document.getElementById('aviso-error').classList.remove('d-none')
     }
@@ -85,12 +83,10 @@
     function pintarContacto(contacto) {
       const filas = []
       if (contacto.email) {
-        filas.push(`<div class="dato-contacto"><i class="fa-solid fa-envelope"></i><a href="mailto:${esc(contacto.email)}">${esc(contacto.email)}</a></div>`)
+        filas.push(`<div class="dato-contacto"><i class="fa-solid fa-envelope"></i>${esc(contacto.email)}</div>`)
       }
       if (contacto.telefono) {
-        // En el celular, tocar el número llama. Sólo dígitos y + en el enlace.
-        const numero = contacto.telefono.replace(/[^0-9+]/g, '')
-        filas.push(`<div class="dato-contacto"><i class="fa-solid fa-phone"></i><a href="tel:${esc(numero)}">${esc(contacto.telefono)}</a></div>`)
+        filas.push(`<div class="dato-contacto"><i class="fa-solid fa-phone"></i>${esc(contacto.telefono)}</div>`)
       }
       if (contacto.domicilio) {
         filas.push(`<div class="dato-contacto"><i class="fa-solid fa-location-dot"></i>${esc(contacto.domicilio)}</div>`)
@@ -185,11 +181,11 @@
       }
 
       if (!['admin_empresa', 'tesorero', 'operador'].includes(user.rol)) {
-        mostrarError('Tu usuario no tiene acceso al buscador entre empresas.')
+        avisarError('Tu usuario no tiene acceso al buscador entre empresas.')
         return
       }
       if (!moduloActivo('articulacion')) {
-        mostrarError('El módulo Buscar empresas no está activo en tu empresa. El administrador puede activarlo desde Módulos del sistema.')
+        avisarError('El módulo Buscar empresas no está activo en tu empresa. El administrador puede activarlo desde Módulos del sistema.')
         return
       }
 
@@ -198,7 +194,7 @@
       const ficha = await res.json()
 
       if (!res.ok) {
-        mostrarError(ficha.error)
+        avisarError(ficha.error)
         return
       }
 

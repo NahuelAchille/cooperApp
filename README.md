@@ -203,6 +203,18 @@ router.get('/', requireLogin, requireRol('admin_empresa', 'operador'), requireMo
 Esconder un botón en la pantalla no alcanza: los controles van siempre del lado
 del servidor.
 
+### Lo que comparten las pantallas
+
+Para que un arreglo se haga una vez y no en cada copia:
+
+| Dónde | Qué |
+|---|---|
+| `views/styles/comun.css` | Colores, letra, la franja verde del título, sus botones, los avisos y las píldoras de estado. Va después de Bootstrap y antes de la hoja de la pantalla |
+| `views/components/util.js` | `esc()` contra el HTML inyectado, el aviso flotante, y los formatos de plata, cantidad y fecha |
+| `views/components/header.js` | El encabezado y el menú; manda al login sin sesión y a cambiar la contraseña si es la temporal |
+| `views/pages/productos.html` | Es también la pantalla de **Servicios** (y `configuracion-categorias-producto.html`, la de sus categorías): `app.js` la entrega en las dos direcciones y la página se arma según por cuál se entró |
+| `services/validacion.service.js`, `formato.service.js`, `config/roles.js` | Del lado del servidor: las validaciones de números y textos, cómo se escriben cantidades y plata en los mensajes, y los roles por su nombre |
+
 ### Dos variables opcionales
 
 Sirven para levantar una segunda copia de la app al mismo tiempo, por ejemplo
@@ -228,4 +240,4 @@ para probar algo sin pisar la base de otra persona. Casi nunca hacen falta.
 | [`capturas-pantalla/`](capturas-pantalla/) | Capturas de todas las pantallas, con los datos de prueba |
 | `Backlog_CooperApp_2026.xlsx` | El backlog: historias, tareas y sprints |
 | `ABZ.CooperApp Validación de idea - versión 2 (empresas)` (`.pdf` y `.docx`) | **La validación de idea vigente** (noviembre de 2026): el producto para empresas, qué cambió respecto de la primera y por qué. El `.docx` es para editarla |
-| `ABZ.CooperAppValidaciónDeIdeaDeProductoDeSoftware (1).pdf` | La primera validación de idea (agosto de 2026), cuando el producto era para cooperativas. Se conserva como historia |
+| `ABZ.CooperApp Validación de idea - versión 1 (cooperativas).pdf` | La primera validación de idea (agosto de 2026), cuando el producto era para cooperativas. Se conserva como historia |

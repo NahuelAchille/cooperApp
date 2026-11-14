@@ -175,7 +175,7 @@ const resumen = async (id_empresa, filtros = {}) => {
   return {
     total_ingresos: totalIngresos,
     total_egresos: totalEgresos,
-    balance: totalIngresos - totalEgresos
+    balance: Math.round(totalIngresos * 100 - totalEgresos * 100) / 100
   }
 }
 
@@ -251,7 +251,7 @@ const resumenPorServicio = async (id_empresa, { desde, hasta } = {}) => {
       cantidad: Number(fila.cantidad),
       total_ingresos: ingresos,
       total_egresos: egresos,
-      resultado: ingresos - egresos
+      resultado: Math.round(ingresos * 100 - egresos * 100) / 100
     }
   })
 

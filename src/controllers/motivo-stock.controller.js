@@ -1,18 +1,11 @@
 const motivoStockModel = require('../models/motivo-stock.model')
 const stockModel = require('../models/stock.model')
 const categoriaModel = require('../models/categoria.model')
+const { limpiarNombre } = require('../services/validacion.service')
 
 const EFECTOS_STOCK = ['entrada', 'salida']
 const EFECTOS_DINERO = ['ingreso', 'egreso', 'ninguno']
 
-// Normaliza un nombre libre: recorta espacios y valida que no quede vacio ni
-// se pase del limite de la columna (80). Devuelve null si no sirve.
-const limpiarNombre = (valor) => {
-  if (typeof valor !== 'string') return null
-  const limpio = valor.trim()
-  if (!limpio || limpio.length > 80) return null
-  return limpio
-}
 
 // Valida los dos impactos del motivo. Devuelve { efecto_stock, efecto_dinero }
 // o { error }.
@@ -30,14 +23,14 @@ const validarEfectos = (body) => {
 
   const efecto_dinero = body.efecto_dinero || 'ninguno'
   if (!EFECTOS_DINERO.includes(efecto_dinero)) {
-    return { error: 'Elegí qué hace el motivo con el dinero' }
+    return { error: 'Elegí qué hace el motivo con la plata' }
   }
 
   if (efecto_stock === 'entrada' && efecto_dinero === 'ingreso') {
-    return { error: 'Si entra mercadería, el dinero no puede ser un ingreso: será un egreso (la pagaste) o ninguno' }
+    return { error: 'Si entra mercadería, no puede entrar plata: o sale plata (la pagaste) o no mueve plata' }
   }
   if (efecto_stock === 'salida' && efecto_dinero === 'egreso') {
-    return { error: 'Si sale mercadería, el dinero no puede ser un egreso: será un ingreso (la vendiste) o ninguno' }
+    return { error: 'Si sale mercadería, no puede salir plata: o entra plata (la vendiste) o no mueve plata' }
   }
 
   return { efecto_stock, efecto_dinero }
@@ -62,13 +55,13 @@ const validarTipo = async (body, efecto_dinero, id_empresa) => {
 
   const tipo = await categoriaModel.findTipoById(body.id_tipo, id_empresa)
   if (!tipo) {
-    return { error: 'No se encontró la categoría de dinero elegida' }
+    return { error: 'No se encontró la categoría de plata elegida' }
   }
   if (!tipo.activo || !tipo.categoria_activa) {
-    return { error: 'Esa categoría de dinero está dada de baja: elegí una activa' }
+    return { error: 'Esa categoría de plata está dada de baja: elegí una activa' }
   }
   if (tipo.naturaleza !== efecto_dinero) {
-    return { error: `Este motivo genera un ${efecto_dinero}, así que su plata tiene que ir a una categoría de ${efecto_dinero}s` }
+    return { error: `Con este motivo ${efecto_dinero === 'ingreso' ? 'entra' : 'sale'} plata, así que tiene que ir a una categoría de plata que ${efecto_dinero === 'ingreso' ? 'entra' : 'sale'}` }
   }
 
   return { id_tipo: tipo.id_tipo }

@@ -30,10 +30,12 @@
         td-oculto-movil  las columnas de relleno, que en el celular sólo
                          empujan lo importante fuera de la vista.
 
-   En 768 px o más no cambia nada: la tabla se sigue viendo como una tabla.
+   En 1024 px o más no cambia nada: la tabla se sigue viendo como una tabla.
+   (Hasta el 14/11/2026 el corte era 768: en una tablet las tablas no entraban
+   y se cortaban contra el borde, con los botones afuera.)
    =========================================================================== */
 
-@media (max-width: 767px) {
+@media (max-width: 1023px) {
 
   .tabla-tarjetas table,
   .tabla-tarjetas thead,

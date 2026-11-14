@@ -88,7 +88,6 @@ const existenciaCon = async (ejecutor, id_producto, id_empresa) => {
   return rows.length ? Number(rows[0].existencia) : 0
 }
 
-const existenciaDeProducto = (id_producto, id_empresa) => existenciaCon(db, id_producto, id_empresa)
 
 // Movimientos de stock de la empresa, con todo lo que la pantalla necesita ya
 // resuelto: producto, motivo, su efecto y quien lo registro.
@@ -130,6 +129,9 @@ const findMovimientos = async (id_empresa, filtros = {}) => {
            -- Para que el cartel de anular diga cuanta plata se va con la venta.
            m.monto AS dinero_monto,
            p.id_producto, p.nombre AS producto_nombre, p.unidad_medida,
+           -- Para no ofrecer "Anular y corregir" sobre un producto dado de baja:
+           -- el formulario no lo puede elegir y la corrección quedaba trabada.
+           p.activo AS producto_activo,
            mo.id_motivo_stock, mo.nombre AS motivo_nombre,
            mo.efecto_stock, mo.efecto_dinero, mo.id_tipo AS motivo_id_tipo,
            u.nombre AS usuario_nombre, u.apellido AS usuario_apellido
@@ -341,7 +343,7 @@ const contarMovimientosDeMotivo = async (id_motivo_stock) => {
 }
 
 module.exports = {
-  findExistencias, existenciaDeProducto, findMovimientos, findMovimientoById,
-  createMovimiento, vincularMovimientoDinero, anularMovimiento,
+  findExistencias, findMovimientos, findMovimientoById,
+  createMovimiento, anularMovimiento,
   contarMovimientosDeMotivo, conProductoTrabado, registrarDineroDeMovimiento
 }

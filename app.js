@@ -1,4 +1,5 @@
 const express = require('express')
+const path = require('path')
 const session = require('express-session')
 const app = express()
 
@@ -18,7 +19,6 @@ const rubroRoutes = require('./src/routes/rubro.routes')
 const localidadRoutes = require('./src/routes/localidad.routes')
 const articulacionRoutes = require('./src/routes/articulacion.routes')
 
-app.use(express.urlencoded({ extended: true }))
 app.use(express.json())
 app.use(session({
   secret: 'cooperapp_secret',
@@ -31,6 +31,15 @@ app.use(session({
   }
 }))
 app.get('/', (req, res) => res.redirect('/pages/login.html'))
+
+// Productos y Servicios comparten la pantalla: un servicio es un producto sin
+// stock, en las mismas tablas. Cada dirección entrega la misma página, y la
+// página se arma según la dirección por la que se entró (revisión de código,
+// 14/11/2026: eran dos copias de cientos de líneas que había que corregir dos
+// veces). Van ANTES del static: Express usa la primera que coincide.
+const pagina = (archivo) => (req, res) => res.sendFile(path.join(__dirname, 'src', 'views', 'pages', archivo))
+app.get('/pages/servicios.html', pagina('productos.html'))
+app.get('/pages/configuracion-categorias-servicio.html', pagina('configuracion-categorias-producto.html'))
 
 app.use(express.static('src/views'))
 

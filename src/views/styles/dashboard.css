@@ -1,6 +1,6 @@
 :root{
-  --verde-primario: #0e7a44;
-  --verde-oscuro: #128c4a;
+  /* El verde, la sombra y el gris vienen de comun.css: el panel tenía otro
+     verde (#0e7a44) y era la pantalla que menos se parecía al resto. */
   --accent-magenta: #c13e96;
   --kpi-bg: #ffffff;
   /* Los mismos colores que Movimientos (UX F-05): antes Ingresos era rojo,
@@ -8,12 +8,12 @@
   --kpi-border-top-1: #2d7a4f;
   --kpi-border-top-2: #a01c1c;
   --kpi-border-top-3: #1f5fa8;
-  --kpi-border-top-4: #9c199c;
-  --kpi-border-top-5: #9c9c19;
+  /* Usuarios y Reponer no son plata: sin color propio. Cinco colores sin
+     significado se leían como un arcoíris (revisión visual, 14/11/2026). */
+  --kpi-border-top-4: #c8e6d5;
+  --kpi-border-top-5: #c8e6d5;
   --card-bg: #ffffff;
-  --muted: #4a6356;  /* 6,5:1; antes #aaa daba 2,3:1 (UX final, contraste) */
   --table-alt: #f7f9f8;
-  --card-shadow: 0 4px 8px rgba(0,0,0,0.10);
 }
 
 /* Box sizing */
@@ -28,7 +28,7 @@
   flex-direction: column;
   width: 100%;
   margin: 0;                 /* ocupa todo el ancho */
-  background-color: #0e7a44;
+  background-color: var(--verde-primario);
   border-radius: 0;          /* sin esquinas redondeadas en mobile */
   box-shadow: none;          /* opcional: quitar sombra para que quede plano */
   color: white;
@@ -85,10 +85,14 @@
 #dashboard-main {
   display: flex;
   flex-direction: column;
+  /* base.css centra el contenido de <main> en vertical: con poco contenido
+     (el panel del operador) quedaba un hueco grande arriba y parecía que no
+     había cargado nada (revisión visual, 14/11/2026). */
+  justify-content: flex-start;
   gap: 12px;
   margin: 0;                
   padding: 10px;             
-  background-color: #f7f9f8;
+  background-color: var(--bg-page);
   box-sizing: border-box;
 }
 
@@ -108,12 +112,12 @@
   justify-content: center;
   align-items: flex-start; /* texto alineado a la izquierda para mejor lectura */
   padding: 12px;
-  border-radius: 6px;
+  border-radius: 12px;
   background: var(--kpi-bg, #ffffff);
-  box-shadow: var(--card-shadow, 0 4px 8px rgba(0,0,0,0.10));
-  color: #2a2a35;
-  border-top-width: 8px ;
-  border-top-style: solid ;
+  box-shadow: var(--card-shadow);
+  color: var(--texto);
+  border-top-width: 4px;
+  border-top-style: solid;
 }
 
 /* Ajustes tipográficos para que no ocupen tanto espacio vertical */
@@ -184,24 +188,10 @@
 
 .dashboard-table .monto { text-align: right; font-weight: 800; }
 .dashboard-table .positivo { color: var(--verde-oscuro); font-weight: 700; }
-.dashboard-table .negativo { color: var(--accent-magenta); font-weight: 700; }
-
-/* Stock estados */
-.estado { font-weight: 700; padding: 6px 8px; border-radius: 8px; text-align: center; display: inline-block; }
-.estado.ok { background: #e8f8ef; color: var(--verde-oscuro); border: 1px solid #dff3e8; }
-.estado.bajo { background: #fff6e6; color: #b36b00; border: 1px solid #ffe9c9; }
-.estado.sin-stock { background: #fde8e8; color: #c13e96; border: 1px solid #f7d6d6; }
-
-/* Porcentajes */
-.porcentaje { font-weight: 800; text-align: right; }
-.porcentaje.alto { color: var(--verde-oscuro); }
-.porcentaje.medio { color: #f0a500; }
-.porcentaje.bajo { color: #b36b00; }
+.dashboard-table .negativo { color: var(--danger); font-weight: 700; }
 
 /* Helpers */
 .text-muted { color: var(--muted); font-size: 0.85rem; }
-
-
 
 /* ===== Tablet (>=768px) ===== */
 @media (min-width: 768px) {
@@ -277,29 +267,10 @@
     gap: 12px;
   }
 
-  .chart-container {
-    width: 100%;
-    height: auto;
-    min-height: 220px; /* altura mínima en tablet para que el chart se vea bien */
-    display: block;
-    position: relative;
-  }
-
-   .chart-container canvas {
-    width: 100% !important;
-    height: 100% !important;
-    display: block;
-  }
-
   /* Ajustes de títulos y acciones para que no empujen el chart */
   .dashboard-block-header {
     margin-bottom: 8px;
     flex: 0 0 auto;
-  }
-
-  .dashboard-block .dashboard-block-body {
-    flex: 1 1 auto;
-    overflow: hidden;
   }
 
   /* Titulos de bloques: tamaño y color para tablet */
@@ -321,8 +292,6 @@
     border-radius: 8px;
   }
 }
-
-
 
 /* ===== Desktop (>=1024px) ===== */
 @media (min-width: 1024px) {
@@ -386,13 +355,6 @@
     display: flex;
     flex-direction: column;
   }
-
-  /* Si necesitás que algunos bloques ocupen 2 columnas (ej: gráfico grande) */
-  .dashboard-block.wide { grid-column: span 2; min-height: 360px; }
-
-  /* Chart container: que ocupe el espacio disponible */
-  .chart-container { width: 100%; height: 100%; min-height: 260px; position: relative; }
-  .chart-container canvas { width: 100% !important; height: 100% !important; display: block; }
 
   /* Titulos de bloques: tamaño y color */
   .dashboard-block-header h3 { font-size: 1.1rem; color: #2a2a35; }
@@ -471,3 +433,11 @@
   }
   #secondary-nav #btn-reporte { grid-column: 1 / -1; }
 }
+
+/* Los números, como en Movimientos y Reportes: en negrita, lo que entró en
+   verde y lo que salió en rojo (revisión visual, 14/11/2026). */
+.dashboard-kpi h4 { font-weight: 700; }
+#kpi-ingresos { color: var(--verde-oscuro); }
+#kpi-egresos { color: var(--danger); }
+#kpi-balance.positivo { color: var(--verde-oscuro); }
+#kpi-balance.negativo { color: var(--danger); }

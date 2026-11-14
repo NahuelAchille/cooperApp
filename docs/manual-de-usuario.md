@@ -77,7 +77,7 @@ parte apagada no aparece en el menú de nadie.
    domicilio, la localidad y la cámara o federación a la que pertenece).
 3. Completá los **datos del administrador**, que sos vos: nombre, apellido, DNI,
    email y una contraseña de 6 caracteres o más.
-4. Tocá **Registrar**.
+4. Tocá **Enviar registro**.
 
 La empresa queda **esperando aprobación**: todavía no podés entrar. Cuando el
 administrador de la plataforma la aprueba, ya podés ingresar con tu email y tu
@@ -101,7 +101,7 @@ Si el administrador de tu empresa te dio de alta, tu **contraseña es tu DNI**.
 ### Me olvidé la contraseña
 
 El sistema no manda correos. **Pedíselo al administrador de tu empresa**: en
-*Usuarios* aprieta **Volver a la contraseña inicial** (la llave) y tu contraseña vuelve a ser tu DNI.
+*Usuarios* aprieta **Contraseña inicial** en tu fila y tu contraseña vuelve a ser tu DNI.
 Al entrar, el sistema te pide una nueva.
 
 Si sos el administrador de la empresa y te olvidaste la tuya, se lo pedís al
@@ -184,7 +184,7 @@ Son las partes de **Productos** (qué vendés) y **Stock** (cuánto hay).
    - **Precio de venta**: aparece ya escrito cuando registrás una venta.
    - **Stock mínimo**: cuando quedan menos que eso, el sistema te avisa que hay que
      reponer. En 0 no avisa.
-   - **¿Cuánto te cuesta perder uno?** (el costo): sirve para saber cuánta plata se
+   - **¿Cuánto te cuesta comprar uno?** (el costo): sirve para saber cuánta plata se
      fue en roturas y robos.
 4. Tocá **Guardar**.
 
@@ -231,7 +231,7 @@ compra**: una rotura, un robo, consumo propio, mercadería vencida, o corregir e
 cuando contaste y no coincide.
 
 1. En **Stock**, tocá **Otra entrada o salida**.
-2. Elegí el **producto**, el **motivo** (por ejemplo *Rotura* o *Ajuste positivo*) y
+2. Elegí el **producto**, el **motivo** (por ejemplo *Pérdida* o *Ajuste positivo*) y
    la **cantidad**.
 3. Tocá **Registrar**.
 
@@ -247,7 +247,7 @@ hace falta, un cartel:
 |---|---|
 | **Sin cargar** | Nunca se le cargó nada. Ver la nota de arriba |
 | **Sin stock** | Tuvo y se terminó |
-| **Reponer** | Hay menos que el stock mínimo |
+| **Reponer** | Llegó al stock mínimo (o hay menos) |
 | **Revisar** | La cuenta dio negativa, algo se cargó mal: revisá sus entradas y salidas |
 | *(sin cartel)* | Hay suficiente |
 
@@ -373,7 +373,7 @@ Es la parte de **Buscar empresas**.
 3. Guardá y **avisale que su contraseña es su DNI**. Al entrar, el sistema le pide
    una nueva.
 
-Desde la misma lista podés **editar** sus datos, **volver a su contraseña inicial** (la llave) o **darlo
+Desde la misma lista podés **editar** sus datos, **volver a su contraseña inicial** (el botón *Contraseña inicial*) o **darlo
 de baja** (deja de poder entrar en el momento). Una baja se puede **reactivar**.
 
 ### Prender o apagar partes del sistema
@@ -410,7 +410,7 @@ mercadería. Cada motivo dice:
   sola vez, y por eso al vender no hay que clasificar nada.
 
 Por ejemplo: *Venta* resta stock y entra plata; *Compra* suma stock y sale plata;
-*Rotura* resta stock y no mueve plata.
+*Pérdida* resta stock y no mueve plata.
 
 > Una vez que un motivo se usó, ya no se puede cambiar si suma o resta (cambiaría
 > todo el historial). El nombre y la categoría de la plata, sí.

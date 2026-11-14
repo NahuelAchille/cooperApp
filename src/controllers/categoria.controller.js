@@ -1,15 +1,8 @@
 const categoriaModel = require('../models/categoria.model')
+const { limpiarNombre } = require('../services/validacion.service')
 
 const NATURALEZAS = ['ingreso', 'egreso']
 
-// Normaliza un nombre libre: recorta espacios y valida que no quede vacio ni
-// se pase del limite de la columna (80). Devuelve null si no sirve.
-const limpiarNombre = (valor) => {
-  if (typeof valor !== 'string') return null
-  const limpio = valor.trim()
-  if (!limpio || limpio.length > 80) return null
-  return limpio
-}
 
 // =====================================================================
 // CATEGORIAS
@@ -42,7 +35,7 @@ exports.crearCategoria = async (req, res) => {
 
     const naturaleza = req.body.naturaleza
     if (!NATURALEZAS.includes(naturaleza)) {
-      return res.status(400).json({ error: 'La naturaleza debe ser "ingreso" o "egreso"' })
+      return res.status(400).json({ error: 'Falta decir si la categoría es de plata que entra o de plata que sale' })
     }
 
     const id = await categoriaModel.createCategoria({ nombre, naturaleza, id_empresa })
@@ -50,7 +43,7 @@ exports.crearCategoria = async (req, res) => {
 
   } catch (error) {
     if (error.code === 'ER_DUP_ENTRY') {
-      return res.status(400).json({ error: 'Ya existe una categoría con ese nombre en esa naturaleza' })
+      return res.status(400).json({ error: 'Ya hay una categoría con ese nombre del mismo lado (plata que entra o plata que sale)' })
     }
     console.error(error)
     res.status(500).json({ error: 'Error al crear la categoría' })
@@ -78,7 +71,7 @@ exports.actualizarCategoria = async (req, res) => {
 
   } catch (error) {
     if (error.code === 'ER_DUP_ENTRY') {
-      return res.status(400).json({ error: 'Ya existe una categoría con ese nombre en esa naturaleza' })
+      return res.status(400).json({ error: 'Ya hay una categoría con ese nombre del mismo lado (plata que entra o plata que sale)' })
     }
     console.error(error)
     res.status(500).json({ error: 'Error al actualizar la categoría' })

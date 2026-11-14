@@ -124,9 +124,6 @@ main {
     margin: 2rem 0;
     }
 
-    .registro-empresa {
-    margin-top: 2rem;
-    }
 }
 
 /* ===== Contraste (UX final, 14/11/2026) =====
@@ -171,3 +168,7 @@ main {
 }
 .marca-login img { height: 40px; width: auto; }
 .marca-login span { color: #fff; font-size: 1.6rem; font-weight: 800; letter-spacing: 0.02em; }
+
+/* Los campos, del mismo ancho que el botón de Ingresar (revisión visual). */
+#formulario-login { max-width: 280px; margin-left: auto; margin-right: auto; }
+#boton-login button { max-width: 280px; }

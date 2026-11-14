@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css">
+  <link rel="stylesheet" href="/styles/comun.css">
   <link rel="stylesheet" href="/styles/header.css">
   <link rel="stylesheet" href="/styles/productos.css">
   <link rel="stylesheet" href="/styles/tabla-mobile.css">
@@ -15,22 +16,29 @@
 
   <div id="header"></div>
 
+  <script src="/components/util.js"></script>
   <script src="/components/header.js"></script>
+  <script src="/components/unidades.js"></script>
 
   <div class="page-header">
     <div>
-      <h4 class="mb-0 fw-bold"><i class="fa-solid fa-box me-2"></i>Productos</h4>
-      <small>El catálogo de tu empresa: qué productos existen y cómo están clasificados</small>
+      <h4 class="mb-0 fw-bold" id="titulo-pantalla"><i class="fa-solid fa-box me-2"></i>Productos</h4>
+      <small id="subtitulo-pantalla">El catálogo de tu empresa: qué productos existen y cómo están clasificados</small>
     </div>
     <div class="acciones-header d-none" id="acciones-header">
       <a class="btn btn-secundario d-none" id="link-categorias" href="/pages/configuracion-categorias-producto.html">
-        <i class="fa-solid fa-sitemap me-2"></i>Categorías
+        <i class="fa-solid fa-sitemap me-2"></i><span id="texto-categorias">Categorías de productos</span>
       </a>
-      <a class="btn btn-secundario" href="/pages/stock.html">
+      <!-- Productos lleva a Stock; Servicios no (un servicio se presta, no se
+           guarda) y lleva a "Cuánto deja cada uno", que vive en Reportes (H-16). -->
+      <a class="btn btn-secundario" href="/pages/stock.html" id="link-stock">
         <i class="fa-solid fa-warehouse me-2"></i>Stock
       </a>
-      <button class="btn btn-nuevo" id="btn-nuevo">
-        <i class="fa-solid fa-plus me-2"></i>Nuevo producto
+      <a class="btn btn-secundario d-none" id="link-cuanto-deja" href="/pages/reportes.html?vista=servicio">
+        <i class="fa-solid fa-chart-simple me-2"></i>Cuánto deja cada uno
+      </a>
+      <button class="btn btn-nuevo d-none" id="btn-nuevo">
+        <i class="fa-solid fa-plus me-2"></i><span id="texto-nuevo">Nuevo producto</span>
       </button>
     </div>
   </div>
@@ -40,13 +48,13 @@
     <!-- Se muestra si el rol no llega al catálogo -->
     <div class="aviso-permiso d-none" id="aviso-permiso">
       <i class="fa-solid fa-lock fa-2x mb-3"></i>
-      <p class="mb-0">Tu usuario no tiene acceso al catálogo de productos.</p>
+      <p class="mb-0" id="texto-permiso">Tu usuario no tiene acceso al catálogo de productos.</p>
     </div>
 
     <!-- Se muestra si la empresa tiene el módulo apagado -->
     <div class="aviso-permiso d-none" id="aviso-modulo">
       <i class="fa-solid fa-plug-circle-xmark fa-2x mb-3"></i>
-      <p class="mb-1">El módulo de <strong>Productos</strong> no está activo en tu empresa.</p>
+      <p class="mb-1">El módulo de <strong id="nombre-modulo">Productos</strong> no está activo en tu empresa.</p>
       <p class="mb-0 small">El administrador puede activarlo desde <em>Módulos del sistema</em>.</p>
     </div>
 
@@ -94,13 +102,15 @@
         <table class="table table-hover mb-0">
           <thead>
             <tr>
-              <th>Producto</th>
+              <th id="th-nombre">Producto</th>
               <th>Categoría</th>
               <th>Subcategoría</th>
-              <th>Unidad</th>
-              <th class="text-end">Stock mínimo</th>
+              <!-- Las dos únicas columnas que separan un producto de un
+                   servicio: un servicio no se mide ni se guarda. -->
+              <th class="solo-producto">Unidad</th>
+              <th class="text-end solo-producto">Stock mínimo</th>
               <th>Estado</th>
-              <th class="text-end">Acciones</th>
+              <th class="text-end" id="th-acciones">Acciones</th>
             </tr>
           </thead>
           <tbody id="tabla-productos">
@@ -127,7 +137,7 @@
             <input type="hidden" name="id">
 
             <div class="mb-3">
-              <label class="form-label">Nombre del producto *</label>
+              <label class="form-label" id="label-nombre">Nombre del producto *</label>
               <input type="text" class="form-control" name="nombre" maxlength="120" placeholder="Ej: Queso cremoso" required>
             </div>
 
@@ -136,7 +146,10 @@
               <input type="text" class="form-control" name="descripcion" maxlength="255" placeholder="Opcional: alguna aclaración sobre el producto">
             </div>
 
-            <div class="row g-2 mb-3">
+            <!-- Sólo para productos. Un servicio no lleva unidad, stock mínimo,
+                 precio ni costo: no se guarda en ningún lado, y el servidor los
+                 fuerza en NULL y en 0 de todas maneras. -->
+            <div class="row g-2 mb-3" id="campos-producto">
               <div class="col-12 col-sm-7">
                 <label class="form-label">Unidad de medida *</label>
                 <select class="form-select" name="unidad_medida" id="select-unidad" required></select>
@@ -145,7 +158,7 @@
               <div class="col-12 col-sm-5">
                 <label class="form-label">Stock mínimo</label>
                 <input type="number" class="form-control" name="stock_minimo" min="0" step="0.01" placeholder="0">
-                <div class="form-text" id="ayuda-stock">Cuando baje de acá, el sistema avisa. En 0 no avisa.</div>
+                <div class="form-text" id="ayuda-stock">Cuando llegue a este número (o menos), el sistema avisa que hay que reponer. En 0 no avisa.</div>
               </div>
               <!-- A cuánto se vende. Es lo que aparece ya escrito al registrar
                    una venta, para no tener que saberse los precios de memoria.
@@ -185,8 +198,8 @@
             <div class="mb-3">
               <label class="form-label">Categoría *</label>
               <select class="form-select" name="id_categoria_producto" id="select-categoria" required></select>
-              <!-- El operador no puede crear categorias: si la que necesita no
-                   esta, queda trabado sin saber a quien pedirle que. -->
+              <!-- Si la categoría que necesita no está, la ayuda dice a dónde ir
+                   a crearla o a quién pedírsela. -->
               <div class="form-text d-none" id="ayuda-categoria"></div>
             </div>
 
@@ -244,21 +257,64 @@
   <script>
 
     let usuarioActual = null
+    let puedeEditar = false      // en Servicios, el tesorero mira y no arma
     let unidades = []            // lista cerrada que viene del servidor
     let todasLasCategorias = []  // activas e inactivas, para el filtro
     let categorias = []          // sólo las activas, para el formulario de alta
 
-    function mostrarToast(mensaje) {
-      const toast = document.createElement('div')
-      toast.style = 'position:fixed;top:24px;left:50%;transform:translateX(-50%);background:#2d7a4f;color:white;padding:14px 24px;border-radius:10px;z-index:9999;font-weight:500;box-shadow:0 4px 16px rgba(0,0,0,0.2)'
-      toast.innerHTML = `<i class="fa-solid fa-circle-check me-2"></i>${esc(mensaje)}`
-      document.body.appendChild(toast)
-      setTimeout(() => toast.remove(), 6000)
-    }
 
-    // Evita romper el HTML (y que se ejecute código) si un nombre trae comillas o etiquetas
-    function esc(texto) {
-      return String(texto).replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+
+    // Esta misma página es la de PRODUCTOS y la de SERVICIOS: un servicio es un
+    // producto sin stock, en las mismas tablas y con los mismos controladores.
+    // El servidor la entrega en las dos direcciones (app.js) y acá se decide
+    // por la dirección. Eran dos páginas de 740 y 630 líneas casi iguales, y
+    // cada arreglo había que hacerlo dos veces (revisión de código, 14/11/2026).
+    //
+    // Las diferencias, y por qué:
+    //   - un servicio no lleva unidad, stock mínimo, precio ni costo;
+    //   - Productos lleva a Stock; Servicios, a "Cuánto deja cada uno";
+    //   - quién entra: el catálogo de productos lo trabajan el admin y el
+    //     operador (el depósito); el de servicios lo arma el admin y lo MIRA el
+    //     tesorero, que es quien dice de dónde viene cada peso.
+    const ES_SERVICIO = location.pathname.includes('servicios')
+    const CATALOGO = ES_SERVICIO
+      ? {
+          api: '/servicios', modulo: 'servicios', Modulo: 'Servicios', cosa: 'servicio', cosas: 'servicios',
+          icono: 'fa-screwdriver-wrench', categorias: '/pages/configuracion-categorias-servicio.html',
+          subtitulo: 'Los servicios que tu empresa presta o contrata, y cómo están clasificados',
+          ejemplo: 'Ej: Servicio técnico a domicilio',
+          puedeVer: (rol) => rol === 'admin_empresa' || rol === 'tesorero',
+          puedeEditar: (rol) => rol === 'admin_empresa'
+        }
+      : {
+          api: '/productos', modulo: 'productos', Modulo: 'Productos', cosa: 'producto', cosas: 'productos',
+          icono: 'fa-box', categorias: '/pages/configuracion-categorias-producto.html',
+          subtitulo: 'El catálogo de tu empresa: qué productos existen y cómo están clasificados',
+          ejemplo: 'Ej: Queso cremoso',
+          puedeVer: (rol) => rol === 'admin_empresa' || rol === 'operador',
+          puedeEditar: (rol) => rol === 'admin_empresa' || rol === 'operador'
+        }
+    const COLUMNAS = ES_SERVICIO ? 5 : 7
+
+    // Los textos que cambian según el catálogo.
+    document.title = `${CATALOGO.Modulo} - CooperApp`
+    document.getElementById('titulo-pantalla').innerHTML = `<i class="fa-solid ${CATALOGO.icono} me-2"></i>${CATALOGO.Modulo}`
+    document.getElementById('subtitulo-pantalla').textContent = CATALOGO.subtitulo
+    document.getElementById('link-categorias').href = CATALOGO.categorias
+    document.getElementById('texto-categorias').textContent = `Categorías de ${CATALOGO.cosas}`
+    document.getElementById('texto-nuevo').textContent = `Nuevo ${CATALOGO.cosa}`
+    document.getElementById('texto-permiso').textContent = `Tu usuario no tiene acceso al catálogo de ${CATALOGO.cosas}.`
+    document.getElementById('nombre-modulo').textContent = CATALOGO.Modulo
+    document.getElementById('th-nombre').textContent = CATALOGO.cosa[0].toUpperCase() + CATALOGO.cosa.slice(1)
+    document.getElementById('label-nombre').textContent = `Nombre del ${CATALOGO.cosa} *`
+    document.querySelector('#form-producto [name="nombre"]').placeholder = CATALOGO.ejemplo
+    document.querySelector('#form-producto [name="descripcion"]').placeholder = `Opcional: alguna aclaración sobre el ${CATALOGO.cosa}`
+    if (ES_SERVICIO) {
+      document.querySelectorAll('.solo-producto').forEach(e => e.remove())
+      // Se esconde, no se saca: el cambio de unidad tiene su evento atado acá.
+      document.getElementById('campos-producto').classList.add('d-none')
+      document.getElementById('link-stock').classList.add('d-none')
+      document.getElementById('link-cuanto-deja').classList.remove('d-none')
     }
 
     // Traduce la clave guardada en la base a la etiqueta que se lee en pantalla.
@@ -266,13 +322,6 @@
       return unidades.find(u => u.clave === clave)?.etiqueta || clave
     }
 
-    // El stock mínimo se guarda con 2 decimales, pero mostrar "5,00 unidades"
-    // cuando son 5 unidades enteras es ruido. Sólo se muestran los decimales
-    // si los tiene de verdad.
-    function formatearCantidad(valor) {
-      const numero = Number(valor)
-      return Number.isInteger(numero) ? String(numero) : numero.toFixed(2).replace('.', ',')
-    }
 
     async function iniciar() {
       usuarioActual = await cargarHeader()
@@ -282,7 +331,8 @@
         return
       }
 
-      const puedeVer = usuarioActual.rol === 'admin_empresa' || usuarioActual.rol === 'operador'
+      const puedeVer = CATALOGO.puedeVer(usuarioActual.rol)
+      puedeEditar = CATALOGO.puedeEditar(usuarioActual.rol)
       if (!puedeVer) {
         document.getElementById('aviso-permiso').classList.remove('d-none')
         return
@@ -290,27 +340,41 @@
 
       // El rol alcanza, pero la empresa puede tener el módulo apagado.
       // Son dos problemas distintos y se resuelven de maneras distintas.
-      if (!moduloActivo('productos')) {
+      if (!moduloActivo(CATALOGO.modulo)) {
         document.getElementById('aviso-modulo').classList.remove('d-none')
         return
       }
+
+      // Sin Reportes, el tesorero no tiene a dónde ir con "Cuánto deja cada
+      // uno" ni lo puede prender. Al admin sí se le muestra: Reportes le dice
+      // que el módulo está apagado y dónde se prende (H-16).
+      if (ES_SERVICIO && !moduloActivo('reportes') && usuarioActual.rol !== 'admin_empresa') {
+        document.getElementById('link-cuanto-deja').classList.add('d-none')
+      }
+      // Quien sólo mira no tiene acciones: una columna entera de guiones es
+      // ruido que empuja lo importante (UX 28/09, H-17).
+      if (!puedeEditar) document.getElementById('th-acciones').classList.add('d-none')
 
       document.getElementById('acciones-header').classList.remove('d-none')
       document.getElementById('card-filtros').classList.remove('d-none')
       document.getElementById('card-tabla').classList.remove('d-none')
 
-      // Armar el árbol de categorías y los motivos es del admin; el operador
-      // sólo los usa.
+      // Armar el árbol de categorías es del admin; el operador y el tesorero
+      // sólo lo usan.
       if (usuarioActual.rol === 'admin_empresa') {
         document.getElementById('link-categorias').classList.remove('d-none')
       }
+      if (puedeEditar) {
+        document.getElementById('btn-nuevo').classList.remove('d-none')
+        await BloqueArticulacion.preparar()
+      }
 
-      await BloqueArticulacion.preparar()
-
-      unidades = await fetch('/productos/unidades').then(r => r.ok ? r.json() : [])
-      document.getElementById('select-unidad').innerHTML =
-        '<option value="">Elegí una unidad</option>' +
-        unidades.map(u => `<option value="${esc(u.clave)}">${esc(u.etiqueta)}</option>`).join('')
+      if (!ES_SERVICIO) {
+        unidades = await fetch('/productos/unidades').then(r => r.ok ? r.json() : [])
+        document.getElementById('select-unidad').innerHTML =
+          '<option value="">Elegí una unidad</option>' +
+          unidades.map(u => `<option value="${esc(u.clave)}">${esc(u.etiqueta)}</option>`).join('')
+      }
 
       // El filtro de categorías las muestra TODAS, activas e inactivas: si una
       // categoría se desactivó, sus productos siguen existiendo y hay que
@@ -349,11 +413,11 @@
     }
 
     async function cargarProductos() {
-      const productos = await fetch(`/productos${armarConsulta()}`).then(r => r.ok ? r.json() : [])
+      const productos = await fetch(`${CATALOGO.api}${armarConsulta()}`).then(r => r.ok ? r.json() : [])
       const tbody = document.getElementById('tabla-productos')
 
       document.getElementById('contador-resultados').textContent =
-        productos.length === 1 ? '1 producto' : `${productos.length} productos`
+        productos.length === 1 ? `1 ${CATALOGO.cosa}` : `${productos.length} ${CATALOGO.cosas}`
 
       if (!productos.length) {
         // No es lo mismo un catálogo vacío que una búsqueda sin resultados:
@@ -361,35 +425,37 @@
         // cambiar el filtro. Decir lo que no es manda a la persona al lugar
         // equivocado.
         tbody.innerHTML = hayFiltrosPuestos()
-          ? `<tr class="fila-aviso"><td colspan="7"><div class="tabla-vacia">
-              Ningún producto coincide con la búsqueda. Probá con otras palabras o limpiá los filtros.
+          ? `<tr class="fila-aviso"><td colspan="${COLUMNAS}"><div class="tabla-vacia">
+              Ningún ${CATALOGO.cosa} coincide con la búsqueda. Probá con otras palabras o limpiá los filtros.
             </div></td></tr>`
-          : `<tr class="fila-aviso"><td colspan="7"><div class="tabla-vacia">
-              Todavía no hay productos cargados. Empezá con el botón <strong>Nuevo producto</strong>.
+          : `<tr class="fila-aviso"><td colspan="${COLUMNAS}"><div class="tabla-vacia">
+              Todavía no hay ${CATALOGO.cosas} cargados. ${puedeEditar
+                ? `Empezá con el botón <strong>Nuevo ${CATALOGO.cosa}</strong>.`
+                : 'Los carga el administrador de tu empresa.'}
             </div></td></tr>`
         return
       }
 
       tbody.innerHTML = productos.map(p => `
         <tr class="${p.activo ? '' : 'fila-inactiva'}">
-          <td class="td-principal" data-label="Producto">
+          <td class="td-principal" data-label="${CATALOGO.cosa === 'producto' ? 'Producto' : 'Servicio'}">
             <div class="prod-nombre">${esc(p.nombre)}</div>
             ${p.descripcion ? `<div class="prod-descripcion">${esc(p.descripcion)}</div>` : ''}
             ${p.visible_empresas && moduloActivo('articulacion') ? '<div class="badge-visible"><i class="fa-solid fa-handshake me-1"></i>Lo ven otras empresas</div>' : ''}
           </td>
           <td data-label="Categoría">${esc(p.categoria_nombre)}</td>
           <td data-label="Subcategoría">${p.subcategoria_nombre ? esc(p.subcategoria_nombre) : '<span class="sin-dato">—</span>'}</td>
-          <td data-label="Unidad"><span class="badge-unidad">${esc(etiquetaUnidad(p.unidad_medida))}</span></td>
+          ${ES_SERVICIO ? '' : `<td data-label="Unidad"><span class="badge-unidad">${esc(etiquetaUnidad(p.unidad_medida))}</span></td>
           <td class="text-end" data-label="Stock mínimo">${Number(p.stock_minimo) > 0
               ? formatearCantidad(p.stock_minimo)
-              : '<span class="sin-dato">—</span>'}</td>
+              : '<span class="sin-dato">—</span>'}</td>`}
           <td data-label="Estado"><span class="badge-estado ${p.activo ? 'badge-activo' : 'badge-inactivo'}">${p.activo ? 'Activo' : 'De baja'}</span></td>
-          <td class="text-end td-acciones" data-label="Acciones">
+          ${puedeEditar ? `<td class="text-end td-acciones" data-label="Acciones">
             <button class="btn-mini" data-accion="editar" data-id="${p.id_producto}" title="Editar"><i class="fa-solid fa-pen"></i></button>
             <button class="btn-mini ${p.activo ? 'peligro' : ''}" data-accion="toggle" data-id="${p.id_producto}" data-nombre="${esc(p.nombre)}" data-activo="${p.activo}" title="${p.activo ? 'Dar de baja' : 'Reactivar'}">
               <i class="fa-solid ${p.activo ? 'fa-circle-minus' : 'fa-circle-plus'}"></i>
             </button>
-          </td>
+          </td>` : ''}
         </tr>`).join('')
 
       // Se guardan para poder abrir el formulario de edición sin volver a pedirlos.
@@ -438,7 +504,7 @@
       const meses = Math.floor((Date.now() - cargado.getTime()) / (1000 * 60 * 60 * 24 * 30))
 
       ayuda.innerHTML = esc(base) +
-        `<br><span class="${meses >= 6 ? 'costo-viejo' : ''}">Cargado el ${cargado.toLocaleDateString('es-AR')}` +
+        `<br><span class="${meses >= 6 ? 'costo-viejo' : ''}">Cargado el ${cargado.toLocaleDateString('es-AR', { day: '2-digit', month: '2-digit', year: 'numeric' })}` +
         `${meses >= 6 ? ' — hace más de medio año, puede haber quedado corto' : ''}.</span>`
     }
 
@@ -451,7 +517,7 @@
     // El formulario de alta ofrece sólo las activas a propósito: no se puede
     // clasificar algo nuevo en una categoría que la empresa dejó de usar.
     async function cargarCategorias() {
-      todasLasCategorias = await fetch('/productos/categorias').then(r => r.ok ? r.json() : [])
+      todasLasCategorias = await fetch(`${CATALOGO.api}/categorias`).then(r => r.ok ? r.json() : [])
       categorias = todasLasCategorias.filter(c => c.activo)
 
       document.getElementById('select-categoria').innerHTML =
@@ -472,11 +538,11 @@
 
       if (esAdmin) {
         ayuda.innerHTML = categorias.length === 0
-          ? '<strong>Todavía no cargaste ninguna categoría.</strong> <a href="/pages/configuracion-categorias-producto.html">Armá las categorías de tus productos</a> antes de dar de alta el primero.'
-          : '¿Falta la categoría que necesitás? <a href="/pages/configuracion-categorias-producto.html">Agregala acá</a>.'
+          ? `<strong>Todavía no cargaste ninguna categoría.</strong> <a href="${CATALOGO.categorias}">Armá las categorías de tus ${CATALOGO.cosas}</a> antes de dar de alta el primero.`
+          : `¿Falta la categoría que necesitás? <a href="${CATALOGO.categorias}">Agregala acá</a>.`
       } else {
         ayuda.innerHTML = categorias.length === 0
-          ? '<strong>Todavía no hay categorías cargadas.</strong> Pedile al administrador de tu empresa que las cree para poder dar de alta productos.'
+          ? `<strong>Todavía no hay categorías cargadas.</strong> Pedile al administrador de tu empresa que las cree para poder dar de alta ${CATALOGO.cosas}.`
           : '¿No está la categoría que necesitás? Pedísela al administrador de tu empresa.'
       }
 
@@ -494,7 +560,7 @@
         return
       }
 
-      const subcategorias = await fetch(`/productos/categorias/${idCategoria}/subcategorias`)
+      const subcategorias = await fetch(`${CATALOGO.api}/categorias/${idCategoria}/subcategorias`)
         .then(r => r.ok ? r.json() : [])
 
       select.disabled = false
@@ -514,7 +580,7 @@
         return
       }
 
-      const todas = await fetch(`/productos/categorias/${idCategoria}/subcategorias`).then(r => r.ok ? r.json() : [])
+      const todas = await fetch(`${CATALOGO.api}/categorias/${idCategoria}/subcategorias`).then(r => r.ok ? r.json() : [])
       const activas = todas.filter(s => s.activo)
 
       select.disabled = false
@@ -523,7 +589,7 @@
 
       ayuda.textContent = activas.length
         ? 'Es opcional: si no subdividís esta categoría, dejala en blanco.'
-        : 'Esta categoría no tiene subcategorías. El producto queda clasificado sólo por categoría.'
+        : `Esta categoría no tiene subcategorías. El ${CATALOGO.cosa} queda clasificado sólo por categoría.`
     }
 
     document.getElementById('select-categoria').addEventListener('change', (evento) => {
@@ -580,8 +646,8 @@
 
       const esEdicion = !!producto
       document.getElementById('prod-titulo').innerHTML = esEdicion
-        ? '<i class="fa-solid fa-pen me-2"></i>Editar producto'
-        : '<i class="fa-solid fa-plus me-2"></i>Nuevo producto'
+        ? `<i class="fa-solid fa-pen me-2"></i>Editar ${CATALOGO.cosa}`
+        : `<i class="fa-solid fa-plus me-2"></i>Nuevo ${CATALOGO.cosa}`
 
       await cargarCategorias()
 
@@ -590,12 +656,14 @@
       if (esEdicion) {
         form.nombre.value = producto.nombre
         form.descripcion.value = producto.descripcion || ''
-        form.unidad_medida.value = producto.unidad_medida
-        form.stock_minimo.value = Number(producto.stock_minimo) > 0 ? Number(producto.stock_minimo) : ''
-        // null es "no lo sé": el campo queda vacío, nunca en 0.
-        form.costo_referencia.value = producto.costo_referencia !== null ? Number(producto.costo_referencia) : ''
-        mostrarAntiguedadDelCosto(producto)
-        form.precio_venta.value = producto.precio_venta !== null ? Number(producto.precio_venta) : ''
+        if (!ES_SERVICIO) {
+          form.unidad_medida.value = producto.unidad_medida
+          form.stock_minimo.value = Number(producto.stock_minimo) > 0 ? Number(producto.stock_minimo) : ''
+          // null es "no lo sé": el campo queda vacío, nunca en 0.
+          form.costo_referencia.value = producto.costo_referencia !== null ? Number(producto.costo_referencia) : ''
+          mostrarAntiguedadDelCosto(producto)
+          form.precio_venta.value = producto.precio_venta !== null ? Number(producto.precio_venta) : ''
+        }
         form.id_categoria_producto.value = producto.id_categoria_producto
 
         // Si la clasificación del producto fue desactivada después de haberlo
@@ -603,7 +671,7 @@
         // campo se ve vacío sin explicación y parece un error del sistema.
         if (!form.id_categoria_producto.value) {
           const aviso = document.getElementById('aviso-clasificacion')
-          aviso.innerHTML = '<i class="fa-solid fa-triangle-exclamation me-1"></i>La categoría de este producto está dada de baja. Elegí una activa para poder guardar.'
+          aviso.innerHTML = `<i class="fa-solid fa-triangle-exclamation me-1"></i>La categoría de este ${CATALOGO.cosa} está dada de baja. Elegí una activa para poder guardar.`
           aviso.classList.remove('d-none')
           await cargarSubcategorias('')
         } else {
@@ -612,7 +680,7 @@
       } else {
         // Producto nuevo: la ayuda del costo vuelve a su texto base, si no
         // quedaría la fecha del producto que se miró antes.
-        mostrarAntiguedadDelCosto(null)
+        if (!ES_SERVICIO) mostrarAntiguedadDelCosto(null)
         await cargarSubcategorias('')
       }
 
@@ -634,13 +702,13 @@
       if (!datos.nombre.trim()) {
         return mostrarError(errorDiv, 'El nombre es obligatorio.')
       }
-      if (!datos.unidad_medida) {
+      if (!ES_SERVICIO && !datos.unidad_medida) {
         return mostrarError(errorDiv, 'Elegí una unidad de medida.')
       }
       if (!datos.id_categoria_producto) {
         return mostrarError(errorDiv, 'Elegí una categoría.')
       }
-      if (datos.stock_minimo && Number(datos.stock_minimo) < 0) {
+      if (!ES_SERVICIO && datos.stock_minimo && Number(datos.stock_minimo) < 0) {
         return mostrarError(errorDiv, 'El stock mínimo no puede ser negativo.')
       }
       const errorArticulacion = BloqueArticulacion.validar()
@@ -651,7 +719,7 @@
       boton.disabled = true
 
       const esEdicion = !!datos.id
-      const url = esEdicion ? `/productos/${datos.id}` : '/productos'
+      const url = esEdicion ? `${CATALOGO.api}/${datos.id}` : CATALOGO.api
 
       const res = await fetch(url, {
         method: esEdicion ? 'PUT' : 'POST',
@@ -659,11 +727,14 @@
         body: JSON.stringify({
           nombre: datos.nombre,
           descripcion: datos.descripcion,
-          unidad_medida: datos.unidad_medida,
-          stock_minimo: datos.stock_minimo,
-          // Vacío viaja como null, no como 0: son cosas distintas.
-          costo_referencia: datos.costo_referencia || null,
-          precio_venta: datos.precio_venta || null,
+          // Un servicio no los manda: el servidor los fuerza en NULL y en 0.
+          ...(ES_SERVICIO ? {} : {
+            unidad_medida: datos.unidad_medida,
+            stock_minimo: datos.stock_minimo,
+            // Vacío viaja como null, no como 0: son cosas distintas.
+            costo_referencia: datos.costo_referencia || null,
+            precio_venta: datos.precio_venta || null
+          }),
           id_categoria_producto: datos.id_categoria_producto,
           id_subcategoria_producto: datos.id_subcategoria_producto || null,
           // Si Articulación está apagado no viaja nada, y el servidor deja
@@ -683,26 +754,40 @@
       cargarProductos()
     })
 
-    function mostrarError(div, mensaje) {
-      div.textContent = mensaje
-      div.classList.remove('d-none')
-    }
 
     // ================= BAJA / ALTA =================
-    function abrirModalEstado(id, nombre, estaActivo) {
+    async function abrirModalEstado(id, nombre, estaActivo) {
       const dandoBaja = estaActivo
 
       document.getElementById('estado-titulo').innerHTML = dandoBaja
-        ? '<i class="fa-solid fa-circle-minus me-2"></i>Dar de baja el producto'
-        : '<i class="fa-solid fa-circle-plus me-2"></i>Reactivar el producto'
+        ? `<i class="fa-solid fa-circle-minus me-2"></i>Dar de baja el ${CATALOGO.cosa}`
+        : `<i class="fa-solid fa-circle-plus me-2"></i>Reactivar el ${CATALOGO.cosa}`
 
       document.getElementById('estado-pregunta').innerHTML = dandoBaja
         ? `¿Dar de baja <strong>${esc(nombre)}</strong>?`
         : `¿Reactivar <strong>${esc(nombre)}</strong>?`
 
       document.getElementById('estado-aviso').innerHTML = dandoBaja
-        ? '<i class="fa-solid fa-circle-info me-1"></i>No se borra: deja de estar disponible para operar, pero sigue en el listado y se puede reactivar cuando quieras.'
+        ? (ES_SERVICIO
+            // Lo que pasa con la plata va dicho: quien da de baja el servicio
+            // que trajo $226.000 necesita saber que no se lleva la historia (H-09).
+            ? '<i class="fa-solid fa-circle-info me-1"></i>No se borra: deja de estar disponible para cargar movimientos nuevos, pero sigue en el listado y se puede reactivar cuando quieras.<br>' +
+              'Los movimientos que ya cargaste siguen mostrando este servicio y siguen contando en los reportes.'
+            : '<i class="fa-solid fa-circle-info me-1"></i>No se borra: deja de estar disponible para operar, pero sigue en el listado y se puede reactivar cuando quieras.')
         : '<i class="fa-solid fa-circle-info me-1"></i>Vuelve a estar disponible para operar.'
+
+      // Un producto dado de baja sale de Stock: si todavía hay mercadería, se
+      // avisa antes, porque después no aparece y no se le puede cargar nada
+      // hasta reactivarlo (revisión funcional, 14/11/2026).
+      if (dandoBaja && !ES_SERVICIO && moduloActivo('productos')) {
+        const existencias = await fetch('/productos/stock').then(r => r.ok ? r.json() : []).catch(() => [])
+        const item = existencias.find(e => String(e.id_producto) === String(id))
+        if (item && Number(item.existencia) > 0) {
+          document.getElementById('estado-aviso').innerHTML +=
+            `<br><i class="fa-solid fa-triangle-exclamation me-1"></i>Todavía hay <strong>${formatearCantidad(item.existencia)} ${esc(nombreUnidad(item.existencia, item.unidad_medida))}</strong> en el depósito. ` +
+            'Al darlo de baja deja de aparecer en Stock. Si ya no está, primero cargá su salida.'
+        }
+      }
 
       const btn = document.getElementById('btn-confirmar-estado')
       btn.innerHTML = dandoBaja
@@ -723,7 +808,7 @@
 
       boton.disabled = true
 
-      const res = await fetch(`/productos/${boton.dataset.id}/estado`, {
+      const res = await fetch(`${CATALOGO.api}/${boton.dataset.id}/estado`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ activo: Number(boton.dataset.activo) })

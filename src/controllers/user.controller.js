@@ -1,18 +1,12 @@
 const bcrypt = require('bcrypt')
 const userModel = require('../models/user.model')
-const { validarLargos, LARGOS, mensajeDeDuplicado } = require('../services/validacion.service')
+const { validarLargos, LARGOS, mensajeDeDuplicado, esEmailValido, limpiarDni, esDniValido, PASSWORD_MINIMO } = require('../services/validacion.service')
+const { ROL, ROLES_ASIGNABLES } = require('../config/roles')
 
 // Las claves unicas de usuarios, para poder explicar cual se repitio.
 const DUPLICADOS_USUARIO = [['email', 'Ya existe un usuario con ese email'],
                             ['dni', 'Ya existe un usuario con ese DNI']]
 
-const ID_ROL_ADMIN_EMPRESA = 1
-const ID_ROL_SUPERADMIN = 4
-
-// Roles que el administrador de una empresa puede asignar a sus usuarios.
-// No incluye admin_empresa ni superadmin: nadie se promueve a si mismo ni
-// crea administradores desde esta pantalla.
-const ROLES_ASIGNABLES = [2, 3]   // 2 = tesorero, 3 = operador
 
 // Reglas de quien puede gestionar a quien. El administrador de una empresa
 // puede tocar a los usuarios comunes de SU empresa, y a nadie mas.
@@ -27,7 +21,7 @@ const validarGestion = (solicitante, objetivo) => {
     return { status: 403, error: 'Ese usuario no pertenece a tu empresa' }
   }
 
-  if (objetivo.id_rol === ID_ROL_ADMIN_EMPRESA || objetivo.id_rol === ID_ROL_SUPERADMIN) {
+  if (objetivo.id_rol === ROL.ADMIN_EMPRESA || objetivo.id_rol === ROL.SUPERADMIN) {
     return { status: 403, error: 'No podés modificar a otro administrador' }
   }
 
@@ -109,7 +103,9 @@ exports.logout = (req, res) => {
 
 exports.me = (req, res) => {
   if (!req.session.user) return res.status(401).json({ error: 'No autenticado' })
-  res.json(req.session.user)
+  // Si el administrador le volvió a la contraseña inicial con la sesión
+  // abierta, la foto de la sesión no lo sabe: se mira el estado de ahora.
+  res.json({ ...req.session.user, debe_cambiar_password: !!req.estadoSesion?.debe_cambiar_password })
 }
 
 exports.getUsuariosEmpresa = async (req, res) => {
@@ -146,7 +142,7 @@ exports.crearUsuario = async (req, res) => {
 
     // El mismo control que hace la edicion: sin esto entraba cualquier texto
     // como email y quedaba una cuenta con un dato de contacto inservible.
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(email).trim())) {
+    if (!esEmailValido(String(email))) {
       return res.status(400).json({ error: 'El email no tiene un formato válido' })
     }
 
@@ -154,8 +150,8 @@ exports.crearUsuario = async (req, res) => {
     // pasaba como otro DNI distinto de "41111111", y la contraseña temporal
     // quedaba con puntos: "tu contraseña es tu DNI" dejaba de ser cierto
     // (QA final, M1).
-    const dniLimpio = String(dni).replace(/[.\s]/g, '')
-    if (!/^\d{7,9}$/.test(dniLimpio)) {
+    const dniLimpio = limpiarDni(dni)
+    if (!esDniValido(dniLimpio)) {
       return res.status(400).json({ error: 'El DNI debe tener entre 7 y 9 dígitos' })
     }
 
@@ -221,7 +217,7 @@ exports.actualizarUsuario = async (req, res) => {
 
     const emailLimpio = email.trim()
 
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailLimpio)) {
+    if (!esEmailValido(emailLimpio)) {
       return res.status(400).json({ error: 'El email no tiene un formato válido' })
     }
 
@@ -240,8 +236,8 @@ exports.actualizarUsuario = async (req, res) => {
 
     // Mismo criterio que el alta: sin puntos ni espacios. La edición ni
     // siquiera revisaba el formato.
-    const dniLimpio = String(dni).replace(/[.\s]/g, '')
-    if (!/^\d{7,9}$/.test(dniLimpio)) {
+    const dniLimpio = limpiarDni(dni)
+    if (!esDniValido(dniLimpio)) {
       return res.status(400).json({ error: 'El DNI debe tener entre 7 y 9 dígitos' })
     }
 
@@ -326,7 +322,7 @@ exports.resetearPassword = async (req, res) => {
 
     if (solicitante.rol === 'superadmin') {
 
-      if (objetivo.id_rol !== ID_ROL_ADMIN_EMPRESA) {
+      if (objetivo.id_rol !== ROL.ADMIN_EMPRESA) {
         return res.status(403).json({ error: 'Sólo podés volver a la contraseña inicial a los administradores de empresa' })
       }
 
@@ -337,7 +333,7 @@ exports.resetearPassword = async (req, res) => {
         return res.status(403).json({ error: 'Ese usuario no pertenece a tu empresa' })
       }
 
-      if (objetivo.id_rol === ID_ROL_ADMIN_EMPRESA || objetivo.id_rol === ID_ROL_SUPERADMIN) {
+      if (objetivo.id_rol === ROL.ADMIN_EMPRESA || objetivo.id_rol === ROL.SUPERADMIN) {
         return res.status(403).json({ error: 'No podés volver a la contraseña inicial a otro administrador' })
       }
 
@@ -370,8 +366,8 @@ exports.cambiarPassword = async (req, res) => {
       return res.status(400).json({ error: 'Las contraseñas no coinciden' })
     }
 
-    if (password_nuevo.length < 6) {
-      return res.status(400).json({ error: 'La contraseña debe tener al menos 6 caracteres' })
+    if (password_nuevo.length < PASSWORD_MINIMO) {
+      return res.status(400).json({ error: `La contraseña debe tener al menos ${PASSWORD_MINIMO} caracteres` })
     }
 
     const hashed = await bcrypt.hash(password_nuevo, 10)

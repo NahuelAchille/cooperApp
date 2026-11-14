@@ -53,9 +53,8 @@ const ROJO = '#a01c1c'
 const MARGEN = 40
 const ANCHO_UTIL = 595.28 - MARGEN * 2   // A4 vertical menos los margenes
 
-// Un numero de plata, con el formato de acá.
-const plata = (valor) =>
-  '$ ' + Number(valor || 0).toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+// Un numero de plata, con el formato de acá (el mismo de los mensajes).
+const plata = require('./formato.service').formatearPlata
 
 const fechaCorta = (valor) => {
   if (!valor) return ''

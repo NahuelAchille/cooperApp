@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css">
+  <link rel="stylesheet" href="/styles/comun.css">
   <link rel="stylesheet" href="/styles/header.css">
   <link rel="stylesheet" href="/styles/usuarios.css">
   <link rel="stylesheet" href="/styles/tabla-mobile.css">
@@ -14,6 +15,7 @@
 
   <div id="header"></div>
   
+  <script src="/components/util.js"></script>
   <script src="/components/header.js"></script>
 
   <div class="page-header">
@@ -27,7 +29,13 @@
   </div>
 
   <div class="content">
-    <div class="card-tabla tabla-tarjetas">
+    <!-- El tesorero o el operador que llegaba acá veía "No hay usuarios
+         registrados" y el botón de alta: la API le contesta 403. -->
+    <div class="aviso-permiso d-none" id="aviso-permiso">
+      <i class="fa-solid fa-lock fa-2x mb-3"></i>
+      <p class="mb-0">Sólo el administrador de la empresa ve y da de alta a los usuarios.</p>
+    </div>
+    <div class="card-tabla tabla-tarjetas" id="caja-usuarios">
       <div class="table-responsive">
         <table class="table table-hover mb-0">
           <thead>
@@ -213,17 +221,12 @@
     // Datos del usuario logueado: se piden una sola vez y se reutilizan
     let usuarioActual = null
 
+    // El rol como lo dice la persona: en la base es "admin_empresa".
+    const NOMBRE_ROL = { admin_empresa: 'Administrador', tesorero: 'Tesorero', operador: 'Operador', superadmin: 'Superadmin' }
+
     // Ultimo listado traido del servidor
     let usuarios = []
 
-    function mostrarToast(mensaje) {
-
-      const toast = document.createElement('div')
-      toast.style = 'position:fixed;top:24px;left:50%;transform:translateX(-50%);background:#2d7a4f;color:white;padding:14px 24px;border-radius:10px;z-index:9999;font-weight:500;box-shadow:0 4px 16px rgba(0,0,0,0.2)'
-      toast.innerHTML = `<i class="fa-solid fa-circle-check me-2"></i>${esc(mensaje)}`
-      document.body.appendChild(toast)
-      setTimeout(() => toast.remove(), 6000)
-    }
 
     // El administrador puede gestionar a los usuarios comunes de su empresa,
     // pero no a si mismo ni a otro administrador. Es la misma regla que aplica el
@@ -237,28 +240,24 @@
         && u.rol !== 'superadmin'
     }
 
-    // Neutraliza el HTML que pueda venir en un dato cargado por el usuario.
-    function esc(texto) {
-      return String(texto).replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
-    }
 
     function botonesAccion(u) {
 
-      if (!puedeGestionar(u)) return '<span class="text-muted small">—</span>'
+      if (!puedeGestionar(u)) return ''
 
       const datos = `data-id="${u.id}" data-nombre="${esc(u.nombre)} ${esc(u.apellido)}"`
 
       const baja = u.activo
         ? `<button class="btn-accion peligro" data-accion="baja" ${datos} title="Dar de baja">
-             <i class="fa-solid fa-circle-minus"></i></button>`
+             <i class="fa-solid fa-circle-minus me-1"></i>Dar de baja</button>`
         : `<button class="btn-accion" data-accion="alta" ${datos} title="Reactivar">
-             <i class="fa-solid fa-circle-plus"></i></button>`
+             <i class="fa-solid fa-circle-plus me-1"></i>Reactivar</button>`
 
-      return `<div class="d-flex gap-1 justify-content-end">
+      return `<div class="d-flex flex-wrap gap-1 justify-content-end">
                 <button class="btn-accion" data-accion="editar" ${datos} title="Editar">
-                  <i class="fa-solid fa-pen"></i></button>
-                <button class="btn-reset" ${datos} title="Volver a la contraseña inicial">
-                  <i class="fa-solid fa-key"></i></button>
+                  <i class="fa-solid fa-pen me-1"></i>Editar</button>
+                <button class="btn-reset" ${datos} title="Volver a la contraseña inicial (su DNI)">
+                  <i class="fa-solid fa-key me-1"></i>Contraseña inicial</button>
                 ${baja}
               </div>`
     }
@@ -267,9 +266,17 @@
 
       if (!usuarioActual) {
         usuarioActual = await cargarHeader()
+        if (!usuarioActual) return
       }
 
       document.getElementById('nombre-empresa').textContent = usuarioActual.empresa?.nombre || ''
+
+      if (usuarioActual.rol !== 'admin_empresa') {
+        document.getElementById('aviso-permiso').classList.remove('d-none')
+        document.getElementById('caja-usuarios').classList.add('d-none')
+        document.getElementById('btn-nuevo-usuario').classList.add('d-none')
+        return
+      }
 
       const res = await fetch('/users')
       const data = await res.json()
@@ -288,12 +295,12 @@
           <td class="td-principal" data-label="Nombre"><strong>${esc(u.nombre)} ${esc(u.apellido)}</strong></td>
           <td data-label="Email">${esc(u.email)}</td>
           <td data-label="DNI">${esc(u.dni)}</td>
-          <td data-label="Rol"><span class="badge-rol">${esc(u.rol)}</span></td>
+          <td data-label="Rol"><span class="badge-rol">${esc(NOMBRE_ROL[u.rol] || u.rol)}</span></td>
           <td data-label="Estado">
             ${!u.activo ? '<span class="badge-inactivo">De baja</span>' : u.debe_cambiar_password ? '<span class="badge-temp">Contraseña temporal</span>' : '<span class="badge-activo">Activo</span>'}
           </td>
-          <td class="td-oculto-movil" data-label="Fecha registro">${new Date(u.fecha_registro).toLocaleDateString('es-AR')}</td>
-          <td class="text-end td-acciones" data-label="Acciones">${botonesAccion(u)}</td>
+          <td class="td-oculto-movil" data-label="Fecha registro">${new Date(u.fecha_registro).toLocaleDateString('es-AR', { day: '2-digit', month: '2-digit', year: 'numeric' })}</td>
+          <td class="text-end ${puedeGestionar(u) ? 'td-acciones' : 'td-oculto-movil'}" data-label="Acciones">${botonesAccion(u)}</td>
         </tr>
       `).join('')
     }

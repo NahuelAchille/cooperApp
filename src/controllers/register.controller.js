@@ -1,16 +1,13 @@
 const bcrypt = require('bcrypt')
 const userModel = require('../models/user.model')
 const empresaModel = require('../models/empresa.model')
-const { validarLargos, LARGOS, mensajeDeDuplicado } = require('../services/validacion.service')
+const { validarLargos, LARGOS, mensajeDeDuplicado, esEmailValido, limpiarDni, esDniValido, limpiarCuit, esCuitValido, PASSWORD_MINIMO } = require('../services/validacion.service')
+const { ROL } = require('../config/roles')
 const { resolverLocalidad } = require('../services/ubicacion.service')
 
 const DUPLICADOS_REGISTRO = [['cuit', 'Ya existe una empresa con ese CUIT'],
                              ['dni', 'Ya existe un usuario con ese DNI'],
                              ['email', 'Ya existe una cuenta con ese email']]
-
-const ID_ROL_ADMIN = 1
-
-const LARGO_MINIMO_PASSWORD = 6
 
 // Devolver "Faltan datos obligatorios" no alcanza: la persona acaba de escribir
 // once campos y no sabe cual quedo vacio. Con el nombre del campo puede ir
@@ -26,8 +23,6 @@ const CAMPOS_OBLIGATORIOS = [
   ['password', 'Contraseña']
 ]
 
-
-const esEmailValido = (valor) => typeof valor === 'string' && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(valor.trim())
 
 // El front necesita saber QUE campo marcar, no solo el texto del error
 const faltaObligatorio = (body) => {
@@ -55,8 +50,8 @@ exports.registerEmpresa = async (req, res) => {
       return res.status(400).json({ error: 'Las contraseñas no coinciden', campo: 'password_confirm' })
     }
 
-    if (password.length < LARGO_MINIMO_PASSWORD) {
-      return res.status(400).json({ error: `La contraseña tiene que tener al menos ${LARGO_MINIMO_PASSWORD} caracteres`, campo: 'password' })
+    if (password.length < PASSWORD_MINIMO) {
+      return res.status(400).json({ error: `La contraseña tiene que tener al menos ${PASSWORD_MINIMO} caracteres`, campo: 'password' })
     }
 
     const largo = validarLargos(req.body, LARGOS.registro)
@@ -78,14 +73,14 @@ exports.registerEmpresa = async (req, res) => {
     // con "Error del servidor" (la columna es un número), y un DNI con puntos
     // se colaba como si fuera otro, con la contraseña temporal con puntos
     // (QA final, A1 y M1).
-    const cuitLimpio = String(empresa_cuit).replace(/[-\s]/g, '')
-    const dniLimpio = String(dni).replace(/[.\s]/g, '')
+    const cuitLimpio = limpiarCuit(empresa_cuit)
+    const dniLimpio = limpiarDni(dni)
 
-    if (!/^\d{11}$/.test(cuitLimpio)) {
+    if (!esCuitValido(cuitLimpio)) {
       return res.status(400).json({ error: 'El CUIT debe tener 11 dígitos', campo: 'empresa_cuit' })
     }
 
-    if (!/^\d{7,9}$/.test(dniLimpio)) {
+    if (!esDniValido(dniLimpio)) {
       return res.status(400).json({ error: 'El DNI debe tener entre 7 y 9 dígitos', campo: 'dni' })
     }
 
@@ -129,7 +124,7 @@ exports.registerEmpresa = async (req, res) => {
       {
         nombre, apellido, email, dni: dniLimpio,
         password_hash: hashedPassword,
-        id_rol: ID_ROL_ADMIN
+        id_rol: ROL.ADMIN_EMPRESA
       }
     )
 

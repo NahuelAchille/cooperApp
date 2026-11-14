@@ -39,6 +39,9 @@ exports.requireLogin = async (req, res, next) => {
       })
     }
 
+    // Lo que se acaba de mirar queda a mano: /users/me lo devuelve para que la
+    // pantalla sepa si tiene que mandar a cambiar la contraseña.
+    req.estadoSesion = estado
     next()
 
   } catch (error) {

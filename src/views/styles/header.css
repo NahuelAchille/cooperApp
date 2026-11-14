@@ -54,10 +54,16 @@
 /* En el celular la chapa del usuario queda sólo con las iniciales: con el
    nombre completo, el logo, el avatar y la hamburguesa no entraban en una
    fila y el botón se caía a un segundo renglón. El nombre sigue estando
-   adentro del menú, en el encabezado del desplegable. */
-@media (max-width: 767px) {
-  .user-dropdown-btn { padding: 5px 8px; gap: 4px; }
+   adentro del menú, en el encabezado del desplegable.
+   Hasta 1023 px, no 767: en una tablet el menú de nueve opciones se partía en
+   dos renglones y el avatar salía aplastado (revisión visual, 14/11/2026). */
+@media (max-width: 1023px) {
+  #main-header .user-dropdown-btn { padding: 5px 8px; gap: 4px; }
   .user-dropdown-btn #user-nombre { display: none; }
+  /* El avatar, pegado a la hamburguesa: con "space-between" quedaba flotando
+     en el medio de la fila, en una caja ancha (revisión visual, 14/11/2026). */
+  #user-dropdown { order: 2; margin-left: auto; }
+  #main-header .user-dropdown-btn { border-color: transparent; background: none; }   /* "#main-header": la regla base viene más abajo y le ganaba */
 }
 
 /* Navegación
@@ -164,8 +170,8 @@
   font-weight: bold;
 }
 
-/* ===== Tablet ===== */
-@media (min-width: 768px) {
+/* ===== Pantalla grande ===== */
+@media (min-width: 1024px) {
   /* De acá para arriba no hay hamburguesa: el menú entra entero en la fila. */
   #btn-menu { display: none; }
 
@@ -212,7 +218,7 @@
    dos textos que se repiten en otro lado -- el nombre de la app al lado del
    logo, y el nombre del usuario, que sigue adentro de su menú -- y las
    opciones se aprietan un poco. Queda lugar para Articulación, la novena. */
-@media (min-width: 768px) and (max-width: 1439px) {
+@media (min-width: 1024px) and (max-width: 1439px) {
   #logo h1 { display: none; }
   #user-nombre { display: none; }
   #main-nav > ul { gap: 2px; }

@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css">
+  <link rel="stylesheet" href="/styles/comun.css">
   <link rel="stylesheet" href="/styles/header.css">
   <link rel="stylesheet" href="/styles/stock.css">
   <link rel="stylesheet" href="/styles/tabla-mobile.css">
@@ -15,13 +16,14 @@
 
   <div id="header"></div>
 
+  <script src="/components/util.js"></script>
   <script src="/components/header.js"></script>
   <script src="/components/unidades.js"></script>
 
   <div class="page-header">
     <div>
       <h4 class="mb-0 fw-bold"><i class="fa-solid fa-warehouse me-2"></i>Stock</h4>
-      <small>Cuánto hay de cada producto, y el registro de todo lo que entra y sale</small>
+      <small>Cuánto hay y todo lo que entra y sale</small>
     </div>
     <div class="acciones-header d-none" id="acciones-header">
       <a class="btn btn-secundario" href="/pages/productos.html">
@@ -354,7 +356,7 @@
     <div class="modal-dialog modal-dialog-centered">
       <div class="modal-content">
         <div class="modal-header">
-          <h5 class="modal-title fw-bold"><i class="fa-solid fa-dollar-sign me-2"></i>Registrar el dinero</h5>
+          <h5 class="modal-title fw-bold"><i class="fa-solid fa-dollar-sign me-2"></i>Completar la plata</h5>
           <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
         </div>
         <div class="modal-body">
@@ -435,33 +437,12 @@
     let puedeDinero = false
     let productos = []     // sólo los activos, para el formulario
     let motivos = []       // sólo los activos
-    let existencias = []   // lo último que devolvió el servidor
+    let existencias = []   // lo último que devolvió el servidor (con los filtros de la pantalla)
+    let existenciasDelFormulario = []   // todas, sin filtros: para "Otra entrada o salida"
 
-    function mostrarToast(mensaje) {
-      const toast = document.createElement('div')
-      toast.style = 'position:fixed;top:24px;left:50%;transform:translateX(-50%);background:#2d7a4f;color:white;padding:14px 24px;border-radius:10px;z-index:9999;font-weight:500;box-shadow:0 4px 16px rgba(0,0,0,0.2);max-width:90vw;text-align:center'
-      toast.innerHTML = `<i class="fa-solid fa-circle-check me-2"></i>${esc(mensaje)}`
-      document.body.appendChild(toast)
-      setTimeout(() => toast.remove(), 6000)
-    }
 
-    // Evita romper el HTML (y que se ejecute código) si un nombre trae comillas o etiquetas
-    function esc(texto) {
-      return String(texto).replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
-    }
 
-    // Fecha de hoy en hora local, como AAAA-MM-DD. No se usa toISOString(),
-    // que trabaja en UTC: en Argentina propondría el día siguiente de noche.
-    function fechaDeHoy() {
-      const hoy = new Date()
-      return `${hoy.getFullYear()}-${String(hoy.getMonth() + 1).padStart(2, '0')}-${String(hoy.getDate()).padStart(2, '0')}`
-    }
 
-    // Muestra 5 en vez de 5,00 pero respeta los decimales cuando los hay.
-    function formatearCantidad(valor) {
-      const numero = Number(valor)
-      return Number.isInteger(numero) ? String(numero) : numero.toFixed(2).replace('.', ',')
-    }
 
     async function iniciar() {
       usuarioActual = await cargarHeader()
@@ -571,7 +552,7 @@
                <div class="mt-2"><button type="button" class="btn btn-sm btn-limpiar" data-limpiar>
                  <i class="fa-solid fa-eraser me-1"></i>Limpiar filtros</button></div>`
           : soloFaltantes
-            ? '¡Bien! No hay productos por debajo del mínimo.'
+            ? '¡Bien! Ningún producto llegó a su mínimo.'
             : `Todavía no hay productos en el catálogo.
                <div class="mt-2">Cargalos desde <a href="/pages/productos.html">Productos</a>: después vas a ver acá cuánto hay de cada uno.</div>`
         }</div></td></tr>`
@@ -671,11 +652,11 @@
 
       document.getElementById('mov-producto').innerHTML =
         '<option value="">Todos</option>' +
-        todosProductos.map(p => `<option value="${p.id_producto}">${esc(p.nombre)}</option>`).join('')
+        todosProductos.map(p => `<option value="${p.id_producto}">${esc(p.nombre)}${p.activo ? '' : ' (de baja)'}</option>`).join('')
 
       document.getElementById('mov-motivo').innerHTML =
         '<option value="">Todos</option>' +
-        todosMotivos.map(m => `<option value="${m.id_motivo_stock}">${esc(m.nombre)}</option>`).join('')
+        todosMotivos.map(m => `<option value="${m.id_motivo_stock}">${esc(m.nombre)}${m.activo ? '' : ' (de baja)'}</option>`).join('')
 
       filtrosDelHistorialListos = true
     }
@@ -741,7 +722,7 @@
         const queFalta = m.efecto_dinero === 'ingreso' ? 'cobro' : 'pago'
         const marcaDinero = !mueveDinero ? ''
           : tieneDinero
-            ? `<span class="marca-dinero hecho" title="Lo que ${queFalta === 'cobro' ? 'se cobró' : 'se pagó'} en esta ${queFalta === 'cobro' ? 'venta' : 'compra'}"><i class="fa-solid fa-circle-check me-1"></i>${queFalta === 'cobro' ? 'Cobrado' : 'Pagado'}: ${formatearPlata(m.dinero_monto)}</span>`
+            ? `<span class="marca-dinero hecho" title="Lo que ${queFalta === 'cobro' ? 'se cobró' : 'se pagó'} en esta ${queFalta === 'cobro' ? 'venta' : 'compra'}"><i class="fa-solid fa-circle-check me-1"></i>${queFalta === 'cobro' ? 'Cobrado' : 'Pagado'}: ${formatMoneda(m.dinero_monto)}</span>`
             : puedeDinero
               ? `<span class="marca-dinero falta" title="Este movimiento genera dinero y todavía no se registró"><i class="fa-solid fa-circle-exclamation me-1"></i>Sin registrar el ${queFalta}</span>`
               : ''
@@ -777,11 +758,11 @@
             <td class="text-end td-acciones" data-label="Acciones">
               ${m.anulado ? '' : `
                 ${(mueveDinero && !tieneDinero && puedeDinero) ? `
-                  <button class="btn-mini" data-accion="cargar-dinero" data-id="${m.id_movimiento_stock}" title="Registrar el movimiento de dinero">
-                    <i class="fa-solid fa-dollar-sign"></i>
+                  <button class="btn-mini" data-accion="cargar-dinero" data-id="${m.id_movimiento_stock}" title="Completar la plata">
+                    <i class="fa-solid fa-dollar-sign me-1"></i>Completar la plata
                   </button>` : ''}
                 <button class="btn-mini peligro" data-accion="anular" data-id="${m.id_movimiento_stock}" title="Anular">
-                  <i class="fa-solid fa-ban"></i>
+                  <i class="fa-solid fa-ban me-1"></i>Anular
                 </button>`}
             </td>
           </tr>`
@@ -791,12 +772,6 @@
       window.movimientosCargados = movimientos
     }
 
-    // La API devuelve la fecha como 2026-09-14T03:00:00.000Z. Se corta el día
-    // del texto en vez de usar Date, que la correría por la zona horaria.
-    function formatearFecha(valor) {
-      const [anio, mes, dia] = String(valor).slice(0, 10).split('-')
-      return `${dia}/${mes}/${anio}`
-    }
 
     document.getElementById('mov-producto').addEventListener('change', cargarMovimientos)
     document.getElementById('mov-motivo').addEventListener('change', cargarMovimientos)
@@ -851,8 +826,16 @@
 
       // Sólo productos y motivos activos: no se le cargan movimientos a algo
       // que la empresa dio de baja.
-      productos = await fetch('/productos?estado=activos').then(r => r.ok ? r.json() : [])
-      const activos = await fetch('/productos/motivos?soloActivos=true').then(r => r.ok ? r.json() : [])
+      // La existencia se pide entera, como en la venta: la lista de la
+      // pantalla puede estar filtrada por una búsqueda, y el producto elegido
+      // quedaba sin "cuánto hay" (revisión funcional, 14/11/2026).
+      const [catalogo, stock, activos] = await Promise.all([
+        fetch('/productos?estado=activos').then(r => r.ok ? r.json() : []),
+        fetch('/productos/stock').then(r => r.ok ? r.json() : []),
+        fetch('/productos/motivos?soloActivos=true').then(r => r.ok ? r.json() : [])
+      ])
+      productos = catalogo
+      existenciasDelFormulario = stock
 
       // Las ventas y las compras no van por acá: tienen su formulario, que
       // carga la plata en el mismo paso. Dejarlas en las dos listas era tener
@@ -885,7 +868,7 @@
       const div = document.getElementById('resumen-movimiento')
       div.classList.remove('alerta')
 
-      const producto = existencias.find(p => String(p.id_producto) === form.id_producto.value)
+      const producto = existenciasDelFormulario.find(p => String(p.id_producto) === form.id_producto.value)
       const motivo = motivos.find(m => String(m.id_motivo_stock) === form.id_motivo_stock.value)
 
       document.getElementById('ayuda-motivo').textContent = motivo
@@ -962,10 +945,6 @@
       // completar las ventas viejas "Sin registrar el cobro" del historial.
     })
 
-    function mostrarError(div, mensaje) {
-      div.textContent = mensaje
-      div.classList.remove('d-none')
-    }
 
     // ================= REGISTRAR UNA VENTA O UNA COMPRA =================
     //
@@ -990,8 +969,8 @@
         boton: 'Registrar la venta',
         la: 'la venta',
         de: 'de venta',
-        loQueHace: 'saque mercadería y genere un ingreso',
-        categorias: 'ingresos',
+        loQueHace: 'saque mercadería y haga entrar plata',
+        categorias: 'plata que entra',
         las: 'las ventas',
         Las: 'Las ventas',
         faltaProducto: 'Elegí qué vendiste.',
@@ -1014,8 +993,8 @@
         boton: 'Registrar la compra',
         la: 'la compra',
         de: 'de compra',
-        loQueHace: 'sume mercadería y genere un egreso',
-        categorias: 'egresos',
+        loQueHace: 'sume mercadería y haga salir plata',
+        categorias: 'plata que sale',
         las: 'las compras',
         Las: 'Las compras',
         faltaProducto: 'Elegí qué compraste.',
@@ -1049,10 +1028,6 @@
     let opProductos = []      // activos, con su existencia, su precio y su costo
     let opMotivos = []        // los motivos activos de la clase abierta
 
-    // Los pesos como se leen acá: $ 25.000,00
-    function formatearPlata(numero) {
-      return Number(numero).toLocaleString('es-AR', { style: 'currency', currency: 'ARS' })
-    }
 
     async function abrirModalOperacion(clase, idProducto, original = null) {
       claseOp = clase
@@ -1233,12 +1208,12 @@
       const centavos = (cantidad > 0 && precio > 0)
         ? Math.round(Math.round(cantidad * 100) * Math.round(precio * 100) / 100)
         : 0
-      document.getElementById('op-total').textContent = formatearPlata(centavos / 100)
+      document.getElementById('op-total').textContent = formatMoneda(centavos / 100)
 
       // El precio como se lee, con separador de miles (UX F-18): en el campo
       // numérico, 12500 y 125000 se confunden de un vistazo.
       document.getElementById('op-precio-legible').textContent = precio > 0
-        ? `= ${formatearPlata(precio)} ${porUnidad(producto?.unidad_medida)}`
+        ? `= ${formatMoneda(precio)} ${porUnidad(producto?.unidad_medida)}`
         : ''
 
       // La casilla del costo: sólo en la compra y sólo si lo pagado es
@@ -1251,8 +1226,8 @@
       document.getElementById('op-bloque-costo').classList.toggle('d-none', !ofrecerCosto)
       if (ofrecerCosto) {
         document.getElementById('op-texto-costo').textContent =
-          `Desde ahora, ${producto.nombre} nos cuesta ${formatearPlata(precioRedondo)} ${porUnidad(producto.unidad_medida)}` +
-          (costoCargado === null ? '.' : ` (antes ${formatearPlata(costoCargado)}).`)
+          `Desde ahora, ${producto.nombre} nos cuesta ${formatMoneda(precioRedondo)} ${porUnidad(producto.unidad_medida)}` +
+          (costoCargado === null ? '.' : ` (antes ${formatMoneda(costoCargado)}).`)
       }
 
       const div = document.getElementById('op-resumen')
@@ -1355,8 +1330,9 @@
       return tiposDeMovimiento
     }
 
-    // Abre el paso del dinero. `propuesta` viene del servidor al registrar el
-    // movimiento; cuando se entra desde el botón del historial se arma acá.
+    // Completa la plata de una venta o compra vieja (de antes del 25/10, cuando
+    // la plata iba en un segundo paso que se podía saltear). Hoy sólo se entra
+    // desde el botón "$" del historial; `propuesta` se arma ahí.
     async function abrirModalDinero(movimiento, propuesta) {
       const form = document.getElementById('form-dinero')
       form.reset()
@@ -1366,11 +1342,11 @@
       form.descripcion.value = propuesta.descripcion || ''
 
       const esIngreso = propuesta.naturaleza === 'ingreso'
-
+      // Decía "Se registró el movimiento de stock", sobre una venta cargada
+      // hace días (revisión funcional, 14/11/2026).
       document.getElementById('dinero-contexto').innerHTML =
-        `<i class="fa-solid fa-circle-check me-1"></i>Se registró el movimiento de stock. ` +
-        `Como el motivo <strong>${esc(movimiento.motivo_nombre)}</strong> genera ` +
-        `<strong>un ${esc(propuesta.naturaleza)}</strong>, podés cargar el dinero acá y queda todo junto.`
+        `<i class="fa-solid fa-circle-info me-1"></i>Esta ${esIngreso ? 'venta' : 'compra'} se cargó sin ` +
+        `${esIngreso ? 'el cobro' : 'el pago'}. Cargalo acá y queda atado a la mercadería.`
 
       // Sólo los tipos de la naturaleza que corresponde: si el motivo genera
       // un ingreso, ofrecer egresos sería ofrecer un error.
@@ -1380,7 +1356,7 @@
       document.getElementById('select-tipo').innerHTML = opciones.length
         ? '<option value="">Elegí una opción</option>' +
           opciones.map(t => `<option value="${t.id_tipo}">${esc(t.categoria_nombre)} › ${esc(t.nombre)}</option>`).join('')
-        : '<option value="">No hay categorías de ' + esc(propuesta.naturaleza) + 's</option>'
+        : '<option value="">No hay categorías de plata que ' + (esIngreso ? 'entra' : 'sale') + '</option>'
 
       // Si el motivo ya sabe dónde cae su plata, va elegido de entrada.
       if (propuesta.id_tipo && opciones.some(t => t.id_tipo === propuesta.id_tipo)) {
@@ -1388,8 +1364,8 @@
       }
 
       document.getElementById('ayuda-tipo').textContent = opciones.length
-        ? `Se muestran sólo las categorías de ${propuesta.naturaleza}s.`
-        : `Tu empresa no tiene ninguna categoría de ${propuesta.naturaleza}s activa. Hay que crearla en Categorías de movimientos.`
+        ? `Se muestran sólo las de plata que ${esIngreso ? 'entra' : 'sale'}.`
+        : `Tu empresa no tiene ninguna categoría de plata que ${esIngreso ? 'entra' : 'sale'}. Hay que crearla en Categorías de movimientos.`
 
       new bootstrap.Modal(document.getElementById('modalDinero')).show()
     }
@@ -1450,7 +1426,7 @@
       // balance. Si ya estaba anulada, no hay nada que avisar.
       if (movimiento.id_movimiento && !movimiento.dinero_anulado) {
         const queEra = movimiento.efecto_dinero === 'ingreso' ? 'cobro' : 'pago'
-        aviso += `<br><i class="fa-solid fa-triangle-exclamation me-1"></i>También se anula su <strong>${queEra} de ${formatearPlata(movimiento.dinero_monto)}</strong>.`
+        aviso += `<br><i class="fa-solid fa-triangle-exclamation me-1"></i>También se anula su <strong>${queEra} de ${formatMoneda(movimiento.dinero_monto)}</strong>.`
       }
 
       document.getElementById('anular-aviso').innerHTML = aviso
@@ -1462,7 +1438,14 @@
       // Corregir sólo una venta o una compra: es donde se tipea un precio o una
       // cantidad mal. El resto (una rotura, un ajuste) se anula y listo.
       const corregir = document.getElementById('btn-anular-corregir')
-      corregir.classList.toggle('d-none', !clase)
+      // Con el producto dado de baja no se puede elegir en el formulario, así
+      // que la corrección quedaba trabada (revisión funcional, 14/11/2026).
+      const productoDeBaja = clase && !movimiento.producto_activo
+      if (productoDeBaja) {
+        document.getElementById('anular-aviso').innerHTML += `<br><i class="fa-solid fa-box-archive me-1"></i>` +
+          `${esc(movimiento.producto_nombre)} está dado de baja: para corregir la ${clase}, primero reactivalo en Productos.`
+      }
+      corregir.classList.toggle('d-none', !clase || productoDeBaja)
       corregir.dataset.id = movimiento.id_movimiento_stock
       document.getElementById('anular-texto-boton').textContent = clase ? 'Sólo anular' : 'Anular'
 

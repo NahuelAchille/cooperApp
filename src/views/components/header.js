@@ -27,7 +27,20 @@ async function cargarHeader() {
   document.getElementById('header').innerHTML = html
 
   const user = await fetch('/users/me').then(r => r.json()).catch(() => null)
-  if (!user || user.error) return null
+
+  // Sin sesión (o vencida), al login; con la contraseña inicial, a cambiarla.
+  // Se decide acá una vez para todas las pantallas: antes cada página lo hacía
+  // a su manera, y el panel, Mi empresa y Usuarios se quedaban en "Cargando...",
+  // o decían "el módulo no está activo" a quien sólo tenía que cambiar la
+  // contraseña (revisión funcional, 14/11/2026).
+  if (!user || user.error) {
+    location.href = '/pages/login.html'
+    return null
+  }
+  if (user.debe_cambiar_password) {
+    location.href = '/pages/cambiar-password.html'
+    return null
+  }
 
   // --- Datos de la persona ---
   document.getElementById('user-avatar').textContent = (user.nombre[0] + user.apellido[0]).toUpperCase()
@@ -99,7 +112,7 @@ async function cargarHeader() {
   }
 
   // --- La hamburguesa del celular ---
-  // El menú arranca cerrado (lo decide el CSS por debajo de 768 px). Acá sólo
+  // El menú arranca cerrado (lo decide el CSS por debajo de 1024 px). Acá sólo
   // se prende y se apaga la clase.
   const botonMenu = document.getElementById('btn-menu')
   const nav = document.getElementById('main-nav')

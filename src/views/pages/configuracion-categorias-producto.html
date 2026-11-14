@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css">
+  <link rel="stylesheet" href="/styles/comun.css">
   <link rel="stylesheet" href="/styles/header.css">
   <link rel="stylesheet" href="/styles/configuracion-categorias-producto.css">
   <title>Categorías de productos - CooperApp</title>
@@ -13,15 +14,17 @@
 
   <div id="header"></div>
 
+  <script src="/components/util.js"></script>
   <script src="/components/header.js"></script>
 
   <div class="page-header">
     <div>
-      <h4 class="mb-0 fw-bold"><i class="fa-solid fa-boxes-stacked me-2"></i>Categorías de productos</h4>
+      <h4 class="mb-0 fw-bold" id="titulo-pantalla"><i class="fa-solid fa-boxes-stacked me-2"></i>Categorías de productos</h4>
       <small>Cómo se ordena el catálogo: categorías y subcategorías propias de tu empresa</small>
     </div>
-    <a class="btn btn-volver" href="/pages/dashboard.html">
-      <i class="fa-solid fa-arrow-left me-2"></i>Volver al panel
+    <!-- Se llega desde Productos (o Servicios): se vuelve ahí, no al panel. -->
+    <a class="btn btn-volver" href="/pages/productos.html" id="link-volver">
+      <i class="fa-solid fa-arrow-left me-2"></i>Volver a Productos
     </a>
   </div>
 
@@ -30,13 +33,13 @@
     <!-- Se muestra si el usuario no es admin -->
     <div class="aviso-permiso d-none" id="aviso-permiso">
       <i class="fa-solid fa-lock fa-2x mb-3"></i>
-      <p class="mb-0">Solo el administrador de la empresa puede configurar las categorías de productos.</p>
+      <p class="mb-0" id="texto-permiso">Sólo el administrador de la empresa puede configurar las categorías de productos.</p>
     </div>
 
     <!-- Se muestra si la empresa tiene el módulo apagado -->
     <div class="aviso-permiso d-none" id="aviso-modulo">
       <i class="fa-solid fa-plug-circle-xmark fa-2x mb-3"></i>
-      <p class="mb-1">El módulo de <strong>Productos</strong> no está activo en tu empresa.</p>
+      <p class="mb-1">El módulo de <strong id="nombre-modulo">Productos</strong> no está activo en tu empresa.</p>
       <p class="mb-0 small">El administrador puede activarlo desde <em>Módulos del sistema</em>.</p>
     </div>
 
@@ -144,18 +147,24 @@
 
     let usuarioActual = null
 
-    function mostrarToast(mensaje) {
-      const toast = document.createElement('div')
-      toast.style = 'position:fixed;top:24px;left:50%;transform:translateX(-50%);background:#2d7a4f;color:white;padding:14px 24px;border-radius:10px;z-index:9999;font-weight:500;box-shadow:0 4px 16px rgba(0,0,0,0.2)'
-      toast.innerHTML = `<i class="fa-solid fa-circle-check me-2"></i>${esc(mensaje)}`
-      document.body.appendChild(toast)
-      setTimeout(() => toast.remove(), 6000)
-    }
+    // Esta misma página arma las categorías de PRODUCTOS y las de SERVICIOS:
+    // el servidor la entrega en las dos direcciones (app.js) y acá se decide
+    // por la dirección. Eran dos páginas de 430 líneas que diferían en las
+    // palabras y en la ruta de la API, y cada arreglo había que hacerlo dos
+    // veces (revisión de código, 14/11/2026). Mismo criterio que abajo: un
+    // servicio es un producto sin stock, en las mismas tablas.
+    const ES_SERVICIO = location.pathname.includes('categorias-servicio')
+    const CATALOGO = ES_SERVICIO
+      ? { api: '/servicios', modulo: 'servicios', Modulo: 'Servicios', cosas: 'servicios', icono: 'fa-screwdriver-wrench', volver: '/pages/servicios.html' }
+      : { api: '/productos', modulo: 'productos', Modulo: 'Productos', cosas: 'productos', icono: 'fa-boxes-stacked', volver: '/pages/productos.html' }
 
-    // Evita romper el HTML (y que se ejecute código) si un nombre trae comillas o etiquetas
-    function esc(texto) {
-      return String(texto).replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
-    }
+    document.title = `Categorías de ${CATALOGO.cosas} - CooperApp`
+    document.getElementById('titulo-pantalla').innerHTML = `<i class="fa-solid ${CATALOGO.icono} me-2"></i>Categorías de ${CATALOGO.cosas}`
+    document.getElementById('texto-permiso').textContent = `Sólo el administrador de la empresa puede configurar las categorías de ${CATALOGO.cosas}.`
+    document.getElementById('nombre-modulo').textContent = CATALOGO.Modulo
+    const linkVolver = document.getElementById('link-volver')
+    linkVolver.href = CATALOGO.volver
+    linkVolver.innerHTML = `<i class="fa-solid fa-arrow-left me-2"></i>Volver a ${CATALOGO.Modulo}`
 
     async function iniciar() {
       usuarioActual = await cargarHeader()
@@ -172,7 +181,7 @@
 
       // El rol alcanza, pero la empresa puede tener el módulo apagado.
       // Son dos problemas distintos y se resuelven de maneras distintas.
-      if (!moduloActivo('productos')) {
+      if (!moduloActivo(CATALOGO.modulo)) {
         document.getElementById('aviso-modulo').classList.remove('d-none')
         return
       }
@@ -183,10 +192,10 @@
 
     // Trae las categorías y, para cada una, sus subcategorías.
     async function cargarArbol() {
-      const categorias = await fetch('/productos/categorias').then(r => r.ok ? r.json() : [])
+      const categorias = await fetch(`${CATALOGO.api}/categorias`).then(r => r.ok ? r.json() : [])
 
       const conSubcategorias = await Promise.all(categorias.map(async (c) => {
-        const subcategorias = await fetch(`/productos/categorias/${c.id_categoria_producto}/subcategorias`)
+        const subcategorias = await fetch(`${CATALOGO.api}/categorias/${c.id_categoria_producto}/subcategorias`)
           .then(r => r.ok ? r.json() : [])
         return { ...c, subcategorias }
       }))
@@ -198,7 +207,7 @@
       const cont = document.getElementById('grilla')
 
       if (!cats.length) {
-        cont.innerHTML = '<div class="grilla-vacia">Todavía no hay categorías de productos. Creá la primera con el botón <strong>Nueva categoría</strong>.</div>'
+        cont.innerHTML = `<div class="grilla-vacia">Todavía no hay categorías de ${CATALOGO.cosas}. Creá la primera con el botón <strong>Nueva categoría</strong>.</div>`
         return
       }
 
@@ -294,7 +303,7 @@
       boton.disabled = true
 
       const esEdicion = !!datos.id
-      const url = esEdicion ? `/productos/categorias/${datos.id}` : '/productos/categorias'
+      const url = esEdicion ? `${CATALOGO.api}/categorias/${datos.id}` : `${CATALOGO.api}/categorias`
 
       const res = await fetch(url, {
         method: esEdicion ? 'PUT' : 'POST',
@@ -351,8 +360,8 @@
 
       const esEdicion = !!datos.id
       const url = esEdicion
-        ? `/productos/categorias/subcategorias/${datos.id}`
-        : `/productos/categorias/${datos.id_categoria}/subcategorias`
+        ? `${CATALOGO.api}/categorias/subcategorias/${datos.id}`
+        : `${CATALOGO.api}/categorias/${datos.id_categoria}/subcategorias`
 
       const res = await fetch(url, {
         method: esEdicion ? 'PUT' : 'POST',
@@ -388,8 +397,8 @@
         : `¿Reactivar <strong>${esc(nombre)}</strong>?`
 
       document.getElementById('estado-aviso').innerHTML = dandoDeBaja
-        ? `<i class="fa-solid fa-circle-info me-1"></i>No se borra, y se puede reactivar cuando quieras: deja de aparecer al cargar productos nuevos, pero lo que ya esté clasificado se conserva.${esCat ? ' Al dar de baja la categoría, sus subcategorías también quedan de baja.' : ''}`
-        : `<i class="fa-solid fa-circle-info me-1"></i>Vuelve a estar disponible para clasificar productos.${esCat ? ' Sus subcategorías también vuelven a quedar activas.' : ''}`
+        ? `<i class="fa-solid fa-circle-info me-1"></i>No se borra, y se puede reactivar cuando quieras: deja de aparecer al cargar ${CATALOGO.cosas} nuevos, pero lo que ya esté clasificado se conserva.${esCat ? ' Al dar de baja la categoría, sus subcategorías también quedan de baja.' : ''}`
+        : `<i class="fa-solid fa-circle-info me-1"></i>Vuelve a estar disponible para clasificar ${CATALOGO.cosas}.${esCat ? ' Sus subcategorías también vuelven a quedar activas.' : ''}`
 
       const btn = document.getElementById('btn-confirmar-estado')
       btn.innerHTML = dandoDeBaja
@@ -412,8 +421,8 @@
       boton.disabled = true
 
       const url = boton.dataset.destino === 'categoria'
-        ? `/productos/categorias/${boton.dataset.id}/estado`
-        : `/productos/categorias/subcategorias/${boton.dataset.id}/estado`
+        ? `${CATALOGO.api}/categorias/${boton.dataset.id}/estado`
+        : `${CATALOGO.api}/categorias/subcategorias/${boton.dataset.id}/estado`
 
       const res = await fetch(url, {
         method: 'PUT',

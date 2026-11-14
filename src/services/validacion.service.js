@@ -86,4 +86,57 @@ const aNumero = (valor) => {
   return Number(valor)
 }
 
-module.exports = { validarLargos, LARGOS, mensajeDeDuplicado, aNumero }
+// Lo que entra en las columnas de la base: DECIMAL(12,2) para cantidades,
+// stock mínimo, costo y precio; DECIMAL(14,2) para los montos de plata.
+const TOPE_12_2 = 9999999999.99
+const TOPE_14_2 = 999999999999.99
+
+// La lectura común de un número que escribe la persona, con 2 decimales.
+// Había cinco validadores que repetían estos mismos pasos, y uno (el stock
+// mínimo) se había quedado con Number() en vez de aNumero(): "1e3" entraba
+// ahí y rebotaba en los demás (revisión de código, 14/11/2026). Ahora los
+// cinco leen acá y sólo deciden lo propio de su campo (si va vacío, si acepta
+// cero, el tope y las palabras del mensaje).
+//
+// Devuelve:
+//   { vacio: true }          no vino nada
+//   { noEsNumero: true }     un booleano, un objeto, "1e3", "abc"...
+//   { numero, valor }        lo escrito y lo redondeado a 2 decimales.
+//
+// Se redondea ANTES de que cada campo compare contra cero: si no, un 0,001
+// pasa el control de "mayor que cero" y se guarda como 0,00.
+const leerDecimal = (valor) => {
+  if (valor === undefined || valor === null || valor === '') return { vacio: true }
+  if (typeof valor !== 'number' && typeof valor !== 'string') return { noEsNumero: true }
+  const numero = aNumero(valor)
+  if (!Number.isFinite(numero)) return { noEsNumero: true }
+  return { numero, valor: Math.round(numero * 100) / 100 }
+}
+
+// Reglas de texto que repetían varios controladores (revisión de código,
+// 14/11/2026): una copia que se arregla deja a las otras con el error.
+
+// Un nombre de categoría, tipo, subcategoría o motivo: texto, recortado, no
+// vacío y que entre en la columna. Devuelve el texto limpio o null.
+const limpiarNombre = (valor, maximo = 80) => {
+  if (typeof valor !== 'string') return null
+  const limpio = valor.trim()
+  if (!limpio || limpio.length > maximo) return null
+  return limpio
+}
+
+const esEmailValido = (valor) => typeof valor === 'string' && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(valor.trim())
+
+// El DNI y el CUIT se guardan como se validan: sin puntos, guiones ni espacios.
+const limpiarDni = (valor) => String(valor ?? '').replace(/[.\s]/g, '')
+const esDniValido = (limpio) => /^\d{7,9}$/.test(limpio)
+const limpiarCuit = (valor) => String(valor ?? '').replace(/[-\s]/g, '')
+const esCuitValido = (limpio) => /^\d{11}$/.test(limpio)
+
+// El mínimo de una contraseña (registro y cambio de contraseña).
+const PASSWORD_MINIMO = 6
+
+module.exports = {
+  validarLargos, LARGOS, mensajeDeDuplicado, aNumero, leerDecimal, TOPE_12_2, TOPE_14_2,
+  limpiarNombre, esEmailValido, limpiarDni, esDniValido, limpiarCuit, esCuitValido, PASSWORD_MINIMO
+}

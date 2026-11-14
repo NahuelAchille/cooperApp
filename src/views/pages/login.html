@@ -5,9 +5,10 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css">
+  <link rel="stylesheet" href="/styles/comun.css">
   <link rel="stylesheet" href="/styles/base.css">
   <link rel="stylesheet" href="/styles/login.css">
-  <title>Login - CooperApp</title>
+  <title>Iniciar sesión - CooperApp</title>
   <style>
 
     .modal-content-empresa {
@@ -65,12 +66,15 @@
     }
     .modal-body hr { border-color: rgba(255,255,255,0.2); }
     .modal-seccion-titulo { color: rgba(255,255,255,0.95); font-weight: 600; }
+    /* El botón que manda el registro, blanco y lleno: translúcido parecía
+       deshabilitado (revisión visual, 14/11/2026). */
     .btn-registro-enviar {
-      background-color: rgba(255,255,255,0.25);
-      color: white; border: 1.5px solid rgba(255,255,255,0.5);
+      background-color: #fff;
+      color: #1e5c3a; border: none;
       font-weight: bold;
     }
-    .btn-registro-enviar:hover { background-color: rgba(255,255,255,0.35); color: white; }
+    .btn-registro-enviar:hover { background-color: #e4f2eb; color: #1e5c3a; }
+    .modal-footer-empresa { display: flex; justify-content: flex-end; gap: 8px; }
     .toast-cooperapp {
       position: fixed;
       top: 30px;
@@ -166,7 +170,7 @@
               </div>
               <div class="col-md-6">
                 <label class="form-label">Domicilio</label>
-                <input type="text" class="form-control form-control-registro" name="empresa_domicilio" placeholder="Av. Siempre Viva 123" autocomplete="new-password">
+                <input type="text" class="form-control form-control-registro" name="empresa_domicilio" placeholder="Av. San Martín 1234" autocomplete="new-password">
               </div>
               <!-- Opcional: la usa el buscador entre empresas para ordenar por
                    cercanía. Si la suya no está en la lista, se registra igual. -->
@@ -240,9 +244,9 @@
   </div>
 
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+  <script src="/components/util.js"></script>
   <script>
-
-    function mostrarToast(mensaje, tipo = 'success') {
+    function avisoLogin(mensaje, tipo = 'success') {
 
       const existente = document.querySelector('.toast-cooperapp')
       if (existente) existente.remove()
@@ -279,7 +283,7 @@
       if (res.ok) {
         window.location.href = data.redirect
       } else {
-        mostrarToast(data.error, 'error')
+        avisoLogin(data.error, 'error')
       }
 
     })
@@ -338,7 +342,6 @@
     // formulario se llena antes de tener usuario. Si no cargan, el campo queda
     // en "Sin elegir" y el registro sigue andando: es opcional.
     fetch('/localidades').then(r => r.ok ? r.json() : []).then(localidades => {
-      const esc = (t) => String(t).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
       document.getElementById('registro-localidad').innerHTML =
         '<option value="">Sin elegir (se puede completar después)</option>' +
         // Agrupadas por provincia (UX F-10): ordenadas por provincia y nombre.
@@ -372,7 +375,7 @@
       if (res.ok) {
         limpiarErrorRegistro()
         bootstrap.Modal.getInstance(document.getElementById('modalRegistro')).hide()
-        mostrarToast(result.message, 'success')
+        avisoLogin(result.message, 'success')
         formRegistro.reset()
       } else {
         mostrarErrorRegistro(result.error, result.campo)

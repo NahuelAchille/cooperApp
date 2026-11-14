@@ -3,7 +3,7 @@ const rubroModel = require('../models/rubro.model')
 const categoriaProductoModel = require('../models/categoria-producto.model')
 const { UNIDADES_MEDIDA, CLAVES_UNIDADES } = require('../config/unidades-medida')
 const { flagServicio, rotulo } = require('../middlewares/catalogo.middleware')
-const { aNumero } = require('../services/validacion.service')
+const { leerDecimal, TOPE_12_2 } = require('../services/validacion.service')
 
 // Este controlador sirve los DOS catalogos, el de productos y el de
 // servicios: un servicio es un producto sin stock. De cual se trata lo dice
@@ -25,19 +25,11 @@ const limpiarTexto = (valor, maximo) => {
 // de "mayor o igual que cero" y despues se guardaba como 0,00. Es el mismo
 // error que habia en los montos de movimientos.
 const limpiarStockMinimo = (valor) => {
-  if (valor === undefined || valor === null || valor === '') return { valor: 0 }
+  const leido = leerDecimal(valor)
+  if (leido.vacio) return { valor: 0 }
+  if (leido.noEsNumero) return { error: 'El stock mínimo tiene que ser un número' }
+  const { numero, valor: redondeado } = leido
 
-  // Un booleano se convierte en 1 o en 0: hay que descartarlo antes.
-  if (typeof valor === 'boolean') {
-    return { error: 'El stock mínimo tiene que ser un número' }
-  }
-
-  const numero = Number(valor)
-  if (!Number.isFinite(numero)) {
-    return { error: 'El stock mínimo tiene que ser un número' }
-  }
-
-  const redondeado = Math.round(numero * 100) / 100
   if (redondeado < 0) {
     return { error: 'El stock mínimo no puede ser negativo' }
   }
@@ -49,7 +41,7 @@ const limpiarStockMinimo = (valor) => {
   if (numero > 0 && redondeado === 0) {
     return { error: 'El stock mínimo es demasiado chico: usá al menos 0,01, o dejalo en 0 para no recibir avisos' }
   }
-  if (redondeado > 9999999999.99) {  // no entra en DECIMAL(12,2)
+  if (redondeado > TOPE_12_2) {
     return { error: 'El stock mínimo es demasiado grande' }
   }
 
@@ -71,21 +63,10 @@ const limpiarImporte = (valor, es_servicio, palabras) => {
 
   if (es_servicio) return { valor: null }
 
-  if (valor === undefined || valor === null || valor === '') return { valor: null }
-
-  // Un booleano se convierte en 1 o en 0: hay que descartarlo antes.
-  if (typeof valor === 'boolean') {
-    return { error: `${palabras.El} tiene que ser un número` }
-  }
-
-  const numero = aNumero(valor)
-  if (!Number.isFinite(numero)) {
-    return { error: `${palabras.El} tiene que ser un número` }
-  }
-
-  // Se redondea ANTES de comparar, igual que el monto y el stock minimo: si no,
-  // un 0,004 pasaba el control y despues se guardaba como 0,00.
-  const redondeado = Math.round(numero * 100) / 100
+  const leido = leerDecimal(valor)
+  if (leido.vacio) return { valor: null }
+  if (leido.noEsNumero) return { error: `${palabras.El} tiene que ser un número` }
+  const redondeado = leido.valor
 
   if (redondeado < 0) {
     return { error: `${palabras.El} no puede ser negativo` }
@@ -96,7 +77,7 @@ const limpiarImporte = (valor, es_servicio, palabras) => {
   if (redondeado === 0) {
     return { error: palabras.siEsCero }
   }
-  if (redondeado > 9999999999.99) {  // no entra en DECIMAL(12,2)
+  if (redondeado > TOPE_12_2) {
     return { error: `${palabras.El} es demasiado grande` }
   }
 

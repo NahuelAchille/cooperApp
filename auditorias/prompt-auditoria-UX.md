@@ -2,6 +2,9 @@
 
 > Prompt reusable para revisar la app desde el punto de vista de quien la usa.
 > Creado el 15/09/2026, después de que el grupo probara la app y la encontrara poco intuitiva.
+> Actualizado el 14/11/2026, al cerrar el cuatrimestre: lo decidido en la auditoría final y en
+> la revisión de ese día, tareas nuevas (el buscador, corregir, la tablet) y, al final, el
+> **guion para la prueba con una persona real**, que es lo que falta hacer.
 
 ---
 
@@ -20,8 +23,10 @@
    `informe-UX-AAAA-MM-DD.md`. Va adentro del repo: es lo que le llega al grupo.
 6. Anotá el resultado en el registro del final de este archivo.
 
-**Cuándo conviene correrlo**: cada dos o tres sprints, y sí o sí antes del Sprint 13, que es
-el de UX y cierre. Cuanto más tarde se renombra algo, más lugares hay que tocar.
+**Cuándo conviene correrlo**: cada dos o tres sprints, y sí o sí antes de una entrega.
+Cuanto más tarde se renombra algo, más lugares hay que tocar. Con el cuatrimestre cerrado,
+antes de otra corrida de este prompt vale más la prueba con una persona real (ver el guion
+al final): el chat ya marcó lo que podía marcar.
 
 **En qué se diferencia del testeo de QA**: el de QA busca cosas que **fallan**; este busca
 cosas que **funcionan pero confunden**. Un botón que hace exactamente lo que promete puede ser
@@ -43,6 +48,10 @@ con cooperativas y una fundación: esa es la prueba que vale.
 - Lo que se notó y **ya se corrigió** (ver abajo la lista de lo decidido): la palabra
   "categorías" significaba dos cosas, "movimientos" también, y la configuración vivía escondida
   abajo del nombre del usuario.
+- **14/11/2026, revisión con capturas de todas las pantallas** (no con personas): las
+  pantallas parecían de dos programas distintos (dos letras, tres verdes, márgenes
+  distintos), la tablet cortaba las tablas, muchos botones eran sólo un ícono, y las ventanas
+  se cerraban al tocar afuera. Se corrigió todo (ver lo decidido).
 - *(agregar acá lo que vayan notando: dónde se trabaron, qué buscaron y no encontraron,
   qué botón apretaron esperando otra cosa)*
 
@@ -62,13 +71,12 @@ informe. Lo que sí sirve es decir si la solución **no alcanzó**, con el recor
   productos* (y ahora *de servicios*).
 - **Toda la configuración está junta (HU-86)**, en un desplegable del menú principal visible
   sólo para el admin. En el menú del avatar quedaron sólo *Mi empresa* y *Cerrar sesión*.
-- **Los listados entran en el celular (HU-85)**: por debajo de 768 px cada fila es una tarjeta.
+- **Los listados entran en el celular y en la tablet (HU-85)**: por debajo de 1024 px cada fila
+  es una tarjeta (hasta el 14/11 el corte era 768 y en una tablet las tablas se cortaban).
   Hay una hoja compartida, `styles/tabla-mobile.css`. Si encontrás una tabla que **no** la use
   y se corte, eso sí reportalo: es el error que se repite.
 - **La matrícula se sacó del sistema** (era del mundo cooperativo). La federación se quedó,
   rotulada *"Cámara o federación a la que pertenece"*, y siempre fue opcional.
-- **Articulación lleva a una pantalla que explica que está en construcción**, no a un botón
-  muerto. (Reportes salió de esa lista el 27/09: ya tiene su pantalla.)
 - **Un reporte no es el listado de Movimientos con fechas.** El listado es la pantalla de
   trabajo (se carga, se corrige, se anula, lo último arriba); el reporte se mira, se imprime y
   se manda: sin botones de acción, en orden cronológico y sin lo anulado. Que sean dos
@@ -96,22 +104,36 @@ informe. Lo que sí sirve es decir si la solución **no alcanzó**, con el recor
   reportalo.
 - **Los atajos de período también están en Movimientos** (28/09), con las mismas fechas que
   Reportes.
-- **La marca del dinero en el historial de stock no la ve el operador** (28/09): no entra a
-  finanzas y no puede resolverla. Para el admin y el tesorero dice *"Sin registrar el cobro"* o
-  *"… el pago"*.
+- **El aviso *"Sin registrar el cobro"* del historial de stock no lo ve el operador** (28/09):
+  no puede resolverlo. Lo cobrado, en cambio, lo ven todos (ver abajo).
 
 **Resuelto en la auditoría final (14/11/2026)**: *cuánto deja cada servicio* vive **sólo en
 Reportes**, vista *Por servicio* (H-16); el módulo se llama **Buscar empresas** en todo lo que se
 ve; los casilleros dicen **Entró / Salió / Resultado**; *Anular y corregir* no anula nada hasta
 guardar; el gris de texto es uno solo (`#4a6356`, 6,5:1) y ningún badge baja de 13 px.
 
-**Lo que sigue abierto a propósito** (anotado en el informe final): renombrar *Ajuste positivo /
-negativo* (*a validar con usuarios*) y la regla de 14 px para todo dato (backlog).
-
 **Decidido por el grupo (14/11/2026)**: el operador **ve lo cobrado o pagado en cada venta o compra**
 (en *Entradas y salidas*), pero **ningún total de la empresa**: ni los casilleros del panel, ni
-Movimientos, ni Reportes. No lo reportes como falta de información. Si los ves, sumá lo que observes, no los
-vuelvas a describir.
+Movimientos, ni Reportes. No lo reportes como falta de información.
+
+**Aplicado en la revisión del 14/11/2026** (bitácora de CLAUDE.md, (13) a (15)):
+- **Una sola hoja de estilos para todo** (`styles/comun.css`): una letra, un verde, la misma
+  franja de título y los mismos márgenes. **Si una pantalla se ve distinta de las demás, eso sí
+  reportalo**: es una regresión, no una elección.
+- *Plata que entra / Plata que sale* en Categorías de movimientos y en Motivos de stock (ya no
+  *ingresos / egresos*); *Entró plata / Salió plata* en las acciones rápidas del panel.
+- Las ventanas con formulario **no se cierran al tocar afuera**: sólo con *Cancelar* o la X.
+- Botones con texto donde eran sólo un ícono (Usuarios, el historial de Stock, Comprar y
+  Vender en cada producto). Los íconos sueltos que quedan son de pantallas de configuración.
+- *Reponer* aparece al **llegar** al stock mínimo, y así lo dice el formulario.
+- Lo que se cuenta (unidades, cajas, paquetes, bolsas) no acepta medias.
+- Sin sesión, al login; con la contraseña inicial, a elegir una propia.
+- Productos y Servicios son la **misma pantalla**, que muestra lo de cada uno: si algo de
+  Productos aparece en Servicios (o al revés), eso sí reportalo.
+
+**Lo que sigue abierto a propósito** (anotado en el informe final): renombrar *Ajuste positivo /
+negativo* (*a validar con usuarios*) y la regla de 14 px para todo dato (backlog). Si los ves,
+sumá lo que observes, no los vuelvas a describir.
 
 ---
 
@@ -194,7 +216,9 @@ COMO ADMIN (marta@laesperanza.com.ar)
 10. "Entrá por primera vez y dejá el sistema listo para que tu equipo trabaje."
 11. "Dá de alta a alguien del depósito."
 12. "Quiero que el sistema me avise cuando queden menos de 10 kg de algo."
-13. "Vendimos mercadería: quiero que quede registrada la venta Y la plata."
+13. "Vendimos mercadería: quiero que quede registrada la venta Y la plata." (Desde el
+    25/10 es un solo formulario: *Registrar una venta*. ¿Se encuentra desde el panel y desde
+    Stock? ¿Queda claro que la plata ya quedó cargada?)
 14. "Nunca vamos a usar productos, sacalo de en medio."
 
 SERVICIOS — usá Metalúrgica del Oeste, que es la única empresa que lo tiene
@@ -203,16 +227,21 @@ prendido: osvaldo@metaloeste.com.ar (admin) y daniel@metaloeste.com.ar (tesorero
 16. Como tesorero: "Cobramos un trabajo de soldadura, cargá la plata y dejá
     anotado que vino de ahí."
 17. Como tesorero: "¿Cuál de los servicios que ofrecemos nos conviene sostener?"
-    Esta es la que más interesa: la respuesta existe, pero está en otra pantalla
-    que la de Servicios. ¿Se llega? ¿En cuántos pasos? ¿Se entiende el número?
+    La respuesta vive en Reportes, vista *Por servicio*, y desde Servicios hay un
+    botón *"Cuánto deja cada uno"* que lleva ahí. ¿Se llega sin saberlo? ¿Se
+    entiende el número?
 18. Como tesorero: "¿Cuánto nos dejó la soldadura el mes pasado?"
 19. Como admin: "Dejamos de ofrecer un servicio." ¿Qué pasa con la plata que ya
     había generado? ¿Queda claro que no se borra?
-20. Un servicio es un producto sin stock, y comparten pantallas casi iguales.
+20. Un servicio es un producto sin stock, y desde el 14/11 son la misma pantalla.
     Mirá Productos y Servicios uno después del otro: ¿se distinguen? ¿O alguien
     puede creer que está en una estando en la otra?
+21. Como admin: "Me equivoqué en el monto de un movimiento de ayer, arreglalo."
+    Y lo mismo con una venta de Stock. *Anular y corregir* abre el formulario con
+    los datos de antes y no anula nada hasta guardar: ¿se entiende que si cancelás
+    no pasó nada? ¿Y por qué la plata de una venta no se corrige desde Movimientos?
 
-REPORTES — es el módulo nuevo y el que MÁS se lee y menos se toca.
+REPORTES — es el que MÁS se lee y menos se toca.
 Todo lo demás del sistema se usa para cargar; esto se usa para entender. Un
 número que no se entiende no sirve aunque esté bien calculado.
 22. Como Marta: "Quiero ver cómo nos fue este mes." ¿Llegás? ¿En cuántos pasos?
@@ -228,9 +257,9 @@ número que no se entiende no sirve aunque esté bien calculado.
     va a intentar restar ese número del balance.
 26. En esa misma vista, mirá "Bolsa de pan": dice **"No se sabe"** en vez de
     $0, porque no tiene costo cargado. ¿Se entiende por qué, y qué hacer?
-27. Como Marta, en Productos, editá un producto: hay un campo nuevo,
-    *"¿Cuánto te cuesta perder uno?"*. ¿Se entiende que es un **costo** y no un
-    precio de venta? ¿Y que dejarlo vacío es una respuesta válida?
+27. Como Marta, en Productos, editá un producto: están *"Precio de venta"* y
+    *"¿Cuánto te cuesta comprar un kilo?"* (la pregunta dice la unidad). ¿Se
+    entiende cuál es cuál? ¿Y que dejarlos vacíos es una respuesta válida?
 28. Como Silvia (operador): entrá a Reportes. ¿El mensaje te deja claro por qué
     no podés y a quién pedirle?
 
@@ -241,15 +270,31 @@ COMO EMPRESA NUEVA (aprobá Huerta Norte desde el superadmin y entrá con su adm
     ¿El reporte vacío explica qué va a aparecer ahí, o es una hoja en blanco
     con tres ceros?
 
+BUSCAR EMPRESAS — el único lugar donde una empresa ve a otra
+31. Como Silvia: "Necesitamos cajas de cartón. ¿Quién cerca las vende?" Buscá,
+    elegí una y averiguá cómo contactarla. ¿Queda claro que CooperApp no manda
+    mensajes y que hay que escribirle o llamarla?
+32. Como Marta: "Quiero que otras empresas vean que vendemos queso." ¿Encontrás
+    dónde se marca? ¿Y cómo ve tu ficha otra empresa?
+33. ¿Se entiende que la distancia es aproximada (entre localidades, no entre
+    direcciones)?
+
+COMO SUPERADMIN (superadmin@cooperapp.com)
+34. "Hay una empresa esperando aprobación: revisala y aprobala."
+35. "Al administrador de El Amanecer se le olvidó la contraseña."
+
+EN UNA TABLET (800 px de ancho)
+36. Repetí la 2, la 8 y la 13. ¿Algo queda incómodo o lejos?
+
 ## Qué mirar, más allá de las tareas
 
 VOCABULARIO
 La ronda grande ya se hizo (HU-84, ver arriba lo decidido). Ahora el trabajo es
 otro: **verificar que el vocabulario decidido se haya respetado en todo**, y
 buscar lo que quedó afuera.
-- Recorré las pantallas nuevas (Servicios y sus categorías, el panel de "cuánto
-  deja cada servicio") y fijate si usan las palabras que se decidieron o si
-  volvieron a aparecer las viejas.
+- Recorré todas las pantallas y fijate si usan las palabras que se decidieron
+  (*Entró / Salió*, *Plata que entra / sale*, *Anular*, *Dar de baja /
+  Reactivar*, *Buscar empresas*) o si volvieron a aparecer las viejas.
 - **Mirá también los mensajes del servidor, no sólo los botones.** El toast
   muestra lo que contesta la API: ya pasó de tener el botón renombrado y la
   respuesta diciendo lo de antes. Se ve mejor por `curl` que en la pantalla,
@@ -257,9 +302,8 @@ buscar lo que quedó afuera.
 - Buscá las palabras que quedan sin revisar: "efecto", "módulo", "existencia",
   "naturaleza" (sigue en la API y en la base, ¿se filtra a alguna pantalla?),
   y las etiquetas nuevas de Servicios.
-- ¿Alguna palabra nueva significa dos cosas? "Servicios" es ahora un módulo del
-  sistema **y** una categoría de egresos en los datos de prueba (donde están la
-  luz y el gas). ¿Confunde?
+- ¿Alguna palabra significa dos cosas? (La categoría de la luz y el gas ya se
+  llama *Gastos fijos*, para no chocar con el módulo *Servicios*.)
 
 Para cada una proponé un nombre y explicá por qué. Importa que la propuesta
 distinga sin alargar: "Categorías de productos" y "Categorías de movimientos"
@@ -269,10 +313,8 @@ NAVEGACIÓN Y ARQUITECTURA
 - ¿Dónde vive cada cosa y por qué ahí? La configuración ya se agrupó en el menú
   principal (HU-86): lo que hay que mirar ahora es si **se encuentra**, y si el
   desplegable no quedó demasiado largo al sumarle Servicios.
-- **El caso más claro para revisar**: la pregunta "cuánto deja cada servicio" se
-  la hace alguien parado en la pantalla de Servicios, pero la respuesta vive en
-  Movimientos, atrás de un botón. Hay un atajo que lleva hasta ahí. ¿Alcanza?
-  ¿O el panel debería estar en Servicios, con su propio selector de período?
+- *"Cuánto deja cada servicio"* se decidió que viva sólo en Reportes (H-16), con un
+  botón desde Servicios. Lo que vale mirar es si **se encuentra** sin saberlo.
 - ¿El menú principal refleja cómo la persona piensa su trabajo, o cómo está
   organizado el código?
 - ¿Cuántos clicks cuesta lo que se hace todos los días, contra lo que se hace
@@ -332,14 +374,16 @@ CONSISTENCIA
 - Productos y Servicios son casi la misma pantalla. ¿Las diferencias que tienen
   están donde corresponde, o hay una que quedó distinta porque sí?
 
-CELULAR (375 px)
+CELULAR (375 px) Y TABLET (800 px)
 - ¿Qué se rompe, qué queda lejos del pulgar, qué obliga a hacer zoom?
 - **Medí cada tabla**, no la mires nomás: `document.querySelector('table').scrollWidth`
   contra `window.innerWidth`. Ya pasó dos veces que una tabla que parecía corta
   se cortara justo en la columna que uno vino a mirar, y la barra para arrastrar
   está abajo de todo, así que uno se entera al final.
 - ¿Cuánto espacio hay que recorrer antes de ver el primer dato? (encabezado +
-  título + filtros). Es lo que queda abierto en Stock y en Servicios.
+  título + filtros).
+- Hasta 1023 px la app se ve como en el celular (menú desplegable, tablas como
+  tarjetas). Mirá si en 800 px eso se siente bien o desaprovecha la pantalla.
 
 ## Restricciones (respetalas al proponer)
 
@@ -347,9 +391,10 @@ CELULAR (375 px)
 - HTML, CSS y JS planos, con Bootstrap 5 y FontAwesome por CDN. NO propongas
   React, Vue, Tailwind ni ningún framework nuevo.
 - Respetá el patrón MVC que ya tiene el proyecto.
-- Quedan 4 sprints y el equipo son 4 estudiantes: una propuesta que implique
-  rehacer todo no sirve, por buena que sea. El Sprint 13, que es el de UX, es
-  además la semana de la entrega final y la defensa.
+- Los módulos del cuatrimestre están terminados y el proyecto lo continúa otro
+  equipo el año próximo: lo que propongas va al backlog para ellos. Una
+  propuesta que implique rehacer todo no sirve, por buena que sea; marcá bien
+  cuánto cuesta cada cosa.
 - Si un cambio obliga a tocar la base de datos (renombrar una tabla o una
   columna), decilo explícitamente: eso obliga a todo el grupo a recrearla y
   pesa en la decisión.
@@ -385,9 +430,10 @@ Un informe con estas cuatro partes:
    - MOLESTA: cosmético o de pulido.
 
 4. PLAN SUGERIDO
-   Qué conviene hacer ya (antes de seguir programando módulos nuevos, porque
-   cada pantalla que se suma multiplica el costo de renombrar) y qué puede
-   esperar al Sprint 13. Máximo 10 ítems, ordenados.
+   Qué conviene hacer primero (antes de sumar módulos nuevos, como RRHH, porque
+   cada pantalla que se suma multiplica el costo de renombrar), qué conviene
+   validar antes con una persona real, y qué puede esperar. Máximo 10 ítems,
+   ordenados.
 
 Sé concreto y honesto: si algo te parece un problema pero no estás seguro de
 que lo sea para el usuario real, marcalo como "a validar con usuarios" en vez
@@ -406,8 +452,15 @@ después.
 ## Para arrancar
 
 Levantá MariaDB de XAMPP, recreá la base desde cero con los dos .sql y poné la
-app a andar (node app.js desde cooperApp/). Corré también una vez `npm install`
-en esa carpeta: sin eso la descarga en PDF no anda (la app sí).
+app a andar: `npm install` y después `npm start` desde cooperApp/
+(`node_modules` no viaja en el repo). Si ya hay otra copia de la app andando
+(otra base y otro puerto), entrá por `127.0.0.1`: las cookies de `localhost` se
+comparten entre puertos y una sesión pisa a la otra.
+
+Para mirar todas las pantallas de un vistazo hay capturas recientes en
+`cooperApp/capturas-pantalla/`, y el script que las saca está en
+`pp2/scripts-capturas/`. Sirven para comparar pantallas entre sí; no
+reemplazan usar la app.
 
 Después abrí el navegador y empezá por el operador, que es el rol más acotado y
 el que más claro deja si la app se entiende sin conocer el resto del sistema.
@@ -432,8 +485,7 @@ sistema que se usa para decidir, no para registrar.
 4. **Si el arreglo es un patrón, escribilo una vez.** `tabla-mobile.css` salió así: una hoja
    compartida en vez de corregir cinco pantallas. Las que vinieron después la heredaron gratis.
 5. **Lo que no se aplica, al backlog.** En `datos.py`, dentro de la épica E10 (Calidad, UX y
-   Documentación), que ya tiene su lugar en el Sprint 13. Ese script vive en
-   `pp2/scripts-backlog/`, fuera del repo.
+   Documentación). Ese script vive en `pp2/scripts-backlog/`, fuera del repo.
 6. **Anotalo en el registro de acá abajo**, y sumá a "Lo que ya está decidido" lo que se haya
    aplicado, para que la próxima corrida no lo vuelva a reportar.
 
@@ -446,6 +498,58 @@ sistema que se usa para decidir, no para registrar.
 | 15/09/2026 | Sprint 08 | 26 hallazgos (4 bloquean, 8 hacen perder tiempo, 8 generan duda, 6 molestan) + 16 términos a renombrar + 3 bugs. Informe en `informes-UX/informe-UX-2026-09-15.md` | **16/09**: los 4 que bloquean (H-01 a H-04) + se sacó la matrícula del sistema + el largo mínimo de contraseña + 1 bug encontrado al corregir. El resto, al backlog: HU-84 a HU-88 en el Sprint 13. El vocabulario queda para decidir en grupo. Detalle al final del informe |
 | 16/09/2026 | *(sin auditoría nueva: se aplicó lo pendiente de la anterior)* | — | **HU-84** (vocabulario, decidido por el grupo), **HU-85** (listados como tarjetas en el celular, con hoja compartida) y **HU-86** (configuración agrupada en el menú principal). Las tres estaban planificadas para el Sprint 13 y se adelantaron al 09, porque arreglaban justo lo que el módulo de Servicios iba a duplicar |
 | 28/09/2026 | **Sprints 09 y 10 juntos** (Servicios completo · Reportes completo) | 17 hallazgos (2 bloquean, 4 hacen perder tiempo, 8 generan duda, 3 molestan) + 9 términos + 3 bugs. Informe en `informes-UX/informe-UX-2026-09-28.md` | **28/09: el plan entero**, incluido lo que se sugería dejar para el Sprint 13, menos H-16 (a validar con usuarios). Encontrado al corregir: la categoría de dinero "Servicios" venía en la **siembra de toda empresa nueva**, no sólo en la demo. Dos patrones compartidos nuevos: `filtros-plegables` (Stock pasó de 653 a 404 px para el primer dato) y los bloques por categoría en el ranking de servicios. Detalle al final del informe. Lo verificado que **sí** alcanzó: HU-84 (también en los mensajes del servidor), HU-85 (ninguna tabla se corta a 375 px, lo nuevo lo heredó gratis), HU-86 y los módulos sin pantalla. Lo grueso ahora está **en los archivos que salen**, no en las pantallas |
-| 14/11/2026 | **Sprint 13, auditoría final** (HU-64). Foco en lo nunca auditado: venta y compra en un paso, buscador y ficha de empresas, superadmin rehecho, Primeros pasos y vacíos (HU-88), alta con un desplegable y *Anular y corregir* (HU-87) | 21 hallazgos, numerados **F-01 a F-21** (0 bloquean, 11 generan duda, 6 hacen perder tiempo, 4 molestan) + 12 términos + tabla de contraste medida texto por texto + 4 bugs + **recomendación sobre H-16: una sola puerta, en Reportes**. Informe en `informes-UX/informe-UX-final.md`. Lo más grave: *Anular y corregir* + *Cancelar* deja la plata anulada sin aviso (F-01); el login entre 1,9 y 2,8 : 1 y seis grises distintos por debajo de 4,5 : 1; la tabla de Motivos de stock no entra a 375 px (606 en 343). Corrida en una copia aparte (`cooperApp_ux`, puerto 3002) porque QA usaba la base y el puerto de siempre: **las cookies de `localhost` se comparten entre puertos**, hay que usar `127.0.0.1` | *(pendiente: lo decide el chat de desarrollo)* |
+| 14/11/2026 | **Sprint 13, auditoría final** (HU-64). Foco en lo nunca auditado: venta y compra en un paso, buscador y ficha de empresas, superadmin rehecho, Primeros pasos y vacíos (HU-88), alta con un desplegable y *Anular y corregir* (HU-87) | 21 hallazgos, numerados **F-01 a F-21** (0 bloquean, 11 generan duda, 6 hacen perder tiempo, 4 molestan) + 12 términos + tabla de contraste medida texto por texto + 4 bugs + **recomendación sobre H-16: una sola puerta, en Reportes**. Informe en `informes-UX/informe-UX-final.md`. Lo más grave: *Anular y corregir* + *Cancelar* deja la plata anulada sin aviso (F-01); el login entre 1,9 y 2,8 : 1 y seis grises distintos por debajo de 4,5 : 1; la tabla de Motivos de stock no entra a 375 px (606 en 343). Corrida en una copia aparte (`cooperApp_ux`, puerto 3002) porque QA usaba la base y el puerto de siempre: **las cookies de `localhost` se comparten entre puertos**, hay que usar `127.0.0.1` | **14/11: los 21 corregidos**, más el contraste, el vocabulario y H-16 (una sola puerta, en Reportes). Afuera a propósito: *Ajuste positivo/negativo* (a validar con usuarios) y la regla de 14 px. Ese mismo día, una revisión visual con capturas de todas las pantallas unificó los estilos (`comun.css`) y la tablet. Detalle al final del informe |
 
 *(Completar después de cada corrida.)*
+
+---
+
+## Guion para la prueba con una persona real
+
+Es la prueba que vale, y la única que quedó sin hacer en el cuatrimestre (HU-64 y HU-65).
+No hace falta un chat: hace falta una persona del perfil (de 35 a 55 años, de oficio, que no
+sea de sistemas) y media hora.
+
+**Antes**
+1. Recreá la base con los dos `.sql` y levantá la app. Usá la computadora donde corre: desde un
+   celular hace falta estar en la misma red wifi y entrar por la IP de la compu, no por `localhost`.
+2. Entrá vos con el usuario que le toque y dejala en el panel de inicio. No le muestres nada.
+3. Tené papel a mano. Si se puede, pedile permiso para grabar la pantalla (no la cara).
+
+**Qué decirle** (y nada más)
+> *"Estamos probando un programa, no a vos. Si algo no se entiende, es culpa del programa.
+> Pensá en voz alta: decí lo que buscás y lo que esperás que pase. No te voy a ayudar,
+> porque quiero ver dónde se traba el programa."*
+
+**Las tareas** (de a una, leídas en voz alta, sin decir dónde está nada)
+
+| Si es del depósito (entrá como Silvia) | Si maneja la plata (entrá como Roberto o Marta) |
+|---|---|
+| "Vendiste 2 kilos de queso a $ 12.500 el kilo. Cargalo." | "Pagaste la luz: $ 32.000. Cargalo." |
+| "¿De qué te estás quedando sin mercadería?" | "¿Cómo te fue este mes comparado con el anterior?" |
+| "Llegaron 20 kilos de queso que pagaste $ 8.000 el kilo. Cargalo." | "Cargaste mal un monto ayer: arreglalo." |
+| "Se rompieron 3 paquetes de fideos. Sacalos." | "Mandale a tu contador lo de este mes." |
+| "Te equivocaste en la venta de recién: arreglala." | "¿Cuánta plata se te fue en mercadería rota este mes?" |
+| "Necesitás cajas de cartón: buscá quién te las vende cerca." | "Necesitás cajas de cartón: buscá quién te las vende cerca." |
+
+**Qué anotar en cada tarea**
+- ¿La terminó? ¿Sola, con una pista, o no pudo?
+- **Dónde se frenó**: en qué pantalla, mirando qué. Los silencios largos valen oro.
+- **Qué palabra no entendió** o leyó como otra cosa (anotá la palabra exacta que usó ella).
+- **Qué tocó esperando otra cosa.**
+- Cuánto tardó, más o menos.
+
+**Reglas para el que mira**
+- **No ayudes.** Si se traba más de dos minutos, dale una pista mínima ("¿dónde buscarías?")
+  y anotá que la necesitó.
+- No expliques el sistema ni defiendas una decisión mientras prueba.
+- Al final, preguntale: *"¿Qué fue lo más difícil?"* y *"¿Lo usarías en tu negocio? ¿Por
+  qué?"*. Anotá las respuestas con sus palabras.
+
+**Después**
+- Pasá lo anotado a la sección **"Lo que ya observamos"** de este archivo, con la fecha y el
+  perfil de la persona (oficio y edad aproximada, sin el nombre).
+- Lo que se trabó dos personas en el mismo lugar ya no es una opinión: es un problema. Va al
+  backlog con prioridad, aunque el chat de UX no lo haya visto.
+- Con eso, **HU-64 y HU-65 quedan validadas de verdad** (hoy figuran como hechas sin esa
+  prueba: está anotado en `datos.py`).

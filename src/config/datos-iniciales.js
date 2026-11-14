@@ -2,8 +2,8 @@
 //
 // La idea es que el administrador pueda empezar a cargar movimientos el
 // primer dia, sin tener que definir toda la clasificacion antes de poder
-// usar el sistema. Nada de esto es definitivo: todo se renombra, se desactiva
-// y se amplia desde "Clasificacion de movimientos".
+// usar el sistema. Nada de esto es definitivo: todo se renombra, se da de baja
+// y se amplia desde "Categorias de movimientos".
 //
 // Se usan terminos genericos a proposito (por ejemplo "Impuestos nacionales"
 // en vez del nombre del organismo de turno), para que no envejezcan.

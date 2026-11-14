@@ -1,64 +1,6 @@
-/* ===== VARIABLES ===== */
-:root {
-  --verde-primario: #2d7a4f;
-  --verde-secundario: #2f8456;
-  --verde-oscuro: #1a6b3a;
-  --bg-page: #f0f7f3;
-  --card-bg: #ffffff;
-  --card-shadow: 0 2px 12px rgba(0,0,0,0.07);
-  --danger: #a01c1c;
-  --warning: #856404;
-}
-
-/* ===== BASE ===== */
-body {
-  background-color: var(--bg-page);
-  margin: 0;
-  padding: 0;
-  font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
-  color: #1a2e23;
-}
-
-/* ===== HEADER ===== */
-.page-header {
-  background: linear-gradient(135deg, var(--verde-primario), var(--verde-secundario));
-  color: white;
-  padding: 16px;
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-  align-items: flex-start;
-}
-
-.page-header h4 {
-  margin: 0;
-  font-weight: 700;
-}
-
-.page-header small {
-  opacity: 0.8;
-}
-
-/* Botón nuevo usuario */
-.btn-nuevo {
-  background: white;
-  color: var(--verde-primario);
-  border: none;
-  border-radius: 8px;
-  font-weight: bold;
-  padding: 8px 20px;
-  transition: background-color 0.3s ease;
-}
-
-.btn-nuevo:hover {
-  background-color: #e4f2eb;
-  color: var(--verde-primario);
-}
-
-/* ===== CONTENIDO ===== */
-.content {
-  padding: 16px;
-}
+/* Los colores, la letra, la franja del título, los botones de la franja, el
+   margen del contenido, los avisos y las píldoras de estado vienen de
+   comun.css (14/11/2026). Acá queda sólo lo propio de esta pantalla. */
 
 .card-tabla {
   background: var(--card-bg);
@@ -96,8 +38,6 @@ body {
   font-weight: 600;
 }
 
-.badge-activo   { background-color: #d1f5e0; color: var(--verde-oscuro); }
-.badge-inactivo { background-color: #fde8e8; color: var(--danger); }
 .badge-temp     { background-color: #fff3cd; color: var(--warning); }
 
 /* ===== BOTONES DE ACCIÓN ===== */
@@ -130,7 +70,7 @@ body {
 }
 
 /* Fila inactiva */
-.fila-inactiva td { opacity: 0.55; }
+.fila-inactiva td:not(.td-acciones) { opacity: 0.55; }
 
 /* ===== MODALES ===== */
 .modal-content {
@@ -164,19 +104,3 @@ body {
 
 /* ===== RESPONSIVE ===== */
 
-/* Tablet */
-@media (min-width: 768px) {
-  .page-header {
-    flex-direction: row;
-    justify-content: space-between;
-    align-items: center;
-    padding: 20px 32px;
-  }
-
-  .content { padding: 24px; }
-}
-
-/* Desktop */
-@media (min-width: 1024px) {
-  .content { padding: 32px; }
-}

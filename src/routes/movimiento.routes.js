@@ -14,9 +14,6 @@ router.get('/',            ...finanzas, movimientoController.getMovimientos)
 router.get('/resumen',     ...finanzas, movimientoController.getResumen)
 // Las fechas de los atajos de periodo de los filtros
 router.get('/periodo',     ...finanzas, movimientoController.getPeriodo)
-// Cuanto deja cada servicio. Va en /movimientos y no en /servicios porque lo
-// que suma son movimientos de dinero: el permiso que hace falta es el de
-// finanzas, no el del catalogo.
 router.post('/',           ...finanzas, movimientoController.crearMovimiento)
 router.put('/:id/anular',  ...finanzas, movimientoController.anularMovimiento)
 // Anular y cargar el corregido en un solo paso (HU-87): si se cancela, no pasa nada.

@@ -4,8 +4,16 @@ const motivoStockModel = require('../models/motivo-stock.model')
 const movimientoModel = require('../models/movimiento.model')
 const categoriaModel = require('../models/categoria.model')
 const { validarFechaDeCarga, parsearFecha, aFechaISO } = require('../services/fecha.service')
-const { aNumero } = require('../services/validacion.service')
-const { nombreUnidad } = require('../config/unidades-medida')
+const { leerDecimal, TOPE_12_2, TOPE_14_2 } = require('../services/validacion.service')
+const { conUnidad, formatearPlata } = require('../services/formato.service')
+const { esEntera } = require('../config/unidades-medida')
+
+// Lo que se cuenta (unidades, cajas, paquetes, bolsas) va en números enteros
+// (revisión funcional, 14/11/2026: se había vendido "1,5 unidades").
+const cantidadQueNoSeCuenta = (cantidad, producto) =>
+  esEntera(producto.unidad_medida) && !Number.isInteger(cantidad)
+    ? `${producto.nombre} se cuenta por ${producto.unidad_medida === 'unidad' ? 'unidades' : producto.unidad_medida + 's'}: escribí un número entero.`
+    : null
 
 // Valida una cantidad de mercaderia. Devuelve { valor } o { error }.
 //
@@ -14,60 +22,27 @@ const { nombreUnidad } = require('../config/unidades-medida')
 // no mueve nada. Es el mismo error que hubo con los montos de movimientos.
 const parsearCantidad = (valor) => {
 
-  if (valor === undefined || valor === null || valor === '') {
-    return { error: 'La cantidad es obligatoria' }
-  }
-
-  // Un booleano se convierte en 1 o en 0, asi que hay que descartarlo antes.
-  if (typeof valor === 'boolean') {
-    return { error: 'La cantidad tiene que ser un número' }
-  }
-
-  const numero = aNumero(valor)
-  if (!Number.isFinite(numero)) {
-    return { error: 'La cantidad tiene que ser un número' }
-  }
-
-  const redondeado = Math.round(numero * 100) / 100
-  if (redondeado <= 0) {
-    return { error: 'La cantidad tiene que ser mayor que cero' }
-  }
-  if (redondeado > 9999999999.99) {  // no entra en DECIMAL(12,2)
-    return { error: 'La cantidad es demasiado grande' }
-  }
-
-  return { valor: redondeado }
+  const leido = leerDecimal(valor)
+  if (leido.vacio) return { error: 'La cantidad es obligatoria' }
+  if (leido.noEsNumero) return { error: 'La cantidad tiene que ser un número' }
+  if (leido.valor <= 0) return { error: 'La cantidad tiene que ser mayor que cero' }
+  if (leido.valor > TOPE_12_2) return { error: 'La cantidad es demasiado grande' }
+  return { valor: leido.valor }
 }
 
-// Formatea una cantidad para los mensajes: 5 en vez de 5.00, pero 2,5 entero.
-const formatearCantidad = (numero) => {
-  return Number.isInteger(numero) ? String(numero) : String(numero).replace('.', ',')
-}
 
 // Valida el monto del movimiento de dinero. Devuelve { valor } o { error }.
 // Mismo criterio que en movimientos: redondea antes de comparar contra cero.
 // "El" cambia las palabras del mensaje: la venta lo usa para el precio.
 // "tope" es lo maximo que entra en la columna donde va a terminar el numero.
-const parsearMonto = (valor, El = 'El monto', tope = 999999999999.99) => {
-
-  if (valor === undefined || valor === null || valor === '' || typeof valor === 'boolean') {
-    return { error: `${El} es obligatorio` }
-  }
-
-  const numero = aNumero(valor)
-  if (!Number.isFinite(numero)) {
-    return { error: `${El} tiene que ser un número` }
-  }
-
-  const redondeado = Math.round(numero * 100) / 100
-  if (redondeado <= 0) {
-    return { error: `${El} tiene que ser mayor que cero` }
-  }
-  if (redondeado > tope) {  // por defecto, DECIMAL(14,2)
-    return { error: `${El} es demasiado grande` }
-  }
-
-  return { valor: redondeado }
+const parsearMonto = (valor, El = 'El monto', tope = TOPE_14_2) => {
+  const leido = leerDecimal(valor)
+  // Un booleano cuenta como "no vino": es lo que manda un formulario roto.
+  if (leido.vacio || typeof valor === 'boolean') return { error: `${El} es obligatorio` }
+  if (leido.noEsNumero) return { error: `${El} tiene que ser un número` }
+  if (leido.valor <= 0) return { error: `${El} tiene que ser mayor que cero` }
+  if (leido.valor > tope) return { error: `${El} es demasiado grande` }
+  return { valor: leido.valor }
 }
 
 // Existencias de todos los productos, con su stock calculado.
@@ -106,8 +81,8 @@ exports.getMovimientos = async (req, res) => {
       efecto_stock: ['entrada', 'salida'].includes(req.query.efecto_stock) ? req.query.efecto_stock : undefined,
       desde: parsearFecha(req.query.desde) || undefined,
       hasta: parsearFecha(req.query.hasta) || undefined,
-      limite: Number.isInteger(Number(req.query.limite)) && Number(req.query.limite) > 0
-        ? Number(req.query.limite)
+      limite: Number.isInteger(Number(req.query.limit)) && Number(req.query.limit) > 0
+        ? Number(req.query.limit)
         : undefined
     }
 
@@ -167,15 +142,24 @@ exports.registrarMovimiento = async (req, res) => {
     if (cantidad.error) {
       return res.status(400).json({ error: cantidad.error })
     }
+    const noSeCuenta = cantidadQueNoSeCuenta(cantidad.valor, producto)
+    if (noSeCuenta) {
+      return res.status(400).json({ error: noSeCuenta, campo: 'cantidad' })
+    }
 
     const revision = validarFechaDeCarga(req.body.fecha)
     if (revision.error) {
       return res.status(400).json({ error: revision.error })
     }
 
+    // Un detalle demasiado largo se avisa, no se corta en silencio: es lo que
+    // el modo estricto de la base vino a evitar (revisión de código, 14/11/2026).
     const descripcion = typeof req.body.descripcion === 'string'
-      ? req.body.descripcion.trim().slice(0, 255) || null
+      ? req.body.descripcion.trim() || null
       : null
+    if (descripcion && descripcion.length > 255) {
+      return res.status(400).json({ error: 'El detalle es muy largo: puede tener hasta 255 caracteres.', campo: 'descripcion' })
+    }
 
     // --- Una salida no puede dejar el stock en negativo ---
     //
@@ -193,7 +177,7 @@ exports.registrarMovimiento = async (req, res) => {
 
         if (motivo.efecto_stock === 'salida' && cantidad.valor > disponible) {
           return {
-            error: `No hay stock suficiente: hay ${formatearCantidad(disponible)} y estás sacando ${formatearCantidad(cantidad.valor)}. ` +
+            error: `No alcanza: hay ${conUnidad(disponible, producto.unidad_medida)} y estás sacando ${conUnidad(cantidad.valor, producto.unidad_medida)}. ` +
                    'Si el sistema todavía no tiene la existencia real, cargala con un movimiento de "Ajuste positivo".'
           }
         }
@@ -227,7 +211,7 @@ exports.registrarMovimiento = async (req, res) => {
     res.status(201).json({
       id_movimiento_stock,
       existencia,
-      message: `Movimiento registrado. ${producto.nombre} queda en ${formatearCantidad(existencia)}.`
+      message: `${motivo.efecto_stock === 'entrada' ? 'Entrada' : 'Salida'} registrada. De ${producto.nombre} hay ahora ${conUnidad(existencia, producto.unidad_medida)}.`
     })
 
   } catch (error) {
@@ -236,8 +220,6 @@ exports.registrarMovimiento = async (req, res) => {
   }
 }
 
-// Los pesos como se leen en Argentina: $ 37.500,00.
-const formatearPlata = (numero) => numero.toLocaleString('es-AR', { style: 'currency', currency: 'ARS' })
 
 // VENTA y COMPRA en un solo paso. Son la misma operacion espejada: una saca
 // mercaderia y trae plata, la otra trae mercaderia y se lleva plata. Por eso
@@ -435,6 +417,10 @@ const registrarOperacion = async (clase, req, res) => {
     if (cantidad.error) {
       return res.status(400).json({ error: cantidad.error })
     }
+    const noSeCuenta = cantidadQueNoSeCuenta(cantidad.valor, producto)
+    if (noSeCuenta) {
+      return res.status(400).json({ error: noSeCuenta, campo: 'cantidad' })
+    }
 
     // El precio por unidad tiene el mismo tope que el precio de venta y el
     // costo del producto, DECIMAL(12,2): en la compra puede terminar guardado
@@ -469,9 +455,12 @@ const registrarOperacion = async (clase, req, res) => {
     // El movimiento de dinero cuenta qué se vendió o compró, para que en
     // Movimientos se entienda sin ir a buscar al stock. El detalle (el cliente,
     // el proveedor, el remito) va a continuación.
-    const unidad = (c) => producto.unidad_medida ? ` ${nombreUnidad(c, producto.unidad_medida)}` : ''
-    const descripcionDinero = `${motivo.nombre}: ${formatearCantidad(cantidad.valor)}${unidad(cantidad.valor)} de ${producto.nombre}` +
-                              (detalle ? ` · ${detalle}` : '')
+    // Si con el nombre del producto y el detalle se pasa de los 255 de la
+    // columna, se corta con "…" para que se note (el detalle completo queda
+    // en el movimiento de stock).
+    const descripcionCompleta = `${motivo.nombre}: ${conUnidad(cantidad.valor, producto.unidad_medida)} de ${producto.nombre}` +
+                                (detalle ? ` · ${detalle}` : '')
+    const descripcionDinero = descripcionCompleta.length > 255 ? descripcionCompleta.slice(0, 254) + '…' : descripcionCompleta
 
     // Todo adentro del candado del producto: el control del stock, el dinero
     // y la mercaderia. O entran los dos movimientos o no entra ninguno: nunca
@@ -495,8 +484,8 @@ const registrarOperacion = async (clase, req, res) => {
           // de lo que entró ya se vendió una parte.
           if (op.efecto_stock === 'entrada' && disponible + cantidad.valor < 0) {
             return {
-              error: `No se puede corregir así: de esta compra ya salieron ${formatearCantidad(-disponible)}, ` +
-                     `y con ${formatearCantidad(cantidad.valor)} el stock quedaría en negativo.`
+              error: `No se puede corregir así: de esta compra ya salieron ${conUnidad(-disponible, producto.unidad_medida)}, ` +
+                     `y con ${conUnidad(cantidad.valor, producto.unidad_medida)} el stock quedaría en negativo.`
             }
           }
         }
@@ -504,7 +493,7 @@ const registrarOperacion = async (clase, req, res) => {
         // Una compra suma: no hay nada que pueda faltar.
         if (op.efecto_stock === 'salida' && cantidad.valor > disponible) {
           return {
-            error: `No hay stock suficiente: hay ${formatearCantidad(disponible)} y estás vendiendo ${formatearCantidad(cantidad.valor)}. ` +
+            error: `No alcanza: hay ${conUnidad(disponible, producto.unidad_medida)} y estás vendiendo ${conUnidad(cantidad.valor, producto.unidad_medida)}. ` +
                    'Si el sistema todavía no tiene la existencia real, cargala con un movimiento de "Ajuste positivo".'
           }
         }
@@ -529,7 +518,7 @@ const registrarOperacion = async (clase, req, res) => {
         const id_movimiento = await movimientoModel.create({
           id_tipo: tipo.id_tipo,
           monto: total,
-          descripcion: descripcionDinero.slice(0, 255),
+          descripcion: descripcionDinero,
           fecha: revision.fecha,
           id_empresa,
           id_usuario
@@ -557,8 +546,8 @@ const registrarOperacion = async (clase, req, res) => {
     const { id_movimiento_stock, id_movimiento, existencia, actualizarCosto, dineroAnulado } = resultado
 
     const comoQueda = op.efecto_stock === 'salida'
-      ? `Quedan ${formatearCantidad(existencia)}${unidad(existencia)}.`
-      : `Ahora hay ${formatearCantidad(existencia)}${unidad(existencia)}.`
+      ? `Quedan ${conUnidad(existencia, producto.unidad_medida)}.`
+      : `Ahora hay ${conUnidad(existencia, producto.unidad_medida)}.`
     const avisoCosto = actualizarCosto
       ? ` El costo del producto pasó a ${formatearPlata(precio.valor)}.`
       : ''
@@ -569,7 +558,7 @@ const registrarOperacion = async (clase, req, res) => {
       existencia,
       total,
       costoActualizado: actualizarCosto,
-      message: `${op.Laoperacion} ${original ? 'corregida' : 'registrada'}: ${formatearCantidad(cantidad.valor)}${unidad(cantidad.valor)} de ${producto.nombre} por ${formatearPlata(total)}. ` +
+      message: `${op.Laoperacion} ${original ? 'corregida' : 'registrada'}: ${conUnidad(cantidad.valor, producto.unidad_medida)} de ${producto.nombre} por ${formatearPlata(total)}. ` +
                comoQueda + avisoCosto +
                (original
                  ? ` La anterior quedó anulada${dineroAnulado !== null ? `, con su ${op.queEra} de ${formatearPlata(dineroAnulado)}` : ''}.`
@@ -632,8 +621,11 @@ exports.registrarMovimientoDinero = async (req, res) => {
     }
 
     const descripcion = typeof req.body.descripcion === 'string'
-      ? req.body.descripcion.trim().slice(0, 255) || null
+      ? req.body.descripcion.trim() || null
       : null
+    if (descripcion && descripcion.length > 255) {
+      return res.status(400).json({ error: 'La descripción es muy larga: puede tener hasta 255 caracteres.' })
+    }
 
     // El movimiento de dinero se fecha igual que el de stock: son el mismo
     // hecho contado dos veces, y con fechas distintas los reportes no cierran.
@@ -712,7 +704,7 @@ exports.anularMovimiento = async (req, res) => {
         const cantidad = Number(movimiento.cantidad)
         return anularConSuPlata(id, id_empresa, conexion, () =>
           movimiento.efecto_stock === 'entrada' && cantidad > disponible
-            ? `No se puede anular: este movimiento sumó ${formatearCantidad(cantidad)} y hoy quedan ${formatearCantidad(disponible)}. ` +
+            ? `No se puede anular: esta entrada sumó ${conUnidad(cantidad, movimiento.unidad_medida)} y hoy quedan ${conUnidad(disponible, movimiento.unidad_medida)}. ` +
               'Anularlo dejaría el stock en negativo, así que primero hay que anular las salidas que se cargaron después.'
             : null
         )
@@ -732,7 +724,7 @@ exports.anularMovimiento = async (req, res) => {
 
     res.json({
       existencia,
-      message: `Movimiento anulado. ${movimiento.producto_nombre} queda en ${formatearCantidad(existencia)}.${avisoDinero}`
+      message: `${movimiento.efecto_stock === 'entrada' ? 'Entrada anulada' : 'Salida anulada'}. De ${movimiento.producto_nombre} hay ahora ${conUnidad(existencia, movimiento.unidad_medida)}.${avisoDinero}`
     })
 
   } catch (error) {

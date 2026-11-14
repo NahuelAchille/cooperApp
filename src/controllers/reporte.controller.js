@@ -4,6 +4,7 @@ const moduloModel = require('../models/modulo.model')
 const { resolver } = require('../services/periodo.service')
 const { armarCSV, nombreDeArchivo, numero, fecha } = require('../services/exportar.service')
 const { armarPDF, plata, fechaCorta, VERDE, ROJO, GRIS } = require('../services/pdf.service')
+const { conUnidad } = require('../services/formato.service')
 
 // Suma montos sin que la coma se corra.
 //
@@ -152,9 +153,8 @@ exports.getReporteAgrupado = async (req, res) => {
 const armarFilas = async (criterio, id_empresa, periodo) => {
 
   if (criterio === 'servicio') {
-    // REUSA la consulta de HU-49 en vez de escribir una igual. Si mañana
-    // cambia la regla de que servicio entra en el resumen, cambia en los dos
-    // lados a la vez. Es lo mismo que se hizo con el calculo del stock.
+    // La consulta de HU-49 (cuanto deja cada servicio). Desde H-16 vive solo
+    // aca, en Reportes: el panel de Movimientos que la usaba se saco.
     const servicios = await movimientoModel.resumenPorServicio(id_empresa, periodo)
     return servicios.map(s => ({
       id: s.id_servicio,
@@ -187,10 +187,9 @@ const armarFilas = async (criterio, id_empresa, periodo) => {
       // acá mismo: sin eso, el total parece el total y es una parte.
       // Con la unidad: en la misma columna conviven kilos, bolsas y unidades,
       // y "salieron 14,50" a secas no dice de que (UX 28/09, vocabulario).
-      const unidad = p.unidad_medida ? ' ' + p.unidad_medida : ''
       const partes = []
-      if (Number(p.entradas) > 0) partes.push(`entraron ${formatearCantidad(p.entradas)}${unidad}`)
-      if (Number(p.salidas) > 0) partes.push(`salieron ${formatearCantidad(p.salidas)}${unidad}`)
+      if (Number(p.entradas) > 0) partes.push(`entraron ${conUnidad(p.entradas, p.unidad_medida)}`)
+      if (Number(p.salidas) > 0) partes.push(`salieron ${conUnidad(p.salidas, p.unidad_medida)}`)
       if (!partes.length) partes.push('Sin movimientos en el período')
       if (sinValorizar > 0) {
         partes.push(sinValorizar === 1
@@ -238,25 +237,20 @@ const armarFilas = async (criterio, id_empresa, periodo) => {
 }
 
 // El reporte por producto con TODA la plata en cero no es "no se vendio
-// nada": es que ninguna salida tiene el cobro cargado, porque el sistema no
-// conoce los precios y el movimiento de dinero se ofrece, no se calcula. En
-// pantalla el detalle de cada fila lo insinua; el archivo que se manda al
-// contador tiene que decirlo con todas las letras (UX 28/09, H-01).
+// nada": es que ninguna salida tiene el cobro cargado. Pasa con las ventas de
+// antes del 25/10, cuando la plata se cargaba en un segundo paso que se podia
+// saltear (las de ahora nacen con su plata). En pantalla el detalle de cada
+// fila lo insinua; el archivo que se manda al contador tiene que decirlo con
+// todas las letras (UX 28/09, H-01).
 // Devuelve el aviso, o null si no hace falta.
 const avisoDeProductosSinPlata = (filas) => {
   const conPlata = filas.some(f => f.ingresos || f.egresos)
   const sinCargar = filas.reduce((s, f) => s + (f.sin_valorizar || 0), 0)
   if (conPlata || sinCargar === 0) return null
   return 'Ninguna de las salidas de este período tiene el cobro cargado, por eso todas las filas dan $0. ' +
-         'El dinero de una venta se carga desde Stock, al registrar la salida.'
+         'Son ventas cargadas antes de que la venta registrara la plata en el mismo paso: el cobro se completa desde Stock, en Entradas y salidas.'
 }
 
-// Las cantidades se guardan con 2 decimales, pero mostrar "5,00 unidades"
-// cuando son 5 es ruido. Mismo criterio que el catalogo de productos.
-function formatearCantidad(valor) {
-  const numero = Number(valor)
-  return Number.isInteger(numero) ? String(numero) : numero.toFixed(2).replace('.', ',')
-}
 
 // =====================================================================
 // PERDIDAS VALORIZADAS (HU-53)
@@ -584,8 +578,8 @@ const armarDescargaDePerdidas = async (id_empresa, periodo) => {
       ['¿Qué se fue?'],
       ['Producto', 'Detalle', 'Cuánto costó'],
       ...datos.productos.map(p => [p.nombre,
-        `${p.cantidad}${p.unidad_medida ? ' ' + p.unidad_medida : ''}` +
-        (p.costo_referencia === null ? ' · sin costo cargado' : ` · a ${p.costo_referencia} cada uno`),
+        conUnidad(p.cantidad, p.unidad_medida) +
+        (p.costo_referencia === null ? ' · sin costo cargado' : ` · a ${plata(p.costo_referencia)} por ${p.unidad_medida || 'unidad'}`),
         p.costo_referencia === null ? 'No se sabe' : numero(p.valorizado)]),
       ['Total', '', numero(t.valorizado)]
     ],
@@ -613,7 +607,7 @@ const armarDescargaDePerdidas = async (id_empresa, periodo) => {
         ],
         filas: datos.productos.map(p => [
           p.nombre,
-          `${p.cantidad}${p.unidad_medida ? ' ' + p.unidad_medida : ''}`,
+          conUnidad(p.cantidad, p.unidad_medida),
           p.costo_referencia === null
             ? { texto: 'No se sabe', color: GRIS }
             : { texto: plata(p.valorizado), color: ROJO }

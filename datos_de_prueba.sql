@@ -19,12 +19,16 @@
 --   todos los demás         ->  prueba123
 --
 -- QUÉ TRAE PARA PROBAR
---   · 4 empresas activas y 1 pendiente (para probar la aprobación)
---   · 1 administrador por empresa, más tesoreros y operadores
+--   · 4 empresas activas y 1 pendiente (para probar la aprobación). La quinta,
+--     Papelera Castelar, existe sólo para el ejemplo del buscador ("papel")
+--   · 1 administrador por empresa, más tesoreros y operadores (27 usuarios)
 --   · 3 usuarios con contraseña temporal sin cambiar
 --   · 2 usuarios dados de baja
---   · Finanzas en las 3 empresas activas: categorías, tipos y movimientos
---     (ingresos y egresos) con fechas recientes, más 1 movimiento anulado
+--   · La plata en 3 empresas: categorías, tipos y movimientos con fechas
+--     recientes, más 1 movimiento anulado
+--   · Catálogo de productos y servicios, motivos de stock y la historia de
+--     entradas y salidas (las ventas y compras de La Esperanza, con su plata)
+--   · Productos y servicios que se muestran a otras empresas, con su rubro
 -- =============================================================================
 
 SET NAMES utf8mb4;
@@ -113,7 +117,7 @@ DELETE FROM empresas WHERE email IN (
     'contacto@papeleracastelar.com.ar');
 
 -- =============================================================================
--- 1 · Alimentos La Esperanza S.R.L.  (activa · 7 empleados · alimentos)
+-- 1 · Alimentos La Esperanza S.R.L.  (activa · alimentos · 6 usuarios)
 -- =============================================================================
 INSERT INTO empresas
   (nombre, email, cuit, federacion, domicilio, estado)
@@ -132,7 +136,7 @@ VALUES
   ('Héctor',     'Sosa',         'hector@laesperanza.com.ar',  '$2b$10$PjeltbH8E0BboqNDV//HI.yHxwvN8uJtQ9umbfnOc0u7Ye9wO3TnK', '22890123', 3, 0, 0, (SELECT id_empresa FROM empresas WHERE email = 'contacto@laesperanza.com.ar'));
 
 -- =============================================================================
--- 2 · Textil El Amanecer S.A.  (activa · 6 empleados)
+-- 2 · Textil El Amanecer S.A.  (activa · textil · 6 usuarios)
 -- =============================================================================
 INSERT INTO empresas
   (nombre, email, cuit, federacion, domicilio, estado)
@@ -151,7 +155,7 @@ VALUES
   ('Estela',   'Cabrera',  'estela@elamanecer.com.ar',   '$2b$10$PjeltbH8E0BboqNDV//HI.yHxwvN8uJtQ9umbfnOc0u7Ye9wO3TnK', '29678901', 3, 1, 1, (SELECT id_empresa FROM empresas WHERE email = 'contacto@elamanecer.com.ar'));
 
 -- =============================================================================
--- 3 · Metalúrgica del Oeste S.A.  (activa · 9 empleados)
+-- 3 · Metalúrgica del Oeste S.A.  (activa · metalúrgica · 9 usuarios)
 -- =============================================================================
 INSERT INTO empresas
   (nombre, email, cuit, federacion, domicilio, estado)
@@ -173,7 +177,7 @@ VALUES
   ('Mariela',  'Godoy',    'mariela@metaloeste.com.ar',  '$2b$10$PjeltbH8E0BboqNDV//HI.yHxwvN8uJtQ9umbfnOc0u7Ye9wO3TnK', '32012345', 3, 1, 1, (SELECT id_empresa FROM empresas WHERE email = 'contacto@metaloeste.com.ar'));
 
 -- =============================================================================
--- 4 · Distribuidora Huerta Norte S.R.L.  (PENDIENTE de aprobación · 5 empleados)
+-- 4 · Distribuidora Huerta Norte S.R.L.  (PENDIENTE de aprobación · 5 usuarios)
 --     Sirve para probar el circuito de aprobación del superadmin: sus usuarios
 --     no pueden iniciar sesión hasta que la empresa sea aprobada.
 -- =============================================================================
@@ -192,8 +196,6 @@ VALUES
   ('Diego',  'Cáceres',   'diego@huertanorte.com.ar',  '$2b$10$PjeltbH8E0BboqNDV//HI.yHxwvN8uJtQ9umbfnOc0u7Ye9wO3TnK', '30456789', 3, 1, 0, (SELECT id_empresa FROM empresas WHERE email = 'contacto@huertanorte.com.ar')),
   ('Rocío',  'Benegas',   'rocio@huertanorte.com.ar',  '$2b$10$PjeltbH8E0BboqNDV//HI.yHxwvN8uJtQ9umbfnOc0u7Ye9wO3TnK', '33567890', 3, 1, 0, (SELECT id_empresa FROM empresas WHERE email = 'contacto@huertanorte.com.ar'));
 
--- =============================================================================
--- FINANZAS DE PRUEBA
 -- =============================================================================
 -- MODULOS ACTIVOS POR EMPRESA
 -- =============================================================================
@@ -411,7 +413,7 @@ INSERT INTO subcategorias_producto (nombre, id_categoria_producto, activo) VALUE
 -- CATÁLOGO DE PRODUCTOS
 --
 -- Qué productos existen en cada empresa. Las cantidades son otra cosa (el
--- stock) y todavía no están.
+-- stock): van más abajo, en MOVIMIENTOS DE STOCK.
 --
 -- La subcategoría es opcional a propósito: hay productos cargados sin ella,
 -- para ver en pantalla que se puede clasificar sólo por categoría.
@@ -897,24 +899,24 @@ SET p.visible_empresas = 1,
     p.id_rubro         = r.id_rubro;
 
 -- ------------------------------------------------------------ comprobación --
-SELECT c.nombre AS empresa, c.estado, COUNT(u.id) AS empleados
-FROM empresas c
-LEFT JOIN usuarios u ON u.id_empresa = c.id_empresa
-GROUP BY c.id_empresa
-ORDER BY c.id_empresa;
+SELECT e.nombre AS empresa, e.estado, COUNT(u.id) AS usuarios
+FROM empresas e
+LEFT JOIN usuarios u ON u.id_empresa = e.id_empresa
+GROUP BY e.id_empresa
+ORDER BY e.id_empresa;
 
 -- Resumen de finanzas por empresa (los anulados no suman)
-SELECT c.nombre AS empresa,
+SELECT e.nombre AS empresa,
        COUNT(m.id_movimiento)                                                    AS movimientos,
-       COALESCE(SUM(CASE WHEN cat.naturaleza = 'ingreso' AND m.anulado = 0 THEN m.monto ELSE 0 END), 0) AS ingresos,
-       COALESCE(SUM(CASE WHEN cat.naturaleza = 'egreso'  AND m.anulado = 0 THEN m.monto ELSE 0 END), 0) AS egresos
-FROM empresas c
-LEFT JOIN movimientos m           ON m.id_empresa = c.id_empresa
+       COALESCE(SUM(CASE WHEN cat.naturaleza = 'ingreso' AND m.anulado = 0 THEN m.monto ELSE 0 END), 0) AS entro,
+       COALESCE(SUM(CASE WHEN cat.naturaleza = 'egreso'  AND m.anulado = 0 THEN m.monto ELSE 0 END), 0) AS salio
+FROM empresas e
+LEFT JOIN movimientos m           ON m.id_empresa = e.id_empresa
 LEFT JOIN tipos_movimiento t      ON t.id_tipo = m.id_tipo
 LEFT JOIN categorias_movimiento cat ON cat.id_categoria = t.id_categoria
-WHERE c.estado = 'activa'
-GROUP BY c.id_empresa
-ORDER BY c.id_empresa;
+WHERE e.estado = 'activa'
+GROUP BY e.id_empresa
+ORDER BY e.id_empresa;
 
 -- Clasificación del catálogo, separando los dos árboles (productos y servicios
 -- comparten la tabla y se distinguen por es_servicio).

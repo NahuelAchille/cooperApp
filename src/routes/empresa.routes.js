@@ -12,7 +12,6 @@ router.put('/mi-empresa', requireLogin, requireRol('admin_empresa'), empresaCont
 // El listado expone datos de contacto de todas las empresas, y aprobar o rechazar
 // decide quién entra al sistema: nada de esto puede quedar abierto.
 router.get('/', requireLogin, requireRol('superadmin'), empresaController.getAll)
-router.get('/pendientes', requireLogin, requireRol('superadmin'), empresaController.getPendientes)
 router.put('/:id/aprobar', requireLogin, requireRol('superadmin'), empresaController.aprobar)
 router.put('/:id/rechazar', requireLogin, requireRol('superadmin'), empresaController.rechazar)
 

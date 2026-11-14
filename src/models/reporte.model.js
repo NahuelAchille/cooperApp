@@ -126,9 +126,9 @@ const porCategoria = async (id_empresa, { desde, hasta } = {}) => {
 // (movimientos_stock.id_movimiento). Se llega a la plata subiendo por ahi.
 //
 // La consecuencia hay que decirla, no esconderla: **hay movimientos de stock
-// sin plata cargada**. El sistema no conoce los precios, asi que el
-// movimiento de dinero se OFRECE y la persona puede decir que no (queda
-// marcado "Falta el $"). Un reporte que muestre solo la plata registrada
+// sin plata cargada**: las ventas y compras de antes del 25/10, cuando la
+// plata se cargaba en un segundo paso que se podia saltear (quedan marcadas
+// "Sin registrar el cobro"). Un reporte que muestre solo la plata registrada
 // estaria contando una parte y pareciendo el total, asi que se devuelve
 // tambien cuantos movimientos quedaron sin valorizar.
 const porProducto = async (id_empresa, { desde, hasta } = {}) => {

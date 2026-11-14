@@ -23,9 +23,6 @@
   let visible = false
   let rubros = []
 
-  function esc(texto) {
-    return String(texto).replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
-  }
 
   // El desplegable va de general a especifico: cada rubro general es un grupo
   // y se puede elegir el general mismo, si ninguno especifico le calza.

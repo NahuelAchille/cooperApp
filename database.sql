@@ -235,13 +235,13 @@ CREATE TABLE rubros (
 --
 -- OJO: esto NO es la clasificacion del dinero. Un producto no es una categoria
 -- de movimiento: el dinero ya tiene la suya (categoria -> tipo). Productos es
--- un modulo operativo que, mas adelante, GENERA movimientos. Si se mezclaran,
+-- un modulo operativo que GENERA movimientos (la venta y la compra). Si se mezclaran,
 -- la misma venta quedaria clasificada dos veces y los totales no cerrarian.
 
 -- Nivel 1: categorias de producto. Una por empresa, con nombre unico.
 --
 -- Sobre es_servicio: un SERVICIO es un producto sin stock. Misma estructura de
--- categoria -> subcategoria y, manana, mismo vinculo con los movimientos, asi
+-- categoria -> subcategoria y mismo vinculo con los movimientos (HU-48), asi
 -- que comparten estas tablas y se distinguen por esta columna. Un solo modelo
 -- de datos abajo y dos pantallas arriba.
 --
@@ -281,7 +281,7 @@ CREATE TABLE subcategorias_producto (
 -- subcategoria de relleno ("General") en cada categoria para poder empezar.
 -- La categoria, en cambio, va siempre: es lo que ordena el catalogo.
 --
--- Los productos no se borran, se dan de baja: manana tienen stock e historial
+-- Los productos no se borran, se dan de baja: tienen stock e historial
 -- colgando y borrarlos dejaria movimientos sin referencia.
 -- El stock_minimo va en DECIMAL y no en entero porque se expresa en la unidad
 -- del producto: hay cosas que se miden por unidad (5) y otras por peso o
@@ -375,7 +375,8 @@ ALTER TABLE movimientos
 -- El caso que obliga a separarlos: una PERDIDA o un ROBO sacan mercaderia
 -- (efecto_stock = salida) pero NO generan movimiento de dinero
 -- (efecto_dinero = ninguno). Igual tienen que poder verse valorizados en un
--- reporte, que es otra cosa: ahi se multiplica la cantidad por el precio.
+-- reporte, que es otra cosa: ahi se multiplica la cantidad por el COSTO de
+-- referencia del producto (no por el precio de venta).
 CREATE TABLE motivos_stock (
   id_motivo_stock INT AUTO_INCREMENT PRIMARY KEY,
   nombre          VARCHAR(80) NOT NULL,
@@ -410,17 +411,16 @@ CREATE TABLE motivos_stock (
 -- mismo criterio que el monto de los movimientos de dinero.
 --
 -- Los movimientos de stock no se borran, se anulan.
--- Sobre id_movimiento: cuando el motivo mueve plata (una venta, una compra),
--- el sistema OFRECE registrar tambien el movimiento de dinero, y si la persona
--- acepta, los dos quedan atados por esta columna. Queda en NULL cuando el
--- motivo no mueve plata (una perdida) o cuando todavia no se cargo.
+-- Sobre id_movimiento: ata una venta o una compra con su plata. "Registrar
+-- una venta" y "Registrar una compra" (desde el 25 y el 26/10/2026) crean los
+-- dos movimientos juntos, en la misma transaccion, y el de stock nace con esta
+-- columna completa. El formulario de "otra entrada o salida" no mueve plata
+-- (desde el 02/11 rechaza los motivos de venta y de compra).
 --
--- El vinculo es lo que evita cargar la misma venta dos veces: con la columna
--- ocupada, el sistema no vuelve a ofrecerlo.
---
--- Desde el 25/10/2026 las VENTAS no pasan por la oferta: "Registrar una
--- venta" crea los dos movimientos juntos, en la misma transaccion, y el de
--- stock nace ya con esta columna completa.
+-- Queda en NULL cuando el motivo no mueve plata (una perdida) o en las ventas
+-- y compras viejas, de cuando la plata se ofrecia en un segundo paso que se
+-- podia saltear: esas se completan desde el historial ("Sin registrar el
+-- cobro"). El vinculo es lo que evita cargar la misma venta dos veces.
 CREATE TABLE movimientos_stock (
   id_movimiento_stock INT AUTO_INCREMENT PRIMARY KEY,
   id_producto         INT NOT NULL,

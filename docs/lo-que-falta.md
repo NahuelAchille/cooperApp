@@ -50,15 +50,26 @@ un paso es la manera más rápida de abrir un agujero.
 - Si el código **consulta algo, decide y después escribe** (¿alcanza?, ¿ya existe?,
   ¿ya está aprobado?), va en una transacción con `SELECT ... FOR UPDATE`. Ver
   `conProductoTrabado()` en `stock.model.js`.
-- Validar los largos con `validacion.service.js` y las fechas con `fecha.service.js`.
+- Validar con `validacion.service.js` (largos, `leerDecimal` para números, `limpiarNombre`,
+  `esEmailValido`, DNI y CUIT) y las fechas con `fecha.service.js`. Los roles, por su
+  nombre en `config/roles.js`; los mensajes con cantidades y plata, con `formato.service.js`.
 
 **En la pantalla**
-- Llamar `await cargarHeader()` y usar `moduloActivo('clave')` para el aviso de módulo
+- Cargar `/styles/comun.css` después de Bootstrap (colores, letra, franja del título,
+  botones de la franja, avisos y píldoras de estado) y en la hoja propia **sólo lo propio**.
+- Cargar `/components/util.js` antes del script de la página (`esc`, `mostrarToast`,
+  `mostrarError`, `formatMoneda`, `formatearCantidad`, `formatearFecha`, `fechaDeHoy`)
+  y **no volver a definirlas**: una página que declara `const esc` además de ésta se queda
+  sin JavaScript.
+- Llamar `await cargarHeader()` (ya manda al login si no hay sesión y a cambiar la
+  contraseña si es la temporal) y usar `moduloActivo('clave')` para el aviso de módulo
   apagado, distinto del de falta de permiso.
 - Agregar la opción al menú en `components/header.html` y `header.js`.
 - Todo texto que venga de la base pasa por `esc()` antes de ir a `innerHTML`.
-- Las tablas usan `tabla-mobile.css` y las cajas de filtros `filtros-plegables`.
-  **Medir** en 375 px que no haya scroll de costado.
+- Las tablas usan `tabla-mobile.css` (tarjetas hasta 1023 px) y las cajas de filtros
+  `filtros-plegables`. **Medir** en 375 y en 800 px que no haya scroll de costado
+  (`pp2/scripts-capturas/revisar-pantallas.js` recorre todas las pantallas con cada rol).
+- Las ventanas con formulario llevan `data-bs-backdrop="static"`.
 - Respetar el vocabulario: **Anular** lo que no se deshace, **Dar de baja / Reactivar**
   lo que sí.
 

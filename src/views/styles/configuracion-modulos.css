@@ -1,53 +1,6 @@
-/* ===== VARIABLES ===== */
-:root {
-  --verde-primario: #2d7a4f;
-  --verde-oscuro: #235f3d;
-  --bg-page: #f0f7f3;
-  --card-bg: #ffffff;
-  --card-shadow: 0 2px 12px rgba(0,0,0,0.07);
-}
-
-/* ===== BASE ===== */
-body {
-  background-color: var(--bg-page);
-  color: #1a2e23;
-  margin: 0;
-  padding: 0;
-  font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
-}
-
-/* ===== ENCABEZADO DE LA PANTALLA ===== */
-.page-header {
-  background: linear-gradient(135deg, var(--verde-primario), #2f8456);
-  color: #fff;
-  padding: 16px;
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-}
-.page-header small { opacity: 0.85; }
-
-.btn-volver {
-  background: rgba(255,255,255,0.15);
-  color: #fff;
-  border: 1px solid rgba(255,255,255,0.45);
-  border-radius: 8px;
-  font-weight: 600;
-  align-self: flex-start;
-}
-.btn-volver:hover { background: rgba(255,255,255,0.3); color: #fff; }
-
-.content { padding: 16px; }
-
-/* ===== AVISO SIN PERMISO ===== */
-.aviso-permiso {
-  background: var(--card-bg);
-  border-radius: 12px;
-  box-shadow: var(--card-shadow);
-  padding: 32px 16px;
-  text-align: center;
-  color: #4a6356;
-}
+/* Los colores, la letra, la franja del título, los botones de la franja, el
+   margen del contenido, los avisos y las píldoras de estado vienen de
+   comun.css (14/11/2026). Acá queda sólo lo propio de esta pantalla. */
 
 /* ===== TARJETAS DE MODULO =====
    Mobile primero: cada modulo ocupa todo el ancho y el interruptor queda
@@ -120,13 +73,6 @@ body {
 
 /* ===== TABLET / ESCRITORIO ===== */
 @media (min-width: 768px) {
-  .page-header {
-    flex-direction: row;
-    justify-content: space-between;
-    align-items: center;
-    padding: 20px 32px;
-  }
-  .content { padding: 24px 32px; }
   .modulos-lista { grid-template-columns: repeat(2, 1fr); gap: 16px; }
   .modulo-card { padding: 20px; }
 }

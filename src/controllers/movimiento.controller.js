@@ -4,7 +4,7 @@ const productoModel = require('../models/producto.model')
 const moduloModel = require('../models/modulo.model')
 const { parsearFecha, validarFechaDeCarga } = require('../services/fecha.service')
 const { resolver: resolverPeriodo } = require('../services/periodo.service')
-const { aNumero } = require('../services/validacion.service')
+const { leerDecimal, TOPE_14_2 } = require('../services/validacion.service')
 
 const NATURALEZAS = ['ingreso', 'egreso']
 
@@ -44,28 +44,13 @@ const validarServicio = async (valor, id_empresa) => {
   return { id_servicio: servicio.id_producto }
 }
 
-// Valida un monto: debe ser un numero positivo con hasta 2 decimales
+// Valida un monto: un número mayor que cero, con hasta 2 decimales, que
+// entre en DECIMAL(14,2). Devuelve el número o null.
 const parsearMonto = (valor) => {
-
-  // true se convierte en 1 y false en 0, asi que un booleano pasaria como
-  // monto valido. Solo se aceptan numeros o texto que represente un numero.
-  if (typeof valor !== 'number' && typeof valor !== 'string') return null
-
-  const numero = aNumero(valor)
-
-  // Rechaza si no es un numero finito (NaN, infinito).
-  if (!Number.isFinite(numero)) return null
-
-  // Se redondea ANTES de comparar contra cero: si se hiciera al reves, un
-  // monto como 0.001 pasaria el control y terminaria guardado como 0.00.
-  const redondeado = Math.round(numero * 100) / 100
-
-  if (redondeado <= 0) return null
-
-  // Rechaza si es mas grande de lo que entra en DECIMAL(14,2)
-  if (redondeado > 999999999999.99) return null
-
-  return redondeado
+  const leido = leerDecimal(valor)
+  if (leido.vacio || leido.noEsNumero) return null
+  if (leido.valor <= 0 || leido.valor > TOPE_14_2) return null
+  return leido.valor
 }
 
 // Toma los filtros que vienen en la URL (?naturaleza=ingreso&desde=...) y arma
@@ -128,12 +113,6 @@ exports.getResumen = async (req, res) => {
   }
 }
 
-// Cuanto deja cada servicio en el periodo elegido (HU-49).
-//
-// Toma SOLO las fechas de los filtros, no los demas. Con el filtro de
-// naturaleza puesto en "ingreso", todos los servicios mostrarian egresos en
-// cero y el resultado seria pura ganancia inventada. La pantalla dice de que
-// periodo esta hablando para que no haya duda.
 // Las fechas de un atajo de periodo ("este mes", "el mes pasado", "este
 // año"), para los filtros de la pantalla (UX 28/09, H-04). Las calcula el
 // mismo servicio que usan los reportes: si la pantalla las armara por su
@@ -177,7 +156,12 @@ const validarMovimiento = async (body, id_empresa) => {
     return { error: revision.error }
   }
 
-  const descripcion = typeof body.descripcion === 'string' ? body.descripcion.trim().slice(0, 255) : null
+  // Una descripción demasiado larga se avisa, no se corta en silencio: es lo
+  // que el modo estricto de la base vino a evitar (revisión de código, 14/11/2026).
+  const descripcion = typeof body.descripcion === 'string' ? body.descripcion.trim() : null
+  if (descripcion && descripcion.length > 255) {
+    return { error: 'La descripción es muy larga: puede tener hasta 255 caracteres.' }
+  }
 
   // De donde salio la plata. Opcional: casi siempre viene vacio.
   const origen = await validarServicio(body.id_servicio, id_empresa)

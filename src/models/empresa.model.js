@@ -1,4 +1,5 @@
 const db = require('../config/db')
+const { ROL } = require('../config/roles')
 
 const findByEmail = async (email) => {
   const [rows] = await db.query('SELECT id_empresa FROM empresas WHERE email = ?', [email])
@@ -55,20 +56,6 @@ const createConAdmin = async (empresa, admin) => {
   }
 }
 
-const findPendientes = async () => {
-
-  const [rows] = await db.query(`
-    SELECT e.id_empresa, e.nombre, e.email, e.cuit, e.federacion, e.domicilio, e.estado,
-           u.nombre AS admin_nombre, u.apellido AS admin_apellido, u.email AS admin_email
-    FROM empresas e
-    LEFT JOIN usuarios u ON u.id_empresa = e.id_empresa AND u.id_rol = 1
-    WHERE e.estado = 'pendiente'
-    ORDER BY e.id_empresa DESC
-  `)
-
-  return rows
-}
-
 // Todas las empresas, para el panel del superadmin. De aca salen tambien las
 // pendientes de esa pantalla (un solo pedido: las dos listas no pueden
 // discrepar). Trae lo que hace falta para decidir si aprobar una empresa que
@@ -83,7 +70,7 @@ const findAll = async () => {
     FROM empresas e
     LEFT JOIN localidades l ON l.id_localidad = e.id_localidad
     LEFT JOIN provincias  p ON p.id_provincia = l.id_provincia
-    LEFT JOIN usuarios adm ON adm.id_empresa = e.id_empresa AND adm.id_rol = 1
+    LEFT JOIN usuarios adm ON adm.id_empresa = e.id_empresa AND adm.id_rol = ${ROL.ADMIN_EMPRESA}
     ORDER BY e.id_empresa DESC
   `)
 
@@ -135,7 +122,7 @@ const updateEstado = async (id_empresa, estado) => {
 }
 
 const activarUsuarioAdmin = async (id_empresa) => {
-  await db.query('UPDATE usuarios SET activo = 1 WHERE id_empresa = ? AND id_rol = 1', [id_empresa])
+  await db.query('UPDATE usuarios SET activo = 1 WHERE id_empresa = ? AND id_rol = ?', [id_empresa, ROL.ADMIN_EMPRESA])
 }
 
-module.exports = { createConAdmin, findByEmail, findByCuit, findPendientes, findAll, findById, findByEmailExcluyendo, update, updateEstado, activarUsuarioAdmin }
+module.exports = { createConAdmin, findByEmail, findByCuit, findAll, findById, findByEmailExcluyendo, update, updateEstado, activarUsuarioAdmin }

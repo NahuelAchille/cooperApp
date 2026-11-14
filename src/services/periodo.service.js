@@ -36,7 +36,7 @@ const armar = (anio, mes, dia) =>
 // Resuelve el periodo pedido. Devuelve { desde, hasta, etiqueta } o { error }.
 //
 // La etiqueta se calcula ACA y no en la pantalla: es el texto que va a
-// encabezar el reporte y, manana, el nombre del archivo descargado. Si se
+// encabezar el reporte y el nombre del archivo descargado. Si se
 // escribiera en los dos lados, el dia que cambie uno el otro queda mintiendo.
 const resolver = ({ periodo, desde, hasta } = {}) => {
 

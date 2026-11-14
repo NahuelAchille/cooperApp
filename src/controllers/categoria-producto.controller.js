@@ -1,17 +1,12 @@
 const categoriaProductoModel = require('../models/categoria-producto.model')
 const { flagServicio, rotulo } = require('../middlewares/catalogo.middleware')
+const { limpiarNombre } = require('../services/validacion.service')
 
 // Este controlador sirve los DOS arboles, el de productos y el de servicios.
 // De cual se trata lo dice la ruta (ver catalogo.middleware), no el pedido.
 
 // Normaliza un nombre libre: recorta espacios y valida que no quede vacio ni
 // se pase del limite de la columna (80). Devuelve null si no sirve.
-const limpiarNombre = (valor) => {
-  if (typeof valor !== 'string') return null
-  const limpio = valor.trim()
-  if (!limpio || limpio.length > 80) return null
-  return limpio
-}
 
 // =====================================================================
 // CATEGORIAS

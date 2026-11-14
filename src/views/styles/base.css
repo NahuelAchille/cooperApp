@@ -1,11 +1,10 @@
 /* ===== Reset y tipografía ===== */
+/* El fondo y la letra vienen de comun.css. Sin height: 100%: cortaba la
+   página a la altura de la ventana (y las capturas salían recortadas). */
 html, body {
   margin: 0;
   padding: 0;
-  font-family: Arial, Helvetica, sans-serif;
-  height: 100%;
   overflow-x: hidden;
-  background-color: #f7f9f8; /* color base neutro */
 }
 
 /* ===== Layout general ===== */
@@ -49,15 +48,6 @@ button:where(:not(.btn):not(.btn-close)) {
   cursor: pointer;
   font-weight: bold;
   transition: all 0.3s ease;
-}
-
-/* Botones genéricos */
-button.primary {
-  background: linear-gradient(180deg, #2d7a4f 0%, #1e5c3a 100%);
-  color: #fff;
-}
-button.primary:hover {
-  background: linear-gradient(180deg, #1e5c3a 0%, #17482e 100%);
 }
 
 /* ===== Tablas ===== */

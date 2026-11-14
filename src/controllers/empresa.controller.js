@@ -3,7 +3,7 @@ const moduloModel = require('../models/modulo.model')
 const categoriaModel = require('../models/categoria.model')
 const motivoStockModel = require('../models/motivo-stock.model')
 const { CATEGORIAS_INICIALES, MOTIVOS_STOCK_INICIALES } = require('../config/datos-iniciales')
-const { validarLargos, LARGOS } = require('../services/validacion.service')
+const { validarLargos, LARGOS, esEmailValido } = require('../services/validacion.service')
 const { resolverLocalidad } = require('../services/ubicacion.service')
 
 // Un telefono escrito como lo escribe la gente: "11 4623-1180", "(0220) 448
@@ -15,19 +15,6 @@ const TELEFONO_VALIDO = /^[0-9 +()\-]{6,30}$/
 const aCasilla = (valor, actual) => {
   if (valor === undefined) return actual
   return [true, 1, '1', 'true', 'on'].includes(valor) ? 1 : 0
-}
-
-exports.getPendientes = async (req, res) => {
-
-  try {
-    const pendientes = await empresaModel.findPendientes()
-    res.json(pendientes)
-
-  } catch (error) {
-    console.error(error)
-    res.status(500).json({ error: 'Error al obtener empresas pendientes' })
-  }
-
 }
 
 exports.getAll = async (req, res) => {
@@ -95,7 +82,7 @@ exports.actualizarMiEmpresa = async (req, res) => {
 
     const emailLimpio = email.trim().toLowerCase()
 
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailLimpio)) {
+    if (!esEmailValido(emailLimpio)) {
       return res.status(400).json({ error: 'El email no tiene un formato válido' })
     }
 
