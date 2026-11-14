@@ -447,3 +447,27 @@
   /* Tenía min-width: 360px, que no entra en el bloque de 331 px. */
   .dashboard-table { min-width: 0; }
 }
+
+/* Acciones rápidas en el celular (14/11/2026): ocupaban media pantalla, cinco
+   renglones verdes antes del primer número. Ahora van de a dos por fila, sin el
+   título (los botones se explican solos), y "Ver reportes" ocupa la fila entera
+   al final. Al operador le quedan Vender y Comprar en una sola fila. */
+@media (max-width: 767px) {
+  #secondary-nav { padding: 10px 12px; }
+  #secondary-nav h2 { display: none; }
+  #secondary-nav ul {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 6px;
+    padding: 0;
+  }
+  #secondary-nav ul li a {
+    display: block;
+    text-align: center;
+    padding: 8px 6px;
+    font-size: 0.9rem;
+    line-height: 1.25;
+    border: 1px solid rgba(255, 255, 255, 0.45);
+  }
+  #secondary-nav #btn-reporte { grid-column: 1 / -1; }
+}

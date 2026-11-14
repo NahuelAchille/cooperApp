@@ -16,7 +16,6 @@
 --
 -- CONTRASEÑAS
 --   marta@laesperanza.com.ar  ->  esperanza123
---   Test1@gmail.com         ->  Test123
 --   todos los demás         ->  prueba123
 --
 -- QUÉ TRAE PARA PROBAR
@@ -126,7 +125,6 @@ INSERT INTO usuarios
   (nombre, apellido, email, password_hash, dni, id_rol, activo, debe_cambiar_password, id_empresa)
 VALUES
   ('Marta',      'Gómez',        'marta@laesperanza.com.ar',   '$2b$10$J4iflUEXRo8C.Iz9wGCzk.eYVZZB8mPTZmwW.zW0TNEb88OV8y01W', '27345678', 1, 1, 0, (SELECT id_empresa FROM empresas WHERE email = 'contacto@laesperanza.com.ar')),
-  ('NombreTest', 'ApellidoTest', 'Test1@gmail.com',          '$2b$10$AjYY2pbzNDZFghnYysMjYOQdqesLqPJy9sLh.SI4feqV1N4WFGNEm', '12345678', 3, 1, 0, (SELECT id_empresa FROM empresas WHERE email = 'contacto@laesperanza.com.ar')),
   ('Roberto',    'Quiroga',      'roberto@laesperanza.com.ar', '$2b$10$PjeltbH8E0BboqNDV//HI.yHxwvN8uJtQ9umbfnOc0u7Ye9wO3TnK', '20456789', 2, 1, 0, (SELECT id_empresa FROM empresas WHERE email = 'contacto@laesperanza.com.ar')),
   ('Silvia',     'Ferreyra',     'silvia@laesperanza.com.ar',  '$2b$10$PjeltbH8E0BboqNDV//HI.yHxwvN8uJtQ9umbfnOc0u7Ye9wO3TnK', '24567890', 3, 1, 0, (SELECT id_empresa FROM empresas WHERE email = 'contacto@laesperanza.com.ar')),
   ('Jorge',      'Maidana',      'jorge@laesperanza.com.ar',   '$2b$10$PjeltbH8E0BboqNDV//HI.yHxwvN8uJtQ9umbfnOc0u7Ye9wO3TnK', '28678901', 3, 1, 0, (SELECT id_empresa FROM empresas WHERE email = 'contacto@laesperanza.com.ar')),
@@ -715,6 +713,48 @@ INSERT INTO movimientos_stock (id_producto, id_motivo_stock, cantidad, descripci
   -- por el motivo.
   (@p_arroz,    @m_consumo_esp, 2, 'Para el comedor del personal', CURDATE() - INTERVAL 3 DAY, @empresa, @operador);
 
+-- La PLATA de cada venta y cada compra, como la deja hoy "Registrar una venta"
+-- o "Registrar una compra" (desde el 25/10 la mercadería y la plata se cargan
+-- juntas). Hasta el 14/11/2026 estas ventas y compras no tenían su plata: eran
+-- de antes de la venta en un paso, y en Stock 13 de 16 filas decían "Sin
+-- registrar el cobro", así que la demo parecía a medio hacer.
+--
+-- La venta va a precio de venta y la compra a costo, con el tipo de dinero que
+-- tiene configurado cada motivo, cargada por quien hizo el movimiento (la
+-- operadora: desde el 25/10 registra la plata de sus ventas y compras). La
+-- descripción es la misma que arma la app: "Venta: 12,5 kg de Queso cremoso ·
+-- Venta mostrador".
+--
+-- Queda UNA sin plata a propósito, la compra de pan: el pan no tiene precio ni
+-- costo cargado, así que es la que se ve "Sin registrar el pago", como una
+-- compra vieja de antes del 25/10.
+INSERT INTO movimientos (id_tipo, monto, descripcion, fecha, id_empresa, id_usuario, anulado)
+SELECT mo.id_tipo,
+       ROUND(ms.cantidad * IF(mo.efecto_dinero = 'ingreso', p.precio_venta, p.costo_referencia), 2),
+       CONCAT(mo.nombre, ': ',
+              REPLACE(TRIM(TRAILING '.' FROM TRIM(TRAILING '0' FROM CAST(ms.cantidad AS CHAR))), '.', ','), ' ',
+              IF(ms.cantidad = 1, p.unidad_medida,
+                 CASE p.unidad_medida WHEN 'unidad' THEN 'unidades' WHEN 'litro' THEN 'litros' WHEN 'metro' THEN 'metros'
+                                      WHEN 'caja' THEN 'cajas' WHEN 'paquete' THEN 'paquetes' WHEN 'bolsa' THEN 'bolsas'
+                                      ELSE p.unidad_medida END),
+              ' de ', p.nombre, ' · ', ms.descripcion),
+       ms.fecha, ms.id_empresa, ms.id_usuario, 0
+FROM movimientos_stock ms
+JOIN motivos_stock mo ON mo.id_motivo_stock = ms.id_motivo_stock
+JOIN productos p      ON p.id_producto = ms.id_producto
+WHERE ms.id_empresa = @empresa AND mo.efecto_dinero <> 'ninguno'
+  AND IF(mo.efecto_dinero = 'ingreso', p.precio_venta, p.costo_referencia) IS NOT NULL;
+
+-- Y cada movimiento de stock apunta a su plata. Se encuentran por la fecha y
+-- la descripción, que lleva el producto y el detalle: no hay dos iguales.
+UPDATE movimientos_stock ms
+JOIN motivos_stock mo ON mo.id_motivo_stock = ms.id_motivo_stock
+JOIN productos p      ON p.id_producto = ms.id_producto
+JOIN movimientos m    ON m.id_empresa = ms.id_empresa AND m.fecha = ms.fecha AND m.id_tipo = mo.id_tipo
+                     AND m.descripcion LIKE CONCAT('%de ', p.nombre, ' · ', ms.descripcion)
+SET ms.id_movimiento = m.id_movimiento
+WHERE ms.id_empresa = @empresa AND mo.efecto_dinero <> 'ninguno';
+
 -- ------------------------------------------------------- 3 · Metal Oeste --
 SET @empresa  := (SELECT id_empresa FROM empresas WHERE email = 'contacto@metaloeste.com.ar');
 SET @operador := (SELECT id FROM usuarios WHERE id_empresa = @empresa AND id_rol = 3 AND activo = 1 LIMIT 1);
@@ -740,8 +780,8 @@ INSERT INTO movimientos_stock (id_producto, id_motivo_stock, cantidad, descripci
 -- Una venta CON su movimiento de dinero ya cargado, y otra SIN cargar.
 --
 -- Las dos hacen falta para que el reporte por producto (HU-52) se vea como es
--- de verdad: el sistema no conoce los precios, asi que el movimiento de dinero
--- se OFRECE y la persona puede decir que no. Un reporte donde todos los
+-- de verdad: antes de la venta en un paso (25/10) el movimiento de dinero se
+-- OFRECIA y la persona podia decir que no, asi que hay ventas viejas sin plata. Un reporte donde todos los
 -- productos tienen su plata seria una demo que miente; uno donde ninguno la
 -- tiene se ve roto. Con las dos se entiende que la columna cuenta lo que se
 -- registro, y el reporte avisa cuantos quedaron sin el $.

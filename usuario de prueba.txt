@@ -153,7 +153,6 @@ CAMBIOS DEL 16/09 POR LA AUDITORIA DE QA:
 
  superadmin@cooperapp.com  ->  password
  marta@laesperanza.com.ar  ->  esperanza123
- Test1@gmail.com           ->  Test123
  todos los demas           ->  prueba123
 
 
@@ -199,11 +198,10 @@ CAMBIOS DEL 16/09 POR LA AUDITORIA DE QA:
  algunos productos o servicios marcados "Mostrar a otras empresas".
 
  --- Alimentos La Esperanza S.R.L. (ACTIVA) ---
- 7 miembros - Ituzaingo - rubro alimentos
+ 6 miembros - Ituzaingo - rubro alimentos
  Modulos: movimientos, productos, reportes
    marta@laesperanza.com.ar     Marta Gomez        ADMIN
    roberto@laesperanza.com.ar   Roberto Quiroga    tesorero
-   Test1@gmail.com              NombreTest         operador
    silvia@laesperanza.com.ar    Silvia Ferreyra    operador
    jorge@laesperanza.com.ar     Jorge Maidana      operador
    claudia@laesperanza.com.ar   Claudia Rios       operador  (contrasena temporal)
@@ -495,9 +493,11 @@ CAMBIOS DEL 16/09 POR LA AUDITORIA DE QA:
        demas en cero, y cada una avisa cuantos movimientos quedaron
        "sin el $ cargado". No es un error: son ventas de ANTES del
        25/10, cuando la plata se cargaba en un segundo paso que se
-       podia saltear. Las de ahora nacen con su plata. Los datos de
-       prueba traen una venta con el $ cargado y otra sin,
-       justamente para que se vea.
+       podia saltear. Las de ahora nacen con su plata. En los datos
+       de prueba, las ventas y compras de La Esperanza tienen su
+       plata (dicen "Cobrado" / "Pagado" en Stock) salvo la compra
+       de pan, que no tiene precio; y Metalurgica tiene una venta
+       con el $ y otra sin, para que se vea el aviso.
      - Como Marta (La Esperanza no tiene el modulo de Servicios):
        el boton "Por servicio" no le aparece.
 
@@ -668,7 +668,7 @@ CAMBIOS DEL 16/09 POR LA AUDITORIA DE QA:
    "C:\xampp\mysql\bin\mysql.exe" -u root < datos_de_prueba.sql
 
  database.sql        = el sistema (tablas + superadmin)
- datos_de_prueba.sql = las 5 empresas y sus 28 usuarios, mas
+ datos_de_prueba.sql = las 5 empresas y sus 27 usuarios, mas
                        categorias, movimientos, catalogo de
                        productos y servicios, motivos de stock
                        y su historial

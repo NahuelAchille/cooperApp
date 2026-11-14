@@ -20,7 +20,11 @@ main {
 }
 
 /* ===== Inputs y formularios ===== */
-input, select, textarea {
+/* Sin las casillas ni los botones de opción: con ancho completo y relleno,
+   en Mi empresa quedaban en escalera y pisando su texto (14/11/2026).
+   Va con :where() para no subir la especificidad: con un :not() suelto esta
+   regla le ganaba a Bootstrap y el buscador del panel se partía en dos. */
+input:where(:not([type="checkbox"]):not([type="radio"])), select, textarea {
   width: 100%; /* mobile: siempre ancho completo */
   padding: 0.8rem;
   border-radius: 6px;
@@ -33,7 +37,11 @@ input::placeholder {
   color: rgba(0,0,0,0.5);
 }
 
-button {
+/* Sólo los botones propios de estas pantallas (el "Ingresar" del login). Los
+   de Bootstrap (.btn, la X de las ventanas) se quedan como los arma Bootstrap:
+   con ancho completo, la X del registro caía debajo del título y Cancelar /
+   Enviar quedaban apilados a media ventana (14/11/2026). */
+button:where(:not(.btn):not(.btn-close)) {
   width: 100%;
   padding: 0.8rem;
   border-radius: 50px;

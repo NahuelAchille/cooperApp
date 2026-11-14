@@ -161,3 +161,13 @@ main {
 
 .link-registro { color: #ffffff; text-decoration: underline; }
 .link-registro:hover { color: #ffd166; }
+
+/* El logo y el nombre arriba de la tarjeta (14/11/2026). */
+.marca-login {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 0.5rem;
+}
+.marca-login img { height: 40px; width: auto; }
+.marca-login span { color: #fff; font-size: 1.6rem; font-weight: 800; letter-spacing: 0.02em; }

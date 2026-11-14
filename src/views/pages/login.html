@@ -16,7 +16,13 @@
       border-radius: 14px;
       overflow: hidden;
     }
+    /* No usa la clase modal-header de Bootstrap, así que el título y la X
+       se ponen en fila acá: si no, la X caía debajo del título. */
     .modal-header-empresa {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
       background-color: rgba(0,0,0,0.2);
       border-bottom: 1px solid rgba(255,255,255,0.15);
       color: white;
@@ -98,6 +104,12 @@
 <body class="fondo-login-con-lineas">
 
   <main>
+    <!-- La pantalla no decía qué aplicación era: sólo "Inicio de sesión".
+         El logo y el nombre, como en el encabezado de adentro (14/11/2026). -->
+    <div class="marca-login">
+      <img src="/images/Logo.png" alt="">
+      <span>CooperApp</span>
+    </div>
     <h1>Inicio de sesión</h1>
 
     <form class="main-input" id="form-login" autocomplete="new-password">
