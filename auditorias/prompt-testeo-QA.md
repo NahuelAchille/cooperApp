@@ -99,8 +99,8 @@ Reportarlo otra vez gasta lugar en el informe sin agregar nada:
 - No hay límite de intentos de login. HU-81.
 - La clave de firma de sesiones está escrita en el código. Sin deploy, el riesgo
   es acotado. HU-82.
-- `node_modules` está commiteado en el repo. Se sabe; sacarlo obliga a todo el
-  grupo a correr `npm install`.
+- `node_modules` NO está en el repo (se sacó el 14/11/2026): hay que correr
+  `npm install` antes de levantar la app. No es un hallazgo.
 - El registro de una empresa NO avisa por correo cuando se aprueba: el proyecto
   es 100% local a propósito y el aviso es por teléfono.
 - **Anular un movimiento de stock SÍ anula su movimiento de dinero**, en la
@@ -149,10 +149,9 @@ Reportarlo otra vez gasta lugar en el informe sin agregar nada:
 - **El costo de referencia de un producto es opcional, y vacío es `NULL`, no
   cero.** Un producto sin costo aparece como *"No se sabe"* y se cuenta aparte:
   eso es lo buscado, no un dato faltante.
-- **`node_modules` está a mitad de camino**: hay 66 paquetes commiteados (los
-  de antes del `.gitignore`) y lo nuevo no viaja. Por eso **pdfkit se carga
-  recién cuando se pide un PDF** y la app arranca igual sin él. Está hecho a
-  propósito. Si el PDF te da "Falta instalar la librería", corré `npm install`.
+- **pdfkit se carga recién cuando se pide un PDF**, no al arrancar: está hecho
+  a propósito, de cuando `node_modules` viajaba a medias en git. Si el PDF te da
+  "Falta instalar la librería", corré `npm install`.
 
 - **Articulación (el buscador entre empresas, 02/11/2026)**, lo que es a propósito:
   - **El rubro general cuenta en la búsqueda**: "papel" trae también las cajas de

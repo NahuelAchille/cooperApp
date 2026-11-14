@@ -533,13 +533,10 @@ CAMBIOS DEL 16/09 POR LA AUDITORIA DE QA:
        cd cooperApp
        npm install
 
-   Hay una libreria nueva para el PDF (pdfkit) y no viaja en el
-   repo: el .gitignore tiene node_modules, asi que lo que ya estaba
-   commiteado sigue llegando, pero lo nuevo no.
+   Desde el 14/11/2026 la carpeta node_modules NO viaja en el repo
+   (ninguna libreria): npm install las baja todas.
 
-   Si no lo corres, NO se rompe nada: la app arranca igual, el CSV
-   anda, y el unico que avisa es el boton del PDF, diciendote esto
-   mismo.
+   Si no lo corres, la app no arranca ("Cannot find module").
 
 
    Adentro de la hoja del reporte, arriba: "Descargar para Excel" y

@@ -9,8 +9,9 @@ Desarrollo de Software · Centro Regional Universitario Ituzaingó · 2026.
 Grupo 3 · ABZ: Aguilera Maximiliano, Hoyos Franco, Delipetro Ezequiel y Achille Nahuel.
 
 > El proyecto nació para cooperativas y en septiembre de 2026 pasó a apuntar a
-> empresas en general. Por eso el nombre (`CooperApp`) y el de la base
-> (`cooperApp`) todavía hablan de cooperativas.
+> empresas en general. El grupo decidió **mantener el nombre `CooperApp`**
+> (noviembre de 2026), así que el nombre de la app y el de la base (`cooperApp`)
+> quedan como están.
 
 **Todo corre en tu computadora** (`localhost`). No hay servidor en internet ni hace
 falta ninguna cuenta ni clave de un servicio externo.
@@ -67,10 +68,11 @@ cd cooperApp
 npm install
 ```
 
-**Es obligatorio, aunque veas una carpeta `node_modules` en el repositorio.** Esa
-carpeta está a medias: tiene Express, pero **no** tiene `mysql2`, `bcrypt`,
-`express-session` ni `pdfkit`. Sin este paso la app no arranca y dice
-`Cannot find module` con el nombre de alguna de esas.
+Baja las librerías que usa la app (Express, `mysql2`, `bcrypt`,
+`express-session` y `pdfkit`) a una carpeta `node_modules`. **Esa carpeta no viaja
+en git** (desde noviembre de 2026): la lista de qué bajar y en qué versión está en
+`package.json` y `package-lock.json`. Sin este paso la app no arranca y dice
+`Cannot find module`.
 
 Al terminar puede mostrar dos avisos que **son normales y no hay que hacerles
 caso**: uno de `allow-scripts` sobre `bcrypt` (ya viene compilado para Windows, no
@@ -217,6 +219,7 @@ para probar algo sin pisar la base de otra persona. Casi nunca hacen falta.
 
 | Dónde | Qué hay |
 |---|---|
+| [`docs/modelo-de-datos.md`](docs/modelo-de-datos.md) | **El modelo de datos**: qué guarda cada tabla, cómo se relacionan, cómo se calculan el stock y el balance, y cómo cambiar el esquema sin romper nada |
 | [`usuario de prueba.txt`](usuario%20de%20prueba.txt) | Todos los usuarios de prueba, qué tiene cada empresa y qué probar |
 | [`auditorias/`](auditorias/) | Las auditorías de calidad (QA) y de experiencia de uso (UX): los prompts para correrlas y los informes de cada sprint |
 | `Backlog_CooperApp_2026.xlsx` | El backlog: historias, tareas y sprints |
