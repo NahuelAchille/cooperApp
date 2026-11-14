@@ -32,7 +32,10 @@ async function cargarHeader() {
   // --- Datos de la persona ---
   document.getElementById('user-avatar').textContent = (user.nombre[0] + user.apellido[0]).toUpperCase()
   document.getElementById('user-nombre').textContent = `${user.nombre} ${user.apellido}`
-  document.getElementById('dropdown-empresa').textContent = user.empresa?.nombre || ''
+  // Arriba del menu del avatar va la empresa. El superadmin no tiene ninguna,
+  // y el renglon vacio con dos separadores se veia como un menu roto.
+  document.getElementById('dropdown-empresa').textContent =
+    user.empresa?.nombre || (user.rol === 'superadmin' ? 'Administración de la plataforma' : '')
 
   const esAdmin = user.rol === 'admin_empresa'
   const esFinanzas = esAdmin || user.rol === 'tesorero'
@@ -55,7 +58,10 @@ async function cargarHeader() {
     // Tampoco tiene "Mi empresa": al apretarlo se comia un
     // "Tu usuario no pertenece a ninguna empresa". Mismo caso que el panel
     // general, que le hablaba de una empresa que no tiene.
-    document.getElementById('item-mi-empresa')?.classList.add('d-none')
+    const itemMiEmpresa = document.getElementById('item-mi-empresa')
+    itemMiEmpresa?.classList.add('d-none')
+    // Y el separador que lo seguia: sin el item quedaban dos lineas juntas.
+    itemMiEmpresa?.nextElementSibling?.classList.add('d-none')
   }
 
   // --- Por modulo contratado (y rol) ---

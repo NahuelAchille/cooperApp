@@ -17,18 +17,6 @@ const aCasilla = (valor, actual) => {
   return [true, 1, '1', 'true', 'on'].includes(valor) ? 1 : 0
 }
 
-// Convierte un campo de cantidad del formulario a numero.
-// Devuelve null si vino vacio, o undefined si el valor no sirve.
-const aCantidad = (valor) => {
-
-  if (valor === undefined || valor === null || valor === '') return null
-
-  const numero = Number(valor)
-  if (!Number.isInteger(numero) || numero < 0) return undefined
-
-  return numero
-}
-
 exports.getPendientes = async (req, res) => {
 
   try {
@@ -107,15 +95,6 @@ exports.actualizarMiEmpresa = async (req, res) => {
       return res.status(400).json({ error: 'Ya existe otra empresa registrada con ese email' })
     }
 
-    const cantidadTrabajadores = aCantidad(req.body.cantidadTrabajadores)
-    const cantidadDiversidad   = aCantidad(req.body.cantidadDiversidad)
-    const cantidadHombre       = aCantidad(req.body.cantidadHombre)
-    const cantidadMujer        = aCantidad(req.body.cantidadMujer)
-
-    if ([cantidadTrabajadores, cantidadDiversidad, cantidadHombre, cantidadMujer].includes(undefined)) {
-      return res.status(400).json({ error: 'Las cantidades deben ser números enteros de cero o más' })
-    }
-
     // Lo nuevo de Articulacion (teléfono, localidad y qué se muestra) sigue la
     // regla de "un campo que no viene no se toca": un pedido viejo, o armado
     // a mano sin estos campos, no borra la localidad ni apaga nada.
@@ -145,11 +124,7 @@ exports.actualizarMiEmpresa = async (req, res) => {
       ...ubicacion,
       mostrar_email:     aCasilla(req.body.mostrar_email, actual.mostrar_email),
       mostrar_telefono:  aCasilla(req.body.mostrar_telefono, actual.mostrar_telefono),
-      mostrar_domicilio: aCasilla(req.body.mostrar_domicilio, actual.mostrar_domicilio),
-      cantidadTrabajadores,
-      cantidadDiversidad,
-      cantidadHombre,
-      cantidadMujer
+      mostrar_domicilio: aCasilla(req.body.mostrar_domicilio, actual.mostrar_domicilio)
     })
 
     // La sesion guarda el nombre de la empresa: hay que refrescarlo

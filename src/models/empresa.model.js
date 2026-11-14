@@ -58,26 +58,33 @@ const createConAdmin = async (empresa, admin) => {
 const findPendientes = async () => {
 
   const [rows] = await db.query(`
-    SELECT c.id_empresa, c.nombre, c.email, c.cuit, c.federacion, c.domicilio, c.estado,
+    SELECT e.id_empresa, e.nombre, e.email, e.cuit, e.federacion, e.domicilio, e.estado,
            u.nombre AS admin_nombre, u.apellido AS admin_apellido, u.email AS admin_email
-    FROM empresas c
-    LEFT JOIN usuarios u ON u.id_empresa = c.id_empresa AND u.id_rol = 1
-    WHERE c.estado = 'pendiente'
-    ORDER BY c.id_empresa DESC
+    FROM empresas e
+    LEFT JOIN usuarios u ON u.id_empresa = e.id_empresa AND u.id_rol = 1
+    WHERE e.estado = 'pendiente'
+    ORDER BY e.id_empresa DESC
   `)
 
   return rows
 }
 
+// Todas las empresas, para el panel del superadmin. De aca salen tambien las
+// pendientes de esa pantalla (un solo pedido: las dos listas no pueden
+// discrepar). Trae lo que hace falta para decidir si aprobar una empresa que
+// se registro: donde esta y como contactarla.
 const findAll = async () => {
 
   const [rows] = await db.query(`
-    SELECT c.id_empresa, c.nombre, c.email, c.cuit, c.federacion, c.domicilio, c.estado,
-           (SELECT COUNT(*) FROM usuarios u WHERE u.id_empresa = c.id_empresa) AS cantidad_usuarios,
+    SELECT e.id_empresa, e.nombre, e.email, e.cuit, e.federacion, e.domicilio, e.telefono, e.estado,
+           l.nombre AS localidad, p.nombre AS provincia,
+           (SELECT COUNT(*) FROM usuarios u WHERE u.id_empresa = e.id_empresa) AS cantidad_usuarios,
            adm.id AS admin_id, adm.nombre AS admin_nombre, adm.apellido AS admin_apellido, adm.email AS admin_email
-    FROM empresas c
-    LEFT JOIN usuarios adm ON adm.id_empresa = c.id_empresa AND adm.id_rol = 1
-    ORDER BY c.id_empresa DESC
+    FROM empresas e
+    LEFT JOIN localidades l ON l.id_localidad = e.id_localidad
+    LEFT JOIN provincias  p ON p.id_provincia = l.id_provincia
+    LEFT JOIN usuarios adm ON adm.id_empresa = e.id_empresa AND adm.id_rol = 1
+    ORDER BY e.id_empresa DESC
   `)
 
   return rows
@@ -87,8 +94,7 @@ const findById = async (id_empresa) => {
 
   const [rows] = await db.query(`
     SELECT id_empresa, nombre, email, cuit, federacion, domicilio, telefono, id_localidad,
-           mostrar_email, mostrar_telefono, mostrar_domicilio,
-           cantidadTrabajadores, cantidadDiversidad, cantidadHombre, cantidadMujer, estado
+           mostrar_email, mostrar_telefono, mostrar_domicilio, estado
     FROM empresas
     WHERE id_empresa = ?
   `, [id_empresa])
@@ -111,20 +117,17 @@ const findByEmailExcluyendo = async (email, id_empresa) => {
 // contradecirse (Moron en la provincia de Cordoba).
 const update = async (id_empresa, { nombre, email, federacion, domicilio, telefono,
                                     id_localidad, id_provincia,
-                                    mostrar_email, mostrar_telefono, mostrar_domicilio,
-                                    cantidadTrabajadores, cantidadDiversidad, cantidadHombre, cantidadMujer }) => {
+                                    mostrar_email, mostrar_telefono, mostrar_domicilio }) => {
 
   await db.query(`
     UPDATE empresas
     SET nombre = ?, email = ?, federacion = ?, domicilio = ?, telefono = ?,
         id_localidad = ?, id_provincia = ?,
-        mostrar_email = ?, mostrar_telefono = ?, mostrar_domicilio = ?,
-        cantidadTrabajadores = ?, cantidadDiversidad = ?, cantidadHombre = ?, cantidadMujer = ?
+        mostrar_email = ?, mostrar_telefono = ?, mostrar_domicilio = ?
     WHERE id_empresa = ?
   `, [nombre, email, federacion, domicilio, telefono,
       id_localidad, id_provincia,
-      mostrar_email, mostrar_telefono, mostrar_domicilio,
-      cantidadTrabajadores, cantidadDiversidad, cantidadHombre, cantidadMujer, id_empresa])
+      mostrar_email, mostrar_telefono, mostrar_domicilio, id_empresa])
 }
 
 const updateEstado = async (id_empresa, estado) => {

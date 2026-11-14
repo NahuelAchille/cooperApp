@@ -154,27 +154,6 @@
           </div>
         </div>
 
-        <p class="seccion-titulo">Composición del grupo de trabajo</p>
-
-        <div class="row g-3 mb-4">
-          <div class="col-md-3">
-            <label class="form-label">Total de trabajadores</label>
-            <input type="number" class="form-control" name="cantidadTrabajadores" min="0" step="1">
-          </div>
-          <div class="col-md-3">
-            <label class="form-label">Mujeres</label>
-            <input type="number" class="form-control" name="cantidadMujer" min="0" step="1">
-          </div>
-          <div class="col-md-3">
-            <label class="form-label">Varones</label>
-            <input type="number" class="form-control" name="cantidadHombre" min="0" step="1">
-          </div>
-          <div class="col-md-3">
-            <label class="form-label">Diversidades</label>
-            <input type="number" class="form-control" name="cantidadDiversidad" min="0" step="1">
-          </div>
-        </div>
-
         <p class="seccion-titulo">Datos registrales</p>
 
         <div class="row g-3 mb-3">
@@ -300,10 +279,6 @@
       form.mostrar_email.checked      = !!empresa.mostrar_email
       form.mostrar_telefono.checked   = !!empresa.mostrar_telefono
       form.mostrar_domicilio.checked  = !!empresa.mostrar_domicilio
-      form.cantidadTrabajadores.value = empresa.cantidadTrabajadores ?? ''
-      form.cantidadMujer.value        = empresa.cantidadMujer ?? ''
-      form.cantidadHombre.value       = empresa.cantidadHombre ?? ''
-      form.cantidadDiversidad.value   = empresa.cantidadDiversidad ?? ''
 
       document.getElementById('cuit').value      = empresa.cuit ?? ''
 

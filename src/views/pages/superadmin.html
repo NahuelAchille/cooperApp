@@ -6,423 +6,476 @@
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css">
   <link rel="stylesheet" href="/styles/header.css">
+  <!-- Las piezas comunes (franja del titulo, tarjeta, tabla, badges, modales)
+       son las de Usuarios: es la pantalla mas parecida. Ver superadmin.css. -->
+  <link rel="stylesheet" href="/styles/usuarios.css">
+  <link rel="stylesheet" href="/styles/tabla-mobile.css">
   <link rel="stylesheet" href="/styles/superadmin.css">
-  <title>Panel Superadmin - CooperApp</title>
+  <title>Empresas - CooperApp</title>
 </head>
 <body>
 
-<div id="header"></div>
+  <div id="header"></div>
   <script src="/components/header.js"></script>
 
-<div class="d-flex sa-layout">
-
-  <div class="sidebar d-flex flex-column p-3">
-    <div class="text-center mb-4 mt-2 sidebar-marca">
-      <img src="/images/Logo.png" alt="Logo" height="50">
-      <div class="small mt-2 text-white-50">Panel Superadmin</div>
-    </div>
-    <ul class="nav flex-column gap-1">
-      <li class="nav-item">
-        <a href="#" class="nav-link active" data-section="pendientes">
-          <i class="fa-solid fa-clock-rotate-left me-2"></i>Pendientes
-          <span class="badge badge-pendiente ms-1" id="badge-pendientes">0</span>
-        </a>
-      </li>
-      <li class="nav-item">
-        <a href="#" class="nav-link" data-section="todas">
-          <i class="fa-solid fa-building me-2"></i>Todas las empresas
-        </a>
-      </li>
-    </ul>
-    <div class="sidebar-salir">
-      <a href="/users/logout" class="btn btn-sm w-100 fw-bold" style="background:rgba(255,255,255,0.2);color:white;border:1px solid rgba(255,255,255,0.4);">
-        <i class="fa-solid fa-right-from-bracket me-1"></i>Salir
-      </a>
+  <div class="page-header">
+    <div>
+      <h4 class="mb-0 fw-bold"><i class="fa-solid fa-building me-2"></i>Empresas</h4>
+      <small>Aprobá las que se registran y ayudá a sus administradores a entrar</small>
     </div>
   </div>
 
-  
-  <div class="flex-grow-1 sa-content">
+  <div class="content">
 
-    
-    <div id="section-pendientes">
-      <h4 class="mb-4 seccion-titulo">
-        <i class="fa-solid fa-clock-rotate-left me-2"></i>Empresas pendientes de aprobación
-      </h4>
-      <div id="lista-pendientes" class="content-card">
-        <div class="text-center py-5" style="color:#19de75;">
-          <i class="fa-solid fa-spinner fa-spin fa-2x"></i>
-        </div>
-      </div>
+    <div class="pestanas" role="tablist">
+      <button class="pestana activa" data-vista="pendientes" role="tab">
+        <i class="fa-solid fa-hourglass-half me-1"></i>Para aprobar
+        <span class="contador" id="contador-pendientes">0</span>
+      </button>
+      <button class="pestana" data-vista="todas" role="tab">
+        <i class="fa-solid fa-list me-1"></i>Todas
+        <span class="contador" id="contador-todas">0</span>
+      </button>
     </div>
 
-    
-    <div id="section-todas" class="d-none">
-      <h4 class="mb-4 seccion-titulo">
-        <i class="fa-solid fa-building me-2"></i>Todas las empresas
-      </h4>
-      <div id="lista-todas" class="content-card">
-        <div class="text-center py-5" style="color:#19de75;">
-          <i class="fa-solid fa-spinner fa-spin fa-2x"></i>
-        </div>
-      </div>
-    </div>
-
-  </div>
-</div>
-
-
-<!-- Modal de confirmacion de reseteo de contraseña del administrador -->
-<div class="modal fade" id="modalReset" tabindex="-1" aria-hidden="true">
-  <div class="modal-dialog modal-dialog-centered">
-    <div class="modal-content">
-      <div class="modal-header">
-        <h5 class="modal-title fw-bold"><i class="fa-solid fa-key me-2"></i>Resetear contraseña</h5>
-        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
-      </div>
-      <div class="modal-body">
-        <p class="mb-2">
-          ¿Confirmás resetear la contraseña de <strong id="reset-nombre"></strong>,
-          administrador de <strong id="reset-empresa"></strong>?
-        </p>
-        <p class="text-muted small mb-2" id="reset-email"></p>
-        <div class="alert alert-warning mb-0 py-2 small">
-          <i class="fa-solid fa-circle-info me-1"></i>
-          La contraseña va a volver a ser el <strong>DNI</strong> del administrador, y el sistema le va a
-          pedir que elija una nueva la próxima vez que ingrese. Avisale por fuera del sistema.
-        </div>
-        <div id="reset-error" class="text-danger small mt-2 d-none"></div>
-      </div>
-      <div class="modal-footer">
-        <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
-        <button type="button" id="btn-confirmar-reset" class="btn fw-bold px-4" style="background-color:#2d7a4f;color:white;">
-          <i class="fa-solid fa-key me-2"></i>Resetear
-        </button>
-      </div>
-    </div>
-  </div>
-</div>
-
-<!-- Confirmacion para rechazar: bloquea el ingreso de toda una empresa -->
-<div class="modal fade" id="modalRechazar" tabindex="-1" aria-hidden="true">
-  <div class="modal-dialog modal-dialog-centered">
-    <div class="modal-content">
-      <div class="modal-header" style="background-color:#a01c1c;">
-        <h5 class="modal-title fw-bold"><i class="fa-solid fa-xmark me-2"></i>Rechazar empresa</h5>
-        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
-      </div>
-      <div class="modal-body">
-        <p class="mb-2" id="rechazar-detalle"></p>
-        <div class="alert alert-warning mb-0 py-2 small">
-          <i class="fa-solid fa-circle-info me-1"></i>
-          Ninguno de sus usuarios va a poder entrar al sistema. No se borra nada:
-          la empresa queda en <strong>Todas las empresas</strong> y se puede volver
-          a habilitar desde ahí.
-        </div>
-      </div>
-      <div class="modal-footer">
-        <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
-        <button type="button" id="btn-confirmar-rechazar" class="btn fw-bold px-4" style="background-color:#a01c1c;color:white;">
-          <i class="fa-solid fa-xmark me-2"></i>Rechazar
-        </button>
-      </div>
-    </div>
-  </div>
-</div>
-
-<div class="modal fade" id="modalDetalle" tabindex="-1" aria-hidden="true">
-  <div class="modal-dialog modal-dialog-centered">
-    <div class="modal-content">
-      <div class="modal-header">
-        <h5 class="modal-title fw-bold" id="modal-titulo">Detalle de empresa</h5>
-        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
-      </div>
-      <div class="modal-body" id="modal-body"></div>
-      <div class="modal-footer" id="modal-footer"></div>
-    </div>
-  </div>
-</div>
-
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
-
-<script>
-
-  const modalDetalle = new bootstrap.Modal(document.getElementById('modalDetalle'));
-
-  document.querySelectorAll('[data-section]').forEach(link => {
-
-    link.addEventListener('click', (e) => {
-
-      e.preventDefault()
-      document.querySelectorAll('[data-section]').forEach(l => l.classList.remove('active'))
-      link.classList.add('active')
-      document.getElementById('section-pendientes').classList.add('d-none')
-      document.getElementById('section-todas').classList.add('d-none')
-      document.getElementById(`section-${link.dataset.section}`).classList.remove('d-none')
-
-    })
-
-  })
-
-  
-  // Neutraliza el HTML que pueda venir en un dato cargado por el usuario.
-  // Los nombres de empresa los escribe cualquiera desde el registro publico,
-  // asi que llegan a esta pantalla sin pasar por ningun filtro previo.
-  function esc(texto) {
-    return String(texto).replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
-  }
-
-  // Las empresas que se estan mostrando, para poder abrir el detalle por id en
-  // vez de meter el objeto entero dentro de un atributo onclick.
-  let empresasEnPantalla = []
-
-  async function cargarPendientes() {
-
-    const res = await fetch('/empresas/pendientes')
-    const data = await res.json()
-
-    document.getElementById('badge-pendientes').textContent = data.length
-
-    const container = document.getElementById('lista-pendientes')
-    if (data.length === 0) {
-      container.innerHTML = '<div class="alert alert-success">No hay empresas pendientes.</div>'
-      return
-    }
-
-    container.innerHTML = `
+    <div class="card-tabla tabla-tarjetas">
       <div class="table-responsive">
-        <table class="table table-hover">
-          <thead><tr>
-            <th>Empresa</th><th>CUIT</th><th>Email</th><th>Administrador</th><th class="text-center">Acciones</th>
-          </tr></thead>
-          <tbody>
-            ${data.map(c => `
-              <tr>
-                <td><strong>${esc(c.nombre)}</strong></td>
-                <td>${esc(c.cuit)}</td>
-                <td>${esc(c.email)}</td>
-                <td>${c.admin_nombre ? `${esc(c.admin_nombre)} ${esc(c.admin_apellido)}` : '-'}</td>
-                <td class="text-center">
-                  <button class="btn btn-sm btn-outline-secondary me-1" onclick="verDetalle(${c.id_empresa})">
-                    <i class="fa-solid fa-eye"></i>
-                  </button>
-                  <button class="btn btn-sm btn-aprobar me-1" onclick="aprobar(${c.id_empresa})">
-                    <i class="fa-solid fa-check"></i> Aprobar
-                  </button>
-                  <button class="btn btn-sm btn-rechazar" onclick="rechazar(${c.id_empresa})">
-                    <i class="fa-solid fa-xmark"></i> Rechazar
-                  </button>
-                </td>
-              </tr>
-            `).join('')}
+        <table class="table table-hover mb-0">
+          <thead id="encabezado-tabla"></thead>
+          <tbody id="cuerpo-tabla">
+            <tr class="fila-aviso"><td class="text-center py-4 text-muted">
+              <i class="fa-solid fa-spinner fa-spin me-2"></i>Cargando...
+            </td></tr>
           </tbody>
         </table>
-      </div>`;
-  }
+      </div>
+    </div>
 
-  
-  async function cargarTodas() {
-    const res = await fetch('/empresas')
-    const data = await res.json()
-    empresasEnPantalla = Array.isArray(data) ? data : []
-    const container = document.getElementById('lista-todas')
+  </div>
 
-    const estadoBadge = (e) => ({
-      activa: '<span class="badge bg-success">Activa</span>',
-      pendiente: '<span class="badge bg-warning text-dark">Pendiente</span>',
-      suspendida: '<span class="badge bg-danger">Suspendida</span>'
-    }[e] || e)
 
-    // Boton para resetear la contraseña del administrador de la empresa
-    const botonReset = (c) => {
+  <!-- Los datos de una empresa. Desde aca se decide si se aprueba. -->
+  <div class="modal fade" id="modalDetalle" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title fw-bold" id="detalle-titulo">Datos de la empresa</h5>
+          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+        </div>
+        <div class="modal-body" id="detalle-cuerpo"></div>
+        <div class="modal-footer" id="detalle-pie"></div>
+      </div>
+    </div>
+  </div>
 
-      // Una empresa suspendida o rechazada tiene que poder volver desde aca:
-      // antes el unico camino de vuelta era por la base de datos.
-      if (c.estado === 'suspendida') {
-        return `<button class="btn-reset-admin" data-habilitar="${c.id_empresa}">
-                  <i class="fa-solid fa-rotate-left me-1"></i>Habilitar de nuevo
-                </button>`
+  <!-- Rechazar deja afuera a toda una empresa: no puede ser un clic suelto. -->
+  <div class="modal fade" id="modalRechazar" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content">
+        <div class="modal-header" style="background-color:#a01c1c;">
+          <h5 class="modal-title fw-bold"><i class="fa-solid fa-xmark me-2"></i>Rechazar empresa</h5>
+          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+        </div>
+        <div class="modal-body">
+          <p class="mb-2" id="rechazar-detalle"></p>
+          <div class="alert alert-warning mb-0 py-2 small">
+            <i class="fa-solid fa-circle-info me-1"></i>
+            Ninguno de sus usuarios va a poder entrar al sistema. No se borra nada:
+            la empresa queda en <strong>Todas</strong> como <em>Rechazada</em> y se puede
+            volver a habilitar desde ahí.
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
+          <button type="button" id="btn-confirmar-rechazar" class="btn fw-bold px-4" style="background-color:#a01c1c;color:white;">
+            <i class="fa-solid fa-xmark me-2"></i>Rechazar
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Resetear la contraseña del administrador de una empresa -->
+  <div class="modal fade" id="modalReset" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title fw-bold"><i class="fa-solid fa-key me-2"></i>Resetear contraseña</h5>
+          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+        </div>
+        <div class="modal-body">
+          <p class="mb-2">
+            ¿Confirmás resetear la contraseña de <strong id="reset-nombre"></strong>,
+            administrador de <strong id="reset-empresa"></strong>?
+          </p>
+          <p class="text-muted small mb-2" id="reset-email"></p>
+          <div class="alert alert-warning mb-0 py-2 small">
+            <i class="fa-solid fa-circle-info me-1"></i>
+            La contraseña va a volver a ser el <strong>DNI</strong> del administrador, y el sistema le va a
+            pedir que elija una nueva la próxima vez que ingrese. Avisale por fuera del sistema.
+          </div>
+          <div id="reset-error" class="text-danger small mt-2 d-none"></div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
+          <button type="button" id="btn-confirmar-reset" class="btn fw-bold px-4" style="background-color:#2d7a4f;color:white;">
+            <i class="fa-solid fa-key me-2"></i>Resetear
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+
+  <script>
+
+    // Neutraliza el HTML que pueda venir en un dato cargado por el usuario.
+    // Los nombres de empresa los escribe cualquiera desde el registro publico,
+    // asi que llegan a esta pantalla sin pasar por ningun filtro previo.
+    function esc(texto) {
+      return String(texto ?? '').replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+    }
+
+    function mostrarToast(mensaje, esError = false) {
+      const toast = document.createElement('div')
+      toast.style = `position:fixed;top:24px;left:50%;transform:translateX(-50%);background:${esError ? '#a01c1c' : '#2d7a4f'};color:white;padding:14px 24px;border-radius:10px;z-index:9999;font-weight:500;box-shadow:0 4px 16px rgba(0,0,0,0.2);max-width:92vw`
+      toast.innerHTML = `<i class="fa-solid ${esError ? 'fa-circle-exclamation' : 'fa-circle-check'} me-2"></i>${esc(mensaje)}`
+      document.body.appendChild(toast)
+      setTimeout(() => toast.remove(), 6000)
+    }
+
+    // El CUIT se guarda como numero: se muestra con sus guiones, que es como
+    // la gente lo lee y lo compara con un papel.
+    function cuitLegible(cuit) {
+      const s = String(cuit ?? '')
+      return s.length === 11 ? `${s.slice(0, 2)}-${s.slice(2, 10)}-${s.slice(10)}` : s
+    }
+
+    function ubicacion(e) {
+      if (!e.localidad) return ''
+      return e.provincia ? `${e.localidad}, ${e.provincia}` : e.localidad
+    }
+
+    function nombreAdmin(e) {
+      return e.admin_nombre ? `${e.admin_nombre} ${e.admin_apellido}` : ''
+    }
+
+    // En la base el estado se llama "suspendida", pero desde esta pantalla la
+    // unica forma de llegar ahi es rechazarla: se nombra con la palabra del
+    // boton que la persona apreto.
+    const ESTADOS = {
+      pendiente:  { texto: 'Para aprobar', clase: 'badge-temp' },
+      activa:     { texto: 'Activa',       clase: 'badge-activo' },
+      suspendida: { texto: 'Rechazada',    clase: 'badge-inactivo' }
+    }
+
+    function badgeEstado(estado) {
+      const e = ESTADOS[estado] || { texto: estado, clase: '' }
+      return `<span class="badge-estado ${e.clase}">${esc(e.texto)}</span>`
+    }
+
+    // ---- Datos y pestañas ----
+
+    // Las dos pestañas salen del MISMO pedido: la de "Para aprobar" es la otra
+    // filtrada. Con dos pedidos, la cuenta de una y la lista de la otra podian
+    // quedar desfasadas despues de aprobar.
+    let empresas = []
+    let vista = 'pendientes'
+
+    async function cargar() {
+      const res = await fetch('/empresas')
+      const data = await res.json().catch(() => null)
+
+      if (!res.ok || !Array.isArray(data)) {
+        dibujarAviso('fa-circle-exclamation', (data && data.error) || 'No se pudieron traer las empresas. Probá recargar la página.')
+        return
       }
 
-      if (!c.admin_id) return '<span class="text-muted small">sin administrador</span>'
+      empresas = data
+      const pendientes = empresas.filter(e => e.estado === 'pendiente').length
 
-      return `<button class="btn-reset-admin"
-                      data-id="${c.admin_id}"
-                      data-nombre="${esc(c.admin_nombre)} ${esc(c.admin_apellido)}"
-                      data-email="${esc(c.admin_email)}"
-                      data-empresa="${esc(c.nombre)}">
-                <i class="fa-solid fa-key me-1"></i>Resetear contraseña
-              </button>`
+      const contador = document.getElementById('contador-pendientes')
+      contador.textContent = pendientes
+      contador.classList.toggle('hay', pendientes > 0)
+      document.getElementById('contador-todas').textContent = empresas.length
+
+      dibujar()
     }
 
-    container.innerHTML = `
-      <div class="table-responsive">
-        <table class="table table-hover">
-          <thead><tr>
-            <th>Empresa</th><th>CUIT</th><th>Email</th><th>Administrador</th>
-            <th>Usuarios</th><th>Estado</th><th class="text-end">Acciones</th>
-          </tr></thead>
-          <tbody>
-            ${data.map(c => `
-              <tr>
-                <td><strong>${esc(c.nombre)}</strong></td>
-                <td>${esc(c.cuit)}</td>
-                <td>${esc(c.email)}</td>
-                <td>${c.admin_id ? `${esc(c.admin_nombre)} ${esc(c.admin_apellido)}<br><span class="text-muted small">${esc(c.admin_email)}</span>` : '<span class="text-muted small">—</span>'}</td>
-                <td class="text-center">${c.cantidad_usuarios}</td>
-                <td>${estadoBadge(c.estado)}</td>
-                <td class="text-end">${botonReset(c)}</td>
-              </tr>
-            `).join('')}
-          </tbody>
-        </table>
-      </div>`
-  }
-
-  function verDetalle(id_empresa) {
-
-    const c = empresasEnPantalla.find(e => e.id_empresa === id_empresa)
-    if (!c) return
-
-    document.getElementById('modal-titulo').textContent = c.nombre
-
-    document.getElementById('modal-body').innerHTML = `
-      <dl class="row mb-0">
-        <dt class="col-5">CUIT</dt><dd class="col-7">${esc(c.cuit)}</dd>
-        <dt class="col-5">Email</dt><dd class="col-7">${esc(c.email)}</dd>
-        <dt class="col-5">Domicilio</dt><dd class="col-7">${c.domicilio ? esc(c.domicilio) : '-'}</dd>
-        <dt class="col-5">Cámara o federación</dt><dd class="col-7">${c.federacion ? esc(c.federacion) : '-'}</dd>
-        <dt class="col-5">Administrador</dt><dd class="col-7">${c.admin_nombre ? `${esc(c.admin_nombre)} ${esc(c.admin_apellido)}` : '-'}</dd>
-        <dt class="col-5">Email admin</dt><dd class="col-7">${c.admin_email ? esc(c.admin_email) : '-'}</dd>
-      </dl>`
-
-    document.getElementById('modal-footer').innerHTML = `
-      <button class="btn btn-success" onclick="aprobar(${c.id_empresa}); bootstrap.Modal.getInstance(document.getElementById('modalDetalle')).hide()">
-        <i class="fa-solid fa-check me-1"></i>Aprobar
-      </button>
-      <button class="btn btn-danger" onclick="rechazar(${c.id_empresa}); bootstrap.Modal.getInstance(document.getElementById('modalDetalle')).hide()">
-        <i class="fa-solid fa-xmark me-1"></i>Rechazar
-      </button>`
-
-    modalDetalle.show()
-  }
-
-  async function aprobar(id) {
-    await fetch(`/empresas/${id}/aprobar`, { method: 'PUT' })
-    cargarPendientes()
-    cargarTodas()
-  }
-
-  // Rechazar bloquea a TODOS los usuarios de la empresa: no puede ser un clic
-  // suelto sin aviso.
-  function rechazar(id) {
-    const empresa = empresasEnPantalla.find(e => e.id_empresa === id)
-    document.getElementById('rechazar-detalle').innerHTML =
-      `¿Confirmás rechazar a <strong>${esc(empresa ? empresa.nombre : 'esta empresa')}</strong>?`
-    document.getElementById('btn-confirmar-rechazar').dataset.id = id
-    new bootstrap.Modal(document.getElementById('modalRechazar')).show()
-  }
-
-  document.getElementById('btn-confirmar-rechazar').addEventListener('click', async (evento) => {
-    const boton = evento.currentTarget
-    boton.disabled = true
-
-    await fetch(`/empresas/${boton.dataset.id}/rechazar`, { method: 'PUT' })
-
-    boton.disabled = false
-    bootstrap.Modal.getInstance(document.getElementById('modalRechazar')).hide()
-    mostrarToast('Empresa rechazada. Podés volver a habilitarla desde "Todas las empresas".')
-    cargarPendientes()
-    cargarTodas()
-  })
-
-  // Volver a habilitar una empresa rechazada o suspendida, sin tener que tocar
-  // la base de datos.
-  async function habilitar(id) {
-    await fetch(`/empresas/${id}/aprobar`, { method: 'PUT' })
-    mostrarToast('Empresa habilitada')
-    cargarPendientes()
-    cargarTodas()
-  }
-
-  // ---- Reseteo de contraseña del administrador de una empresa ----
-
-  function mostrarToast(mensaje) {
-
-    const toast = document.createElement('div')
-    toast.style = 'position:fixed;top:24px;left:50%;transform:translateX(-50%);background:#2d7a4f;color:white;padding:14px 24px;border-radius:10px;z-index:9999;font-weight:500;box-shadow:0 4px 16px rgba(0,0,0,0.2)'
-    toast.innerHTML = `<i class="fa-solid fa-circle-check me-2"></i>${esc(mensaje)}`
-    document.body.appendChild(toast)
-    setTimeout(() => toast.remove(), 6000)
-  }
-
-  // Un solo listener para toda la seccion: sirve para las filas que se dibujan despues
-  document.getElementById('lista-todas').addEventListener('click', (evento) => {
-
-    const boton = evento.target.closest('.btn-reset-admin')
-    if (!boton) return
-
-    // Empresa suspendida: el boton es para volver a habilitarla
-    if (boton.dataset.habilitar) {
-      habilitar(Number(boton.dataset.habilitar))
-      return
+    function elegirVista(nueva) {
+      vista = nueva
+      document.querySelectorAll('.pestana').forEach(b => {
+        const activa = b.dataset.vista === vista
+        b.classList.toggle('activa', activa)
+        b.setAttribute('aria-selected', activa)
+      })
+      dibujar()
     }
 
-    document.getElementById('reset-nombre').textContent = boton.dataset.nombre
-    document.getElementById('reset-email').textContent  = boton.dataset.email
-    document.getElementById('reset-empresa').textContent   = boton.dataset.empresa
-    document.getElementById('reset-error').classList.add('d-none')
-    document.getElementById('btn-confirmar-reset').dataset.id = boton.dataset.id
+    document.querySelectorAll('.pestana').forEach(boton => {
+      boton.addEventListener('click', () => elegirVista(boton.dataset.vista))
+    })
 
-    new bootstrap.Modal(document.getElementById('modalReset')).show()
-  })
-
-  document.getElementById('btn-confirmar-reset').addEventListener('click', async (evento) => {
-
-    const boton = evento.currentTarget
-    const errorDiv = document.getElementById('reset-error')
-
-    boton.disabled = true
-
-    const res = await fetch(`/users/${boton.dataset.id}/resetear-password`, { method: 'POST' })
-    const resultado = await res.json()
-
-    boton.disabled = false
-
-    if (!res.ok) {
-      errorDiv.textContent = resultado.error
-      errorDiv.classList.remove('d-none')
-      return
+    function dibujarAviso(icono, texto) {
+      document.getElementById('encabezado-tabla').innerHTML = ''
+      document.getElementById('cuerpo-tabla').innerHTML = `
+        <tr class="fila-aviso"><td>
+          <div class="lista-vacia">
+            <i class="fa-solid ${icono} d-block"></i>${esc(texto)}
+          </div>
+        </td></tr>`
     }
 
-    bootstrap.Modal.getInstance(document.getElementById('modalReset')).hide()
-    mostrarToast(resultado.message)
-  })
-
-  // Control de acceso y carga inicial.
-  // Primero se averigua quien entra: si no corresponde, se lo desvia y NO se piden
-  // los datos. Si se pidieran igual, el servidor responde 401 o 403 y las funciones
-  // de dibujo revientan al intentar recorrer un error como si fuera una lista.
-  async function iniciar() {
-
-    const user = await cargarHeader()
-
-    if (!user || user.error) {
-      window.location.href = '/pages/login.html'
-      return
+    function dibujar() {
+      if (vista === 'pendientes') dibujarPendientes()
+      else dibujarTodas()
     }
 
-    if (user.rol !== 'superadmin') {
-      window.location.href = '/pages/dashboard.html'
-      return
+    function dibujarPendientes() {
+
+      const lista = empresas.filter(e => e.estado === 'pendiente')
+
+      if (lista.length === 0) {
+        dibujarAviso('fa-circle-check', 'No hay empresas esperando aprobación. Cuando una se registre, va a aparecer acá.')
+        return
+      }
+
+      document.getElementById('encabezado-tabla').innerHTML = `
+        <tr><th>Empresa</th><th>CUIT</th><th>Contacto</th><th>Administrador</th><th class="text-end">Acciones</th></tr>`
+
+      document.getElementById('cuerpo-tabla').innerHTML = lista.map(e => `
+        <tr>
+          <td class="td-principal" data-label="Empresa">
+            ${esc(e.nombre)}
+            ${ubicacion(e) ? `<span class="dato-chico fw-normal"><i class="fa-solid fa-location-dot me-1"></i>${esc(ubicacion(e))}</span>` : ''}
+          </td>
+          <td data-label="CUIT">${esc(cuitLegible(e.cuit))}</td>
+          <td data-label="Contacto">
+            <div class="valor">
+              ${esc(e.email)}
+              ${e.telefono ? `<span class="dato-chico">${esc(e.telefono)}</span>` : ''}
+            </div>
+          </td>
+          <td data-label="Administrador">${nombreAdmin(e) ? esc(nombreAdmin(e)) : '—'}</td>
+          <td class="td-acciones" data-label="Acciones">
+            <div class="acciones-fila">
+              <button class="btn-accion" data-ver="${e.id_empresa}"><i class="fa-solid fa-eye me-1"></i>Ver datos</button>
+              <button class="btn-aprobar" data-aprobar="${e.id_empresa}"><i class="fa-solid fa-check me-1"></i>Aprobar</button>
+              <button class="btn-accion peligro" data-rechazar="${e.id_empresa}"><i class="fa-solid fa-xmark me-1"></i>Rechazar</button>
+            </div>
+          </td>
+        </tr>`).join('')
     }
 
-    cargarPendientes()
-    cargarTodas()
-  }
+    function accionesDeTodas(e) {
 
-  iniciar()
+      const ver = `<button class="btn-accion" data-ver="${e.id_empresa}" title="Ver datos" aria-label="Ver datos de ${esc(e.nombre)}"><i class="fa-solid fa-eye"></i></button>`
 
-</script>
+      if (e.estado === 'pendiente') {
+        return ver + `<button class="btn-aprobar" data-aprobar="${e.id_empresa}"><i class="fa-solid fa-check me-1"></i>Aprobar</button>`
+      }
+
+      // Una empresa rechazada tiene que poder volver desde aca: antes de que
+      // existiera este boton, el unico camino era tocar la base.
+      if (e.estado === 'suspendida') {
+        return ver + `<button class="btn-accion" data-habilitar="${e.id_empresa}"><i class="fa-solid fa-rotate-left me-1"></i>Habilitar de nuevo</button>`
+      }
+
+      if (!e.admin_id) return ver
+
+      return ver + `<button class="btn-accion" data-reset="${e.id_empresa}"><i class="fa-solid fa-key me-1"></i>Resetear contraseña</button>`
+    }
+
+    function dibujarTodas() {
+
+      if (empresas.length === 0) {
+        dibujarAviso('fa-building', 'Todavía no se registró ninguna empresa.')
+        return
+      }
+
+      document.getElementById('encabezado-tabla').innerHTML = `
+        <tr><th>Empresa</th><th class="col-secundaria">CUIT</th><th>Administrador</th><th class="text-center">Usuarios</th><th>Estado</th><th class="text-end">Acciones</th></tr>`
+
+      document.getElementById('cuerpo-tabla').innerHTML = empresas.map(e => `
+        <tr class="${e.estado === 'pendiente' ? 'fila-pendiente' : ''}">
+          <td class="td-principal" data-label="Empresa">
+            ${esc(e.nombre)}
+            ${ubicacion(e) ? `<span class="dato-chico fw-normal"><i class="fa-solid fa-location-dot me-1"></i>${esc(ubicacion(e))}</span>` : ''}
+          </td>
+          <td class="td-oculto-movil col-secundaria" data-label="CUIT">${esc(cuitLegible(e.cuit))}</td>
+          <td data-label="Administrador">
+            ${nombreAdmin(e) ? `<div class="valor">${esc(nombreAdmin(e))}<span class="dato-chico">${esc(e.admin_email)}</span></div>` : '—'}
+          </td>
+          <td class="text-center td-oculto-movil" data-label="Usuarios">${e.cantidad_usuarios}</td>
+          <td data-label="Estado">${badgeEstado(e.estado)}</td>
+          <td class="td-acciones" data-label="Acciones"><div class="acciones-fila">${accionesDeTodas(e)}</div></td>
+        </tr>`).join('')
+    }
+
+    // ---- Un solo listener para todos los botones de la tabla y del detalle ----
+    // Las filas se dibujan de nuevo cada vez: un listener por boton se perderia.
+
+    const buscar = (id) => empresas.find(e => e.id_empresa === Number(id))
+
+    document.addEventListener('click', (evento) => {
+      const boton = evento.target.closest('[data-ver],[data-aprobar],[data-rechazar],[data-habilitar],[data-reset]')
+      if (!boton) return
+
+      const d = boton.dataset
+      if (d.ver)       verDetalle(buscar(d.ver))
+      if (d.aprobar)   aprobar(buscar(d.aprobar), boton)
+      if (d.rechazar)  pedirRechazo(buscar(d.rechazar))
+      if (d.habilitar) habilitar(buscar(d.habilitar), boton)
+      if (d.reset)     pedirReset(buscar(d.reset))
+    })
+
+    function cerrarModal(id) {
+      bootstrap.Modal.getInstance(document.getElementById(id))?.hide()
+    }
+
+    // ---- Detalle ----
+
+    function verDetalle(e) {
+      if (!e) return
+
+      const fila = (titulo, valor) =>
+        `<dt class="col-5">${titulo}</dt><dd class="col-7">${valor ? esc(valor) : '—'}</dd>`
+
+      document.getElementById('detalle-titulo').textContent = e.nombre
+      document.getElementById('detalle-cuerpo').innerHTML = `
+        <p class="mb-3">${badgeEstado(e.estado)}</p>
+        <dl class="row mb-0">
+          ${fila('CUIT', cuitLegible(e.cuit))}
+          ${fila('Email', e.email)}
+          ${fila('Teléfono', e.telefono)}
+          ${fila('Localidad', ubicacion(e))}
+          ${fila('Domicilio', e.domicilio)}
+          ${fila('Cámara o federación', e.federacion)}
+          ${fila('Administrador', nombreAdmin(e))}
+          ${fila('Email del administrador', e.admin_email)}
+          ${e.estado === 'pendiente' ? '' : fila('Usuarios', String(e.cantidad_usuarios))}
+        </dl>`
+
+      // Los botones del pie dependen de en que estado esta: aprobar una que ya
+      // esta activa no tiene sentido, y antes se ofrecia igual.
+      let pie = '<button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cerrar</button>'
+      if (e.estado === 'pendiente') {
+        pie = `
+          <button class="btn-accion peligro" data-rechazar="${e.id_empresa}"><i class="fa-solid fa-xmark me-1"></i>Rechazar</button>
+          <button class="btn-aprobar" data-aprobar="${e.id_empresa}"><i class="fa-solid fa-check me-1"></i>Aprobar</button>`
+      } else if (e.estado === 'suspendida') {
+        pie += `<button class="btn-aprobar" data-habilitar="${e.id_empresa}"><i class="fa-solid fa-rotate-left me-1"></i>Habilitar de nuevo</button>`
+      }
+      document.getElementById('detalle-pie').innerHTML = pie
+
+      bootstrap.Modal.getOrCreateInstance(document.getElementById('modalDetalle')).show()
+    }
+
+    // ---- Aprobar, rechazar, habilitar ----
+
+    async function cambiarEstado(e, accion, boton, mensajeOk) {
+      if (!e) return
+      if (boton) boton.disabled = true
+
+      const res = await fetch(`/empresas/${e.id_empresa}/${accion}`, { method: 'PUT' })
+      const resultado = await res.json().catch(() => ({}))
+
+      if (boton) boton.disabled = false
+
+      if (!res.ok) {
+        mostrarToast(resultado.error || 'No se pudo guardar el cambio', true)
+        return
+      }
+
+      cerrarModal('modalDetalle')
+      mostrarToast(mensajeOk)
+      await cargar()
+    }
+
+    function aprobar(e, boton) {
+      const quien = nombreAdmin(e) ? ` ${nombreAdmin(e)} ya puede entrar con su email y su contraseña.` : ''
+      cambiarEstado(e, 'aprobar', boton, `${e.nombre} quedó aprobada.${quien}`)
+    }
+
+    function habilitar(e, boton) {
+      cambiarEstado(e, 'aprobar', boton, `${e.nombre} quedó habilitada de nuevo.`)
+    }
+
+    function pedirRechazo(e) {
+      if (!e) return
+      cerrarModal('modalDetalle')
+      document.getElementById('rechazar-detalle').innerHTML =
+        `¿Confirmás rechazar a <strong>${esc(e.nombre)}</strong>?`
+      document.getElementById('btn-confirmar-rechazar').dataset.id = e.id_empresa
+      bootstrap.Modal.getOrCreateInstance(document.getElementById('modalRechazar')).show()
+    }
+
+    document.getElementById('btn-confirmar-rechazar').addEventListener('click', async (evento) => {
+      const boton = evento.currentTarget
+      const e = buscar(boton.dataset.id)
+      cerrarModal('modalRechazar')
+      await cambiarEstado(e, 'rechazar', boton, `${e.nombre} quedó rechazada. Podés volver a habilitarla desde "Todas".`)
+    })
+
+    // ---- Reseteo de la contraseña del administrador ----
+
+    function pedirReset(e) {
+      if (!e) return
+      document.getElementById('reset-nombre').textContent  = nombreAdmin(e)
+      document.getElementById('reset-email').textContent   = e.admin_email
+      document.getElementById('reset-empresa').textContent = e.nombre
+      document.getElementById('reset-error').classList.add('d-none')
+      document.getElementById('btn-confirmar-reset').dataset.id = e.admin_id
+      bootstrap.Modal.getOrCreateInstance(document.getElementById('modalReset')).show()
+    }
+
+    document.getElementById('btn-confirmar-reset').addEventListener('click', async (evento) => {
+
+      const boton = evento.currentTarget
+      const errorDiv = document.getElementById('reset-error')
+
+      boton.disabled = true
+      const res = await fetch(`/users/${boton.dataset.id}/resetear-password`, { method: 'POST' })
+      const resultado = await res.json().catch(() => ({}))
+      boton.disabled = false
+
+      if (!res.ok) {
+        errorDiv.textContent = resultado.error || 'No se pudo resetear la contraseña'
+        errorDiv.classList.remove('d-none')
+        return
+      }
+
+      cerrarModal('modalReset')
+      mostrarToast(resultado.message)
+    })
+
+    // ---- Control de acceso y carga inicial ----
+    // Primero se averigua quien entra: si no corresponde, se lo desvia y NO se
+    // piden los datos (el servidor responderia 401 o 403 igual).
+    async function iniciar() {
+
+      const user = await cargarHeader()
+
+      if (!user || user.error) {
+        window.location.href = '/pages/login.html'
+        return
+      }
+
+      if (user.rol !== 'superadmin') {
+        window.location.href = '/pages/dashboard.html'
+        return
+      }
+
+      await cargar()
+
+      // Si no hay nada para aprobar, se arranca mostrando todas: una pestaña
+      // vacia como primera pantalla parece que el sistema no anda.
+      if (!empresas.some(e => e.estado === 'pendiente')) elegirVista('todas')
+    }
+
+    iniciar()
+
+  </script>
 </body>
 </html>

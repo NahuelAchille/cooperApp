@@ -64,21 +64,6 @@ CREATE TABLE localidades (
 );
 
 -- =============================================
--- CLASIFICACIÓN DE EMPRESAS
--- =============================================
-
-CREATE TABLE sector (
-  id_sector INT AUTO_INCREMENT PRIMARY KEY,
-  nombre VARCHAR(50)
-);
-
-CREATE TABLE tipos_empresa (
-  id_tipo_empresa TINYINT(2) PRIMARY KEY,
-  nombre VARCHAR(50) NOT NULL UNIQUE,
-  descripcion TEXT
-);
-
--- =============================================
 -- EMPRESAS
 -- =============================================
 
@@ -87,7 +72,11 @@ CREATE TABLE empresas (
   nombre VARCHAR(100) NOT NULL,
   email VARCHAR(150) NOT NULL UNIQUE,
   cuit BIGINT NOT NULL UNIQUE,
-  id_tipo_empresa TINYINT(2),
+  -- El 14/11/2026 se sacaron otros restos del planteo para cooperativas: las
+  -- tablas "sector" y "tipos_empresa" (nunca se cargaron ni las uso ninguna
+  -- pantalla) con sus columnas, y la cantidad de trabajadores por genero
+  -- (cantidadTrabajadores, cantidadMujer, cantidadHombre, cantidadDiversidad),
+  -- un dato que informa el sector cooperativo y que la app no usaba para nada.
   -- La matricula se saco el 16/09/2026: era un dato del mundo cooperativo
   -- (numero de inscripcion en el INAES) y el producto ahora apunta a empresas
   -- en general. Una S.R.L., un monotributista o un negocio chico no tienen.
@@ -107,17 +96,10 @@ CREATE TABLE empresas (
   id_pais INT,
   id_localidad INT,
   id_provincia INT,
-  id_sector INT,
-  cantidadTrabajadores INT,
-  cantidadDiversidad INT,
-  cantidadHombre INT,
-  cantidadMujer INT,
   estado ENUM('pendiente', 'activa', 'suspendida') DEFAULT 'pendiente',
   FOREIGN KEY (id_pais) REFERENCES pais(id_pais),
   FOREIGN KEY (id_provincia) REFERENCES provincias(id_provincia),
-  FOREIGN KEY (id_localidad) REFERENCES localidades(id_localidad),
-  FOREIGN KEY (id_sector) REFERENCES sector(id_sector),
-  FOREIGN KEY (id_tipo_empresa) REFERENCES tipos_empresa(id_tipo_empresa)
+  FOREIGN KEY (id_localidad) REFERENCES localidades(id_localidad)
 );
 
 -- =============================================

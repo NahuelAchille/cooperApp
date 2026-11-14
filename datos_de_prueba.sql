@@ -51,6 +51,16 @@ DELETE FROM movimientos WHERE id_empresa IN (
     'contacto@metaloeste.com.ar',  'contacto@huertanorte.com.ar',
     'contacto@papeleracastelar.com.ar'));
 
+-- Los motivos de stock van ANTES que los tipos de dinero: desde el 25/10
+-- cada motivo que mueve plata apunta al tipo donde cae (motivos_stock.id_tipo).
+-- Borrados despues, MySQL rechazaba la limpieza y el archivo dejaba de poder
+-- correrse dos veces.
+DELETE FROM motivos_stock WHERE id_empresa IN (
+  SELECT id_empresa FROM empresas WHERE email IN (
+    'contacto@laesperanza.com.ar', 'contacto@elamanecer.com.ar',
+    'contacto@metaloeste.com.ar',  'contacto@huertanorte.com.ar',
+    'contacto@papeleracastelar.com.ar'));
+
 DELETE FROM tipos_movimiento WHERE id_categoria IN (
   SELECT id_categoria FROM categorias_movimiento WHERE id_empresa IN (
     SELECT id_empresa FROM empresas WHERE email IN (
@@ -64,11 +74,6 @@ DELETE FROM categorias_movimiento WHERE id_empresa IN (
     'contacto@metaloeste.com.ar',  'contacto@huertanorte.com.ar',
     'contacto@papeleracastelar.com.ar'));
 
-DELETE FROM motivos_stock WHERE id_empresa IN (
-  SELECT id_empresa FROM empresas WHERE email IN (
-    'contacto@laesperanza.com.ar', 'contacto@elamanecer.com.ar',
-    'contacto@metaloeste.com.ar',  'contacto@huertanorte.com.ar',
-    'contacto@papeleracastelar.com.ar'));
 
 -- Catalogo: primero los productos, despues su clasificacion
 -- (subcategorias -> categorias).
@@ -112,12 +117,10 @@ DELETE FROM empresas WHERE email IN (
 -- 1 · Alimentos La Esperanza S.R.L.  (activa · 7 empleados · alimentos)
 -- =============================================================================
 INSERT INTO empresas
-  (nombre, email, cuit, federacion, domicilio, estado,
-   cantidadTrabajadores, cantidadMujer, cantidadHombre, cantidadDiversidad)
+  (nombre, email, cuit, federacion, domicilio, estado)
 VALUES
   ('Alimentos La Esperanza S.R.L.', 'contacto@laesperanza.com.ar',
-   30712345678, NULL, 'Av. San Martín 2450, Ituzaingó', 'activa',
-   7, 4, 3, 0);
+   30712345678, NULL, 'Av. San Martín 2450, Ituzaingó', 'activa');
 
 INSERT INTO usuarios
   (nombre, apellido, email, password_hash, dni, id_rol, activo, debe_cambiar_password, id_empresa)
@@ -134,12 +137,10 @@ VALUES
 -- 2 · Textil El Amanecer S.A.  (activa · 6 empleados)
 -- =============================================================================
 INSERT INTO empresas
-  (nombre, email, cuit, federacion, domicilio, estado,
-   cantidadTrabajadores, cantidadMujer, cantidadHombre, cantidadDiversidad)
+  (nombre, email, cuit, federacion, domicilio, estado)
 VALUES
   ('Textil El Amanecer S.A.', 'contacto@elamanecer.com.ar',
-   30698765432, NULL, 'Belgrano 1180, Morón', 'activa',
-   6, 5, 1, 0);
+   30698765432, NULL, 'Belgrano 1180, Morón', 'activa');
 
 INSERT INTO usuarios
   (nombre, apellido, email, password_hash, dni, id_rol, activo, debe_cambiar_password, id_empresa)
@@ -155,12 +156,10 @@ VALUES
 -- 3 · Metalúrgica del Oeste S.A.  (activa · 9 empleados)
 -- =============================================================================
 INSERT INTO empresas
-  (nombre, email, cuit, federacion, domicilio, estado,
-   cantidadTrabajadores, cantidadMujer, cantidadHombre, cantidadDiversidad)
+  (nombre, email, cuit, federacion, domicilio, estado)
 VALUES
   ('Metalúrgica del Oeste S.A.', 'contacto@metaloeste.com.ar',
-   30655443322, NULL, 'Ruta 200 km 3, Merlo', 'activa',
-   9, 2, 7, 0);
+   30655443322, NULL, 'Ruta 200 km 3, Merlo', 'activa');
 
 INSERT INTO usuarios
   (nombre, apellido, email, password_hash, dni, id_rol, activo, debe_cambiar_password, id_empresa)
@@ -181,12 +180,10 @@ VALUES
 --     no pueden iniciar sesión hasta que la empresa sea aprobada.
 -- =============================================================================
 INSERT INTO empresas
-  (nombre, email, cuit, federacion, domicilio, estado,
-   cantidadTrabajadores, cantidadMujer, cantidadHombre, cantidadDiversidad)
+  (nombre, email, cuit, federacion, domicilio, estado)
 VALUES
   ('Distribuidora Huerta Norte S.R.L.', 'contacto@huertanorte.com.ar',
-   30677889900, NULL, 'Camino Real 540, San Miguel', 'pendiente',
-   5, 3, 1, 1);
+   30677889900, NULL, 'Camino Real 540, San Miguel', 'pendiente');
 
 INSERT INTO usuarios
   (nombre, apellido, email, password_hash, dni, id_rol, activo, debe_cambiar_password, id_empresa)
@@ -781,12 +778,10 @@ INSERT INTO movimientos_stock (id_producto, id_motivo_stock, cantidad, descripci
 -- Una empresa chica que existe sólo para el ejemplo del papel: no tiene
 -- finanzas ni stock cargados, sólo su catálogo.
 INSERT INTO empresas
-  (nombre, email, cuit, federacion, domicilio, estado,
-   cantidadTrabajadores, cantidadMujer, cantidadHombre, cantidadDiversidad)
+  (nombre, email, cuit, federacion, domicilio, estado)
 VALUES
   ('Papelera Castelar S.R.L.', 'contacto@papeleracastelar.com.ar',
-   30711223344, NULL, 'Arias 2150, Castelar', 'activa',
-   4, 2, 2, 0);
+   30711223344, NULL, 'Arias 2150, Castelar', 'activa');
 
 INSERT INTO usuarios
   (nombre, apellido, email, password_hash, dni, id_rol, activo, debe_cambiar_password, id_empresa)

@@ -1,163 +1,139 @@
-/* ===== VARIABLES ===== */
-:root {
-  --verde-primario: #2d7a4f;
-  --verde-oscuro: #235f3d;
-  --bg-page: #f0f7f3;
-  --card-bg: #ffffff;
-  --card-shadow: 0 2px 12px rgba(0,0,0,0.07);
-  --danger: #c0392b;
+/* ===========================================================================
+   PANEL DEL SUPERADMIN (Empresas)
+
+   Hasta el 14/11/2026 esta pantalla tenia su propio diseño: un panel lateral
+   verde con el logo repetido, un boton "Salir" propio y otra paleta. Venia de
+   antes del encabezado compartido y quedo distinta a todo el resto.
+
+   Ahora usa las mismas piezas que Usuarios, que es la pantalla mas parecida
+   (una tabla de personas o empresas con acciones por fila): la franja verde
+   del titulo, la tarjeta con la tabla, los badges y los modales salen de
+   usuarios.css, y la tabla pasa a tarjetas en el celular con tabla-mobile.css.
+   Aca va solo lo propio de esta pantalla.
+   =========================================================================== */
+
+/* ===== PESTAÑAS: las mismas que Stock ===== */
+.pestanas {
+  display: flex;
+  gap: 4px;
+  margin-bottom: 16px;
+  border-bottom: 2px solid #d8e8e0;
+  overflow-x: auto;
+  /* Sin esto el navegador dibujaba una barrita de scroll vertical al costado:
+     el borde de la pestaña activa se mete 2 px abajo a proposito. */
+  overflow-y: hidden;
 }
-
-/* ===== BASE ===== */
-body {
-  background-color: var(--bg-page);
-  color: #1a2e23;
-  margin: 0;
-  padding: 0;
-  font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
-}
-
-/* ===== LAYOUT =====
-   Mobile primero: el panel lateral se acuesta y queda como una franja
-   arriba del contenido. Recien en pantallas grandes se para como columna. */
-.sa-layout {
-  flex-direction: column;
-}
-
-.sidebar {
-  width: 100%;
-  min-height: auto;
-  background-color: var(--verde-primario);
-  box-shadow: 0 3px 12px rgba(0,0,0,0.15);
-}
-
-/* En el celular el logo sobra: ya esta el del encabezado de arriba. */
-.sidebar .sidebar-marca { display: none; }
-
-/* Los dos accesos van uno al lado del otro, no apilados. */
-.sidebar .nav {
-  flex-direction: row !important;
-  flex-wrap: wrap;
-  justify-content: center;
-}
-
-.sidebar .nav-link {
-  color: rgba(255,255,255,0.85);
-  border-radius: 8px;
-  font-weight: 500;
-  padding: 8px 12px;
+.pestana {
+  background: none;
+  border: none;
+  border-bottom: 3px solid transparent;
+  color: #6c8a7a;
+  font-weight: 600;
+  font-size: 0.9rem;
+  padding: 10px 18px;
+  margin-bottom: -2px;
   white-space: nowrap;
 }
-.sidebar .nav-link:hover,
-.sidebar .nav-link.active {
-  background-color: rgba(255,255,255,0.15);
-  color: #fff;
-}
-
-/* "Salir" acompaña a los accesos en vez de irse al pie. */
-.sidebar .sidebar-salir {
-  margin-top: 12px;
-}
-.sidebar .sidebar-salir .btn {
-  background: rgba(255,255,255,0.2);
-  color: #fff;
-  border: 1px solid rgba(255,255,255,0.4);
-}
-
-.badge-pendiente { background-color: rgba(255,255,255,0.25); color: #fff; }
-
-.sa-content { padding: 16px; }
-
-.seccion-titulo {
+.pestana:hover { color: var(--verde-primario); }
+.pestana.activa {
   color: var(--verde-primario);
-  font-weight: 700;
-  font-size: 1.1rem;
+  border-bottom-color: var(--verde-primario);
 }
 
-/* ===== TARJETA Y TABLA ===== */
-.content-card {
-  background: var(--card-bg);
-  border-radius: 12px;
-  box-shadow: var(--card-shadow);
-  padding: 16px;
-}
-
-.table thead th {
+/* El numerito de la pestaña: cuantas esperan. Si hay alguna, se ve de lejos. */
+.contador {
+  display: inline-block;
+  min-width: 22px;
+  padding: 1px 7px;
+  margin-left: 6px;
+  border-radius: 20px;
+  font-size: 0.75rem;
   background-color: #e4f2eb;
   color: var(--verde-primario);
-  border-bottom: 2px solid #a8d5bc;
-  font-size: 0.85rem;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
+}
+.contador.hay { background-color: #fff3cd; color: var(--warning); }
+
+/* ===== DATOS DE CADA FILA ===== */
+/* El nombre de la empresa es lo primero que se busca con la vista. */
+.table td.td-principal { font-weight: 600; }
+
+.dato-chico {
+  display: block;
+  color: #6c8a7a;
+  font-size: 0.82rem;
+}
+
+/* Lo que esta esperando: se marca la fila para que la decision se vea. */
+.fila-pendiente td { background-color: #fffbea; }
+
+/* Estado: los mismos tres colores que Usuarios, con la palabra adentro. */
+.badge-estado {
+  font-size: 0.78rem;
+  padding: 4px 10px;
+  border-radius: 20px;
+  font-weight: 600;
   white-space: nowrap;
 }
-.table tbody tr:hover { background-color: #f2faf6; }
-.table td { vertical-align: middle; color: #1a2e23; }
 
 /* ===== BOTONES ===== */
+/* Aprobar es la accion que se vino a hacer: va llena. Las demas, de borde,
+   como en Usuarios (.btn-accion). */
 .btn-aprobar {
   background-color: var(--verde-primario);
   color: #fff;
-  border: none;
-  border-radius: 6px;
-  white-space: nowrap;
-}
-.btn-aprobar:hover { background-color: var(--verde-oscuro); color: #fff; }
-
-.btn-rechazar {
-  background: transparent;
-  color: var(--danger);
-  border: 1.5px solid var(--danger);
-  border-radius: 6px;
-  white-space: nowrap;
-}
-.btn-rechazar:hover { background-color: var(--danger); color: #fff; }
-
-.btn-reset-admin {
-  background: none;
-  border: 1.5px solid #c8e6d5;
-  color: var(--verde-primario);
+  border: 1.5px solid var(--verde-primario);
   border-radius: 8px;
   padding: 5px 12px;
   font-size: 0.8rem;
   font-weight: 600;
   white-space: nowrap;
 }
-.btn-reset-admin:hover { background-color: #e4f2eb; }
-.btn-reset-admin:disabled { opacity: 0.5; }
+.btn-aprobar:hover { background-color: var(--verde-oscuro); border-color: var(--verde-oscuro); color: #fff; }
+.btn-aprobar:disabled,
+.btn-accion:disabled { opacity: 0.5; }
 
-/* ===== MODALES ===== */
-.modal-content { border-radius: 12px; overflow: hidden; border: none; }
-.modal-header { background-color: var(--verde-primario); color: #fff; border: none; }
-.modal-footer { background-color: var(--bg-page); border-top: 1px solid #c8e6d5; }
-.modal-body dl dt { color: var(--verde-primario); }
-
-/* ===== TABLET / ESCRITORIO ===== */
-@media (min-width: 768px) {
-  .sa-layout { flex-direction: row; }
-
-  .sidebar {
-    width: 230px;
-    flex-shrink: 0;
-    min-height: 100vh;
-    box-shadow: 3px 0 12px rgba(0,0,0,0.15);
-  }
-
-  .sidebar .sidebar-marca { display: block; }
-
-  .sidebar .nav {
-    flex-direction: column !important;
-    justify-content: flex-start;
-  }
-
-  /* Con la columna parada, "Salir" vuelve al pie. */
-  .sidebar .sidebar-salir { margin-top: auto; }
-
-  .sa-content { padding: 24px; }
-  .seccion-titulo { font-size: 1.25rem; }
-  .content-card { padding: 24px; }
+.acciones-fila {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  justify-content: flex-end;
 }
 
-@media (min-width: 1024px) {
-  .sa-content { padding: 32px; }
+/* ===== LISTA VACIA ===== */
+.lista-vacia {
+  text-align: center;
+  padding: 40px 16px;
+  color: #6c8a7a;
 }
+.lista-vacia i {
+  font-size: 2rem;
+  color: #a8d5bc;
+  margin-bottom: 12px;
+}
+
+/* ===== DETALLE ===== */
+.modal-body dl dt { color: var(--verde-primario); font-weight: 600; }
+.modal-body dl dd { word-break: break-word; }
+
+/* ===== CELULAR ===== */
+@media (max-width: 767px) {
+  /* En tarjeta, los botones van a la izquierda y ocupan el ancho que haya. */
+  .acciones-fila { justify-content: flex-start; width: 100%; }
+  /* Mismo alto que los demas botones de tarjeta: comodos para el pulgar. */
+  .tabla-tarjetas tbody td.td-acciones .btn-aprobar { min-height: 38px; font-size: 0.95rem; }
+  .fila-pendiente td { background-color: transparent; }
+}
+
+/* ===== TABLET (768 a 1023 px) =====
+   Ahi la tabla todavia es tabla pero no entra entera: en "Todas" se pasaba
+   47 px en 800 de ancho y el boton de cada fila quedaba cortado. El CUIT es
+   lo que menos se mira de corrido y esta en "Ver datos". */
+@media (min-width: 768px) and (max-width: 1023px) {
+  .col-secundaria { display: none; }
+}
+
+/* Un dato de dos renglones (nombre y email, email y telefono) va envuelto en
+   .valor. En la tarjeta del celular cada celda es flex: sin el envoltorio, los
+   dos renglones quedaban uno al lado del otro y el email se salia de la
+   pantalla. */
+.valor { min-width: 0; overflow-wrap: anywhere; }

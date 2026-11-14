@@ -1,7 +1,8 @@
 ===========================================================
  CooperApp - USUARIOS DE PRUEBA
- Actualizado: 02/11/2026  (la venta y la compra en un solo paso,
-                           y Articulacion: el buscador entre empresas)
+ Actualizado: 14/11/2026  (pantalla del superadmin nueva, y se
+                           sacaron restos de cuando era para
+                           cooperativas: hay que recrear la base)
 ===========================================================
 
 -----------------------------------------------------------
@@ -30,7 +31,10 @@ agrego "es_servicio" en productos y en categorias_producto, y
 "id_servicio" en movimientos, el 25/10 se agrego "precio_venta" en
 productos e "id_tipo" en motivos_stock, y el 02/11 la tabla "rubros",
 las coordenadas de "localidades", el telefono y lo que se muestra de
-cada empresa, y "visible_empresas" e "id_rubro" en productos. Si venis de una version
+cada empresa, y "visible_empresas" e "id_rubro" en productos, y el
+14/11 se sacaron restos de cuando era para cooperativas: las tablas
+"sector" y "tipos_empresa" y la cantidad de trabajadores por genero
+de "Mi empresa". Si venis de una version
 anterior hay que BORRAR la base y volver a crearla, no alcanza con
 reimportar. Los comandos estan al final.
 
@@ -662,15 +666,16 @@ CAMBIOS DEL 16/09 POR LA AUDITORIA DE QA:
    "C:\xampp\mysql\bin\mysql.exe" -u root < datos_de_prueba.sql
 
  database.sql        = el sistema (tablas + superadmin)
- datos_de_prueba.sql = las 4 empresas y sus 27 usuarios, mas
-                       categorias, movimientos, catalogo de 18
-                       productos, motivos de stock y su historial
+ datos_de_prueba.sql = las 5 empresas y sus 28 usuarios, mas
+                       categorias, movimientos, catalogo de
+                       productos y servicios, motivos de stock
+                       y su historial
 
  No hace falta ninguna opcion de codificacion: los archivos
  traen el SET NAMES adentro.
 
  datos_de_prueba.sql se puede volver a correr cuando quieras:
- borra las 4 empresas de prueba y las carga de nuevo, sin
+ borra las 5 empresas de prueba y las carga de nuevo, sin
  tocar el superadmin ni nada que hayas creado por fuera. Sirve
  para dejar todo limpio despues de andar probando.
 
