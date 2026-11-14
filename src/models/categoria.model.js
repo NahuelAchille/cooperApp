@@ -92,6 +92,26 @@ const findTiposByCategoria = async (id_categoria) => {
   return rows
 }
 
+// Todos los tipos que se pueden usar HOY al cargar plata, con su categoria y
+// su naturaleza, en un solo pedido (HU-87). Es lo que arma el desplegable unico
+// "¿En qué va?" de Movimientos y el del cobro en Stock.
+//
+// Hacen falta los dos activos: el tipo y su categoria. Un tipo activo dentro
+// de una categoria dada de baja no se puede usar (lo rechaza el alta), asi que
+// ofrecerlo seria ofrecer un error.
+const findTiposActivos = async (id_empresa) => {
+
+  const [rows] = await db.query(`
+    SELECT t.id_tipo, t.nombre, c.id_categoria, c.nombre AS categoria_nombre, c.naturaleza
+    FROM tipos_movimiento t
+    JOIN categorias_movimiento c ON c.id_categoria = t.id_categoria
+    WHERE c.id_empresa = ? AND c.activo = 1 AND t.activo = 1
+    ORDER BY c.naturaleza, c.nombre, t.nombre
+  `, [id_empresa])
+
+  return rows
+}
+
 // Busca un tipo verificando que pertenezca a la empresa (subiendo por la
 // categoria). Devuelve tambien la naturaleza, util al cargar un movimiento.
 const findTipoById = async (id_tipo, id_empresa) => {
@@ -165,6 +185,6 @@ const crearCategoriasIniciales = async (id_empresa, categorias) => {
 
 module.exports = {
   findCategorias, findCategoriaById, createCategoria, updateCategoria, setActivoCategoria,
-  findTiposByCategoria, findTipoById, createTipo, updateTipo, setActivoTipo,
+  findTiposByCategoria, findTiposActivos, findTipoById, createTipo, updateTipo, setActivoTipo,
   contarCategorias, crearCategoriasIniciales
 }

@@ -111,6 +111,21 @@ exports.cambiarEstadoCategoria = async (req, res) => {
 // TIPOS
 // =====================================================================
 
+// Todos los tipos que se pueden usar al cargar plata, con su categoria, de una
+// vez. Antes la pantalla pedia una lista por cada categoria.
+exports.getTiposActivos = async (req, res) => {
+
+  try {
+    const id_empresa = req.session.user.empresa.id
+    const tipos = await categoriaModel.findTiposActivos(id_empresa)
+    res.json(tipos)
+
+  } catch (error) {
+    console.error(error)
+    res.status(500).json({ error: 'Error al obtener los tipos' })
+  }
+}
+
 exports.getTipos = async (req, res) => {
 
   try {

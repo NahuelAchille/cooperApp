@@ -252,7 +252,7 @@ body {
 
 /* Fila anulada */
 .fila-anulada td { opacity: 0.5; text-decoration: line-through; }
-.fila-anulada td.sin-tachado { text-decoration: none; }
+.fila-anulada td.sin-tachado { text-decoration: none; opacity: 1; }
 
 /* ===== BOTONES DE ACCION ===== */
 .btn-accion {
@@ -345,3 +345,8 @@ body {
    nada, y ofrece lo que hay que hacer en cada caso (HU-88). Igual que en Stock
    y en Productos. */
 .tabla-vacia { padding: 32px 20px; text-align: center; color: #8aa596; font-size: 0.9rem; }
+
+/* "Cargar de nuevo" en un movimiento anulado (HU-87): va al lado de la marca
+   de anulado y sin el gris de la fila, porque es lo único que se puede hacer. */
+.btn-accion.btn-recargar { margin-left: 6px; border-color: #c8e6d5; color: var(--verde-primario, #2d7a4f); }
+.btn-accion.btn-recargar:hover { background-color: #e4f2eb; }

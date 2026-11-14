@@ -1262,24 +1262,12 @@
 
     let tiposDeMovimiento = []  // los tipos activos, para el desplegable
 
-    // Trae el árbol de clasificación del dinero, aplanado a "Categoría › Tipo",
-    // que es como se elige en la pantalla de movimientos.
+    // Trae los tipos de dinero que se pueden usar, con su categoría, de una vez:
+    // es el mismo pedido que arma el desplegable de Movimientos (HU-87). Antes
+    // se pedía una lista por cada categoría.
     async function cargarTiposDeMovimiento() {
       if (tiposDeMovimiento.length) return tiposDeMovimiento
-
-      const categorias = await fetch('/categorias?soloActivas=true').then(r => r.ok ? r.json() : [])
-
-      const porCategoria = await Promise.all(categorias.map(async (c) => {
-        const tipos = await fetch(`/categorias/${c.id_categoria}/tipos`).then(r => r.ok ? r.json() : [])
-        return tipos.filter(t => t.activo).map(t => ({
-          id_tipo: t.id_tipo,
-          nombre: t.nombre,
-          categoria_nombre: c.nombre,
-          naturaleza: c.naturaleza
-        }))
-      }))
-
-      tiposDeMovimiento = porCategoria.flat()
+      tiposDeMovimiento = await fetch('/categorias/tipos').then(r => r.ok ? r.json() : [])
       return tiposDeMovimiento
     }
 

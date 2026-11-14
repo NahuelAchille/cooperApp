@@ -120,7 +120,8 @@ Es la parte de **Movimientos**: todo lo que entró y salió de la caja.
 1. Andá a **Movimientos** y tocá **Nuevo movimiento** (o, desde el panel de inicio,
    **Registrar ingreso** o **Registrar egreso**).
 2. Contestá **¿Qué pasó con la plata?**: **Entró** o **Salió**.
-3. Elegí la **categoría** y el **tipo** (por ejemplo, *Gastos fijos › Luz*).
+3. Elegí **de qué fue** en la lista, que está agrupada por categoría (por ejemplo,
+   *Luz*, dentro de *Gastos fijos*). Abajo te dice en qué categoría cae lo que elegiste.
 4. Escribí el **monto**, la **fecha** y, si querés, una descripción.
 5. Si esa plata vino de un servicio que prestás o contratás, elegilo al final, en
    **¿Este movimiento es de algún servicio?** Casi siempre queda vacío.
@@ -146,11 +147,17 @@ Los números de arriba se recalculan con lo que filtraste.
 ### Me equivoqué en un movimiento
 
 Los movimientos **no se borran ni se editan: se anulan**. Tocá el botón de
-**Anular** en esa fila y confirmá.
+**Anular** en esa fila y elegí:
 
-- Un movimiento anulado **no suma en ningún total**, pero queda en la lista (con
-  **Ver anulados**) para que se sepa qué pasó.
-- **Anular no se puede deshacer.** Si te equivocaste, anulalo y cargalo de nuevo bien.
+- **Anular y corregir**: lo anula y te abre el formulario **con los mismos datos**,
+  para que cambies sólo lo que estaba mal (el monto, la fecha, de qué fue) y toques
+  **Registrar**. Es lo que conviene si te equivocaste al cargarlo.
+- **Anular**: sólo lo anula, para algo que no tendría que haberse cargado.
+
+Un movimiento anulado **no suma en ningún total**, pero queda en la lista (con
+**Ver anulados**) para que se sepa qué pasó. **Anular no se puede deshacer**, pero
+desde esa lista podés tocar **Cargar de nuevo** en uno anulado y se abre el formulario
+con sus datos.
 
 ---
 

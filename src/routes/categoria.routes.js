@@ -18,6 +18,9 @@ const puedeLeer = [requireLogin, requireRol('admin_empresa', 'tesorero'), modulo
 
 // --- Categorias (nivel 2) ---
 router.get('/',              ...puedeLeer, categoriaController.getCategorias)
+// Todos los tipos activos con su categoria, para el desplegable unico del alta
+// de un movimiento (HU-87). No choca con '/:id/tipos': son dos tramos distintos.
+router.get('/tipos',         ...puedeLeer, categoriaController.getTiposActivos)
 router.post('/',             ...soloAdmin, categoriaController.crearCategoria)
 router.put('/:id',           ...soloAdmin, categoriaController.actualizarCategoria)
 router.put('/:id/estado',    ...soloAdmin, categoriaController.cambiarEstadoCategoria)
