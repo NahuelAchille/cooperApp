@@ -1,7 +1,7 @@
 /* ===== VARIABLES ===== */
 :root {
   --verde-primario: #2d7a4f;
-  --verde-secundario: #3a9e65;
+  --verde-secundario: #2f8456;
   --verde-oscuro: #1a6b3a;
   --bg-page: #f0f7f3;
   --card-bg: #ffffff;
@@ -93,7 +93,7 @@ body {
 
 /* Los dos efectos se leen de un vistazo por el color: verde entra, rojo sale */
 .badge-efecto {
-  font-size: 0.75rem;
+  font-size: 0.8125rem;
   padding: 4px 10px;
   border-radius: 6px;
   font-weight: 600;
@@ -105,11 +105,11 @@ body {
 
 /* A qué categoría va la plata del motivo, debajo del ingreso o el egreso.
    Si falta, va en ámbar: sin eso, las ventas no se pueden registrar. */
-.destino-plata { font-size: 0.76rem; color: #6c8a7a; margin-top: 4px; }
+.destino-plata { font-size: 0.76rem; color: #4a6356; margin-top: 4px; }
 .destino-plata.falta { color: #8a6d1f; font-weight: 600; }
 
 .badge-estado {
-  font-size: 0.72rem;
+  font-size: 0.8125rem;
   padding: 3px 9px;
   border-radius: 20px;
   font-weight: 600;
@@ -134,7 +134,7 @@ body {
 .btn-mini.peligro:hover { background-color: #fde8e8; }
 .btn-mini:disabled { opacity: 0.5; }
 
-.tabla-vacia { padding: 32px 20px; text-align: center; color: #8aa596; font-size: 0.9rem; }
+.tabla-vacia { padding: 32px 20px; text-align: center; color: #4a6356; font-size: 0.9rem; }
 
 /* ===== MODALES ===== */
 .modal-content { border-radius: 12px; overflow: hidden; border: none; }
@@ -164,7 +164,7 @@ body {
   box-shadow: var(--card-shadow);
   padding: 40px 20px;
   text-align: center;
-  color: #6c8a7a;
+  color: #4a6356;
 }
 
 /* ===== RESPONSIVE ===== */

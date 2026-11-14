@@ -1,13 +1,13 @@
 /* ===== VARIABLES ===== */
 :root {
   --verde-primario: #2d7a4f;
-  --verde-secundario: #3a9e65;
+  --verde-secundario: #2f8456;
   --verde-oscuro: #1a6b3a;
   --bg-page: #f0f7f3;
   --card-bg: #ffffff;
   --card-shadow: 0 2px 12px rgba(0,0,0,0.07);
   --danger: #a01c1c;
-  --warning: #b5650a;
+  --warning: #8a4b00;
 }
 
 body {
@@ -92,7 +92,7 @@ body {
   margin-top: 12px;
   flex-wrap: wrap;
 }
-.contador { color: #6c8a7a; font-size: 0.85rem; font-weight: 600; }
+.contador { color: #4a6356; font-size: 0.85rem; font-weight: 600; }
 
 .btn-limpiar {
   background: none;
@@ -125,7 +125,7 @@ body {
 .table tbody td { vertical-align: middle; }
 
 .prod-nombre { font-weight: 600; }
-.prod-clasificacion { color: #6c8a7a; font-size: 0.82rem; }
+.prod-clasificacion { color: #4a6356; font-size: 0.82rem; }
 
 /* La existencia es el dato principal de la pantalla: va grande y a la derecha,
    que es donde el ojo busca un número. */
@@ -134,7 +134,7 @@ body {
   font-weight: 700;
   white-space: nowrap;
 }
-.existencia .unidad { font-size: 0.78rem; font-weight: 500; color: #6c8a7a; margin-left: 4px; }
+.existencia .unidad { font-size: 0.78rem; font-weight: 500; color: #4a6356; margin-left: 4px; }
 
 /* Tres estados posibles, que se leen por color sin tener que comparar
    mentalmente contra el mínimo */
@@ -142,11 +142,11 @@ body {
 .existencia.bajo  { color: var(--warning); }
 .existencia.sin   { color: var(--danger); }
 /* Todavia nadie le cargo nada: es un cero neutro, no una alarma */
-.existencia.nuevo { color: #b3c7bc; }
+.existencia.nuevo { color: #4a6356; }
 
 .aviso-minimo {
   display: inline-block;
-  font-size: 0.72rem;
+  font-size: 0.8125rem;
   font-weight: 600;
   padding: 3px 9px;
   border-radius: 20px;
@@ -156,7 +156,7 @@ body {
 .aviso-minimo.sin   { background-color: #fde8e8; color: var(--danger); }
 .aviso-minimo.nuevo { background-color: #eef1f0; color: #7a8a82; }
 
-.minimo-texto { color: #8aa596; font-size: 0.82rem; white-space: nowrap; }
+.minimo-texto { color: #4a6356; font-size: 0.82rem; white-space: nowrap; }
 
 .btn-mini {
   background: none;
@@ -171,7 +171,7 @@ body {
 .btn-mini:hover { background-color: #e4f2eb; }
 .btn-mini:disabled { opacity: 0.5; }
 
-.tabla-vacia { padding: 32px 20px; text-align: center; color: #8aa596; font-size: 0.9rem; }
+.tabla-vacia { padding: 32px 20px; text-align: center; color: #4a6356; font-size: 0.9rem; }
 
 /* ===== MODAL ===== */
 .modal-content { border-radius: 12px; overflow: hidden; border: none; }
@@ -217,7 +217,7 @@ body {
   box-shadow: var(--card-shadow);
   padding: 40px 20px;
   text-align: center;
-  color: #6c8a7a;
+  color: #4a6356;
 }
 
 /* ===== RESPONSIVE ===== */
@@ -248,7 +248,7 @@ body {
   background: none;
   border: none;
   border-bottom: 3px solid transparent;
-  color: #6c8a7a;
+  color: #4a6356;
   font-weight: 600;
   font-size: 0.9rem;
   padding: 10px 18px;
@@ -266,12 +266,12 @@ body {
 .filtros-grid-mov { display: grid; grid-template-columns: 1fr; gap: 12px; }
 
 .fecha-mov { white-space: nowrap; color: #4a6b5a; font-size: 0.88rem; }
-.detalle-mov { color: #6c8a7a; font-size: 0.85rem; }
+.detalle-mov { color: #4a6356; font-size: 0.85rem; }
 
 /* El motivo y la cantidad se leen por color: verde entra, rojo sale. Es lo
    que permite recorrer el historial sin leer cada renglón. */
 .badge-motivo {
-  font-size: 0.78rem;
+  font-size: 0.8125rem;
   font-weight: 600;
   padding: 3px 10px;
   border-radius: 6px;
@@ -283,9 +283,9 @@ body {
 .cantidad-mov { font-weight: 700; white-space: nowrap; }
 .cantidad-mov.entrada { color: var(--verde-oscuro); }
 .cantidad-mov.salida  { color: var(--danger); }
-.cantidad-mov .unidad { font-size: 0.75rem; font-weight: 500; color: #6c8a7a; margin-left: 4px; }
+.cantidad-mov .unidad { font-size: 0.75rem; font-weight: 500; color: #4a6356; margin-left: 4px; }
 
-.sin-dato { color: #b3c7bc; }
+.sin-dato { color: #4a6356; }
 
 @media (min-width: 768px) {
   .filtros-grid-mov { grid-template-columns: 1fr 1fr; }
@@ -305,7 +305,7 @@ body {
 .badge-anulado {
   background-color: #fde8e8;
   color: var(--danger);
-  font-size: 0.7rem;
+  font-size: 0.8125rem;
   font-weight: 600;
   padding: 2px 8px;
   border-radius: 20px;
@@ -317,7 +317,7 @@ body {
    olvida y despues descuadra: conviene que se vea de un vistazo. */
 .marca-dinero {
   display: inline-block;
-  font-size: 0.7rem;
+  font-size: 0.8125rem;
   font-weight: 600;
   padding: 2px 8px;
   border-radius: 20px;
@@ -329,3 +329,21 @@ body {
 
 .btn-mini.peligro { border-color: #f0c2c2; color: var(--danger); }
 .btn-mini.peligro:hover { background-color: #fde8e8; }
+
+/* ===== Celular (UX final, F-14 y F-15) =====
+   Arriba, Vender y Comprar lado a lado y grandes: es lo de todos los días, y
+   antes la venta quedaba última de cuatro botones apilados. Lo demás, más
+   chico abajo. En cada tarjeta, Comprar y Vender con texto y de 44 px. */
+.btn-mini .texto-boton { display: none; }
+
+@media (max-width: 767px) {
+  .acciones-header { width: 100%; }
+  .acciones-header #btn-vender  { order: 1; flex: 1 1 calc(50% - 4px); }
+  .acciones-header #btn-comprar { order: 2; flex: 1 1 calc(50% - 4px); }
+  .acciones-header #btn-nuevo   { order: 3; flex: 1 1 100%; font-size: 0.875rem; }
+  .acciones-header > a          { order: 4; font-size: 0.875rem; padding: 4px 10px; }
+
+  .btn-mini .texto-boton { display: inline; margin-left: 6px; }
+  /* Un "tr" más en el selector: tabla-mobile.css carga después y lo dejaba en 38 px. */
+  .tabla-tarjetas tbody tr td.td-acciones .btn-mini { min-height: 44px; min-width: 44px; }
+}

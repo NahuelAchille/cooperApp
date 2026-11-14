@@ -102,7 +102,11 @@ const findTiposByCategoria = async (id_categoria) => {
 const findTiposActivos = async (id_empresa) => {
 
   const [rows] = await db.query(`
-    SELECT t.id_tipo, t.nombre, c.id_categoria, c.nombre AS categoria_nombre, c.naturaleza
+    SELECT t.id_tipo, t.nombre, c.id_categoria, c.nombre AS categoria_nombre, c.naturaleza,
+           -- Si es donde cae la plata de una venta o una compra de Stock: el
+           -- alta lo usa para avisar que quizá ya la cargó el depósito (UX F-02).
+           EXISTS (SELECT 1 FROM motivos_stock mo
+                   WHERE mo.id_tipo = t.id_tipo AND mo.activo = 1 AND mo.efecto_dinero <> 'ninguno') AS destino_de_stock
     FROM tipos_movimiento t
     JOIN categorias_movimiento c ON c.id_categoria = t.id_categoria
     WHERE c.id_empresa = ? AND c.activo = 1 AND t.activo = 1

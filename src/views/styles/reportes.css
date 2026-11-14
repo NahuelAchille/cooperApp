@@ -1,7 +1,7 @@
 /* ===== VARIABLES ===== */
 :root {
   --verde-primario: #2d7a4f;
-  --verde-secundario: #3a9e65;
+  --verde-secundario: #2f8456;
   --verde-oscuro: #1a6b3a;
   --bg-page: #f0f7f3;
   --card-bg: #ffffff;
@@ -125,7 +125,7 @@ body {
 }
 
 /* Debajo de las vistas que son la misma plata (UX 28/09, H-07) */
-.nota-vista { font-size: 0.78rem; color: #7d8c84; margin: 6px 0 0; }
+.nota-vista { font-size: 0.78rem; color: #4a6356; margin: 6px 0 0; }
 
 /* Las pérdidas, aparte: no son esa plata */
 .vista-aparte {
@@ -136,7 +136,7 @@ body {
   padding-top: 12px;
   border-top: 1px dashed #d8e6de;
 }
-.rotulo-aparte { font-size: 0.82rem; font-weight: 600; color: #7d8c84; }
+.rotulo-aparte { font-size: 0.82rem; font-weight: 600; color: #4a6356; }
 .vista-aparte .btn-vista { flex: 0 1 auto; }
 
 /* ===== LA TABLA AGRUPADA ===== */
@@ -297,7 +297,7 @@ body {
   font-weight: 700;
 }
 .total-card .valor { font-size: 1.5rem; font-weight: 700; }
-.total-card .detalle { font-size: 0.78rem; color: #8b9a92; margin-top: 3px; }
+.total-card .detalle { font-size: 0.78rem; color: #4a6356; margin-top: 3px; }
 
 .total-card.ingresos { border-left-color: var(--verde-secundario); }
 .total-card.ingresos .valor { color: var(--verde-oscuro); }
@@ -339,7 +339,7 @@ body {
 .badge-cat {
   background-color: #e4f2eb;
   color: var(--verde-primario);
-  font-size: 0.76rem;
+  font-size: 0.8125rem;
   padding: 3px 9px;
   border-radius: 20px;
   font-weight: 600;
@@ -348,11 +348,11 @@ body {
 .origen-servicio { font-size: 0.78rem; color: #6c7a72; margin-top: 3px; }
 .origen-servicio i { margin-right: 5px; opacity: 0.75; }
 
-.tabla-vacia { text-align: center; padding: 26px 16px; color: #8b9a92; }
+.tabla-vacia { text-align: center; padding: 26px 16px; color: #4a6356; }
 
 .pie-reporte {
   font-size: 0.78rem;
-  color: #8b9a92;
+  color: #4a6356;
   margin: 12px 0 0;
   text-align: right;
 }

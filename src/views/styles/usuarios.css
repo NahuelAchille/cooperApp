@@ -1,7 +1,7 @@
 /* ===== VARIABLES ===== */
 :root {
   --verde-primario: #2d7a4f;
-  --verde-secundario: #3a9e65;
+  --verde-secundario: #2f8456;
   --verde-oscuro: #1a6b3a;
   --bg-page: #f0f7f3;
   --card-bg: #ffffff;
@@ -90,7 +90,7 @@ body {
 .badge-rol {
   background-color: #e4f2eb;
   color: var(--verde-primario);
-  font-size: 0.78rem;
+  font-size: 0.8125rem;
   padding: 4px 10px;
   border-radius: 20px;
   font-weight: 600;

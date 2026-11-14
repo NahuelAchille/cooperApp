@@ -18,7 +18,7 @@ body {
 
 /* ===== ENCABEZADO DE LA PANTALLA ===== */
 .page-header {
-  background: linear-gradient(135deg, var(--verde-primario), #3a9e65);
+  background: linear-gradient(135deg, var(--verde-primario), #2f8456);
   color: #fff;
   padding: 16px;
   display: flex;

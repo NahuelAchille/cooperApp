@@ -108,7 +108,7 @@ main {
   border: none;
   border-radius: 50px;
   cursor: pointer;
-  background: linear-gradient(180deg, #19de75 0%, #128c4a 100%); 
+  background: linear-gradient(180deg, #2d7a4f 0%, #1e5c3a 100%); 
   color: #ffffff;
   font-weight: bold;
   box-shadow: 0 6px 12px rgba(0, 0, 0, 0.25); 
@@ -116,7 +116,7 @@ main {
 }
 
 #boton-login button:hover {
-  background: linear-gradient(180deg, #9fc1cb 0%, #19de75 100%); 
+  background: linear-gradient(180deg, #1e5c3a 0%, #17482e 100%); 
   box-shadow: 0 8px 16px rgba(0, 0, 0, 0.35);
   transform: translateY(-2px); 
 }
@@ -613,7 +613,7 @@ main {
 
 .dashboard-kpi h3, h5 {
   font-size: 0.8rem;
-  color:#aaaaaa
+  color:#4a6356
 }
 
 .dashboard-kpi h4 {

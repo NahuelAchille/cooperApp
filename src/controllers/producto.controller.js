@@ -3,6 +3,7 @@ const rubroModel = require('../models/rubro.model')
 const categoriaProductoModel = require('../models/categoria-producto.model')
 const { UNIDADES_MEDIDA, CLAVES_UNIDADES } = require('../config/unidades-medida')
 const { flagServicio, rotulo } = require('../middlewares/catalogo.middleware')
+const { aNumero } = require('../services/validacion.service')
 
 // Este controlador sirve los DOS catalogos, el de productos y el de
 // servicios: un servicio es un producto sin stock. De cual se trata lo dice
@@ -77,7 +78,7 @@ const limpiarImporte = (valor, es_servicio, palabras) => {
     return { error: `${palabras.El} tiene que ser un número` }
   }
 
-  const numero = Number(valor)
+  const numero = aNumero(valor)
   if (!Number.isFinite(numero)) {
     return { error: `${palabras.El} tiene que ser un número` }
   }
@@ -359,9 +360,18 @@ exports.actualizarProducto = async (req, res) => {
       return res.status(400).json({ error: medida.error })
     }
 
-    const descripcion = req.body.descripcion ? limpiarTexto(req.body.descripcion, 255) : null
-    if (req.body.descripcion && !descripcion) {
-      return res.status(400).json({ error: 'La descripción no puede pasar de 255 caracteres' })
+    // "Un campo que no viene no se toca" (QA final, B3): la descripción es lo
+    // que otra empresa lee en el buscador, y editar sin mandarla la borraba.
+    // Vacía sí se borra; algo que no es texto, se rechaza.
+    let descripcion = producto.descripcion
+    if (req.body.descripcion !== undefined) {
+      if (req.body.descripcion !== null && typeof req.body.descripcion !== 'string') {
+        return res.status(400).json({ error: 'La descripción tiene que ser un texto' })
+      }
+      descripcion = req.body.descripcion ? limpiarTexto(req.body.descripcion, 255) : null
+      if (req.body.descripcion && req.body.descripcion.trim() && !descripcion) {
+        return res.status(400).json({ error: 'La descripción no puede pasar de 255 caracteres' })
+      }
     }
 
     const costo = limpiarCosto(req.body.costo_referencia, es_servicio)

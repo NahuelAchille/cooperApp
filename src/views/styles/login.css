@@ -83,7 +83,7 @@ main {
   border: none;
   border-radius: 50px;
   cursor: pointer;
-  background: linear-gradient(180deg, #19de75 0%, #128c4a 100%);
+  background: linear-gradient(180deg, #2d7a4f 0%, #1e5c3a 100%);
   color: #fff;
   font-weight: bold;
   box-shadow: 0 6px 12px rgba(0,0,0,0.25);
@@ -91,7 +91,7 @@ main {
 }
 
 #boton-login button:hover {
-  background: linear-gradient(180deg, #9fc1cb 0%, #19de75 100%);
+  background: linear-gradient(180deg, #1e5c3a 0%, #17482e 100%);
   box-shadow: 0 8px 16px rgba(0,0,0,0.35);
   transform: translateY(-2px);
 }
@@ -128,3 +128,36 @@ main {
     margin-top: 2rem;
     }
 }
+
+/* ===== Contraste (UX final, 14/11/2026) =====
+   El texto blanco iba directo sobre la foto (2,0 a 2,8:1), los campos eran
+   verde claro con letras blancas (2,1:1) y el link verde sobre verde (1,9:1):
+   menos de la mitad del mínimo, en la puerta de entrada y para un público de
+   35 a 55 años. Una tarjeta oscura detrás del formulario lo resuelve sin
+   tocar la foto. */
+main {
+  background: rgba(16, 48, 31, 0.82);
+  border-radius: 16px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.35);
+  max-width: 440px;
+  margin: 1rem;
+  padding: 1.5rem 1rem;
+  /* base.css le pone min-height: 100vh a main: la tarjeta tapaba toda la foto. */
+  min-height: auto;
+}
+
+#formulario-login input,
+.input-con-icono input {
+  background-color: #ffffff;
+  border: 2px solid #2d7a4f;
+  color: #1a2e23;
+}
+
+#formulario-login input::placeholder { color: #4a6356; opacity: 1; }
+.input-con-icono i { color: #2d7a4f; }
+
+/* El error, en amarillo: el rojo de Bootstrap no se lee sobre el verde oscuro. */
+#login-error { color: #ffd166 !important; font-weight: 600; }
+
+.link-registro { color: #ffffff; text-decoration: underline; }
+.link-registro:hover { color: #ffd166; }

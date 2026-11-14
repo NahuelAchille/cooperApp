@@ -171,6 +171,19 @@ Reportarlo otra vez gasta lugar en el informe sin agregar nada:
   - **El buscador no usa los filtros plegables**: la búsqueda es la pantalla.
   - **El mapa muestra un círculo, no un alfiler**, y si no hay internet la
     ficha funciona igual sin él.
+- **Corregir un movimiento (desde la auditoría final, 14/11/2026)**, lo que es a propósito:
+  - **Los movimientos no se editan: se anulan y se carga el bueno.** *Anular y corregir*
+    no anula nada hasta guardar: el servidor anula el viejo y crea el nuevo en una sola
+    transacción (`POST /movimientos/:id/corregir`). Cancelar no toca nada.
+  - **La plata de una venta o una compra no se corrige desde Movimientos** (lo rechaza el
+    servidor, `de_stock`): se corrige desde Stock, con *Anular y corregir*, que manda
+    `reemplaza` a `/productos/stock/ventas` o `/compras`. Tiene que ser del mismo
+    producto. *Sólo anular* la plata desde Movimientos sigue dejando vivo el stock.
+  - **"Cuánto deja cada servicio" vive sólo en Reportes** (H-16): el panel de Movimientos y
+    `GET /movimientos/resumen-por-servicio` se sacaron a propósito.
+  - **El CUIT y el DNI se guardan sin separadores** y los montos sólo aceptan números
+    comunes (`aNumero` en `validacion.service.js`): `1e3` o `0x10` rebotan.
+  - ***Habilitar de nuevo* no pide confirmación**, como *Aprobar*: se deshace.
 
 Si encontrás una forma NUEVA de explotar alguna de estas, eso sí reportalo.
 
@@ -542,5 +555,6 @@ encima.
 | 16/09/2026 | **Sprints 07 y 08** (juntos: el 07 nunca se había corrido) | 8 (2 críticos, 1 alto, 3 medios, 2 bajos), todos confirmados ejecutándolos. Informe en `informes-QA/informe-QA-sprints-07-08.md` | **Los 8 corregidos**, ninguno al backlog, + 2 encontrados al corregir. Los dos críticos eran el mismo error de concurrencia (consultar-decidir-escribir) y se cerraron con una transacción que traba la fila del producto. Detalle al final del informe |
 | 28/09/2026 | **Sprints 09 y 10 juntos** (Servicios completo · Reportes completo) — era **HU-50** | 5 (0 críticos, 1 alto, 2 medios, 2 bajos), todos confirmados ejecutándolos. Informe en `informes-QA/informe-QA-sprints-09-10.md` | **28/09: los 5 corregidos**, ninguno al backlog, + 1 encontrado al corregir (el PDF agrupado tampoco traía los totales). A1 era el escape de fórmulas pegándole a los números del sistema; B1, el mismo patrón consultar-decidir-escribir, cerrado con un `UPDATE ... AND anulado = 0`. Detalle al final del informe. **Lo que se atacó a fondo aguantó**: los 13 intentos de cruzar los dos catálogos rebotan y los totales de los reportes cierran contra `SELECT` en las cinco vistas. El único hallazgo con un número mal es del **archivo, no del sistema**: el escape contra fórmulas de Excel también le pega a los resultados negativos del CSV, que quedan como texto y Excel no los suma |
 | 02/11/2026 | **La venta y la compra en un solo paso** (commit `89e2bcb`, 25-26/10; hecho fuera de sprint, HU-90 y HU-91) | 6 (1 crítico, 5 bajos), todos confirmados ejecutándolos. Informe en `informes-QA/informe-QA-venta-compra.md` | **02/11: los 6 corregidos**, ninguno al backlog, + 1 encontrado al corregir (anular y cargar el cobro a la vez podía dejar un cobro vivo en una venta anulada). **C1 lo decidió el grupo antes del código**: anular una venta o una compra anula también su plata, en la misma transacción; reemplaza a la decisión vieja de que no la anulaba. B1 era otra vez el patrón consultar-decidir-escribir (el costo leído fuera del candado). Detalle al final del informe |
+| 14/11/2026 | **Auditoría final, sistema completo** (HU-67), con foco en lo que nunca pasó por QA: Articulación, el superadmin rehecho, lo que se sacó, HU-87 y HU-88 | 6 (1 crítico, 1 alto, 1 medio, 3 bajos), todos confirmados ejecutándolos. Informe en `informes-QA/informe-QA-final.md` | *(pendiente de corregir)*. **C1**: *Anular y corregir* (HU-87) vuelve a cargar la plata de una venta sin atarla, la venta queda *"Sin registrar el cobro"* y se puede cobrar dos veces. **A1**: el registro da *"Error del servidor"* con el CUIT escrito con guiones. **M1**: el DNI con puntos se guarda con puntos (saltea el duplicado y la contraseña temporal queda con puntos). **Lo nuevo de Articulación y del superadmin aguantó entero**: nada privado sale hacia otra empresa, cada condición de "quién aparece" esconde, y 0 inyecciones de XSS en las pantallas nuevas. La regresión de los cuatro informes anteriores dio bien |
 
 *(Completar después de cada corrida.)*

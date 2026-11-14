@@ -29,7 +29,7 @@ los que usa, y el menú muestra eso.
 | **Productos** | Catálogo con categorías y subcategorías, stock calculado, avisos de reposición, y la venta y la compra en un solo paso |
 | **Servicios** | Lo mismo que Productos pero sin stock, y cuánta plata deja cada servicio |
 | **Reportes** | Por período, agrupado por categoría, producto o servicio, lo que se perdió, y descarga en CSV y PDF |
-| **Articulación** | Un buscador entre empresas: escribís "papel" y aparecen las que lo ofrecen, de la más cercana a la más lejana |
+| **Buscar empresas** (en el código, *Articulación*) | Un buscador entre empresas: escribís "papel" y aparecen las que lo ofrecen, de la más cercana a la más lejana |
 
 Hay cuatro roles: **administrador de la empresa**, **tesorero** (la plata),
 **operador** (el depósito) y **superadmin** (la plataforma: aprueba las empresas

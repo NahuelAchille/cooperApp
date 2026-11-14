@@ -75,4 +75,15 @@ const mensajeDeDuplicado = (error, campos) => {
   return 'Ya existe un registro con esos datos'
 }
 
-module.exports = { validarLargos, LARGOS, mensajeDeDuplicado }
+// Convierte un monto o una cantidad en número aceptando sólo lo que una
+// persona escribe: un número, o un texto como "1500" o "1500.50". Number()
+// solo aceptaba también "1e3" (1000), "0x10" (16) y " 10 " (QA final,
+// observación): ningún formulario los manda, pero un pedido armado a mano
+// guardaba un monto que nadie escribió. Lo que no sirve devuelve NaN.
+const aNumero = (valor) => {
+  if (typeof valor === 'number') return valor
+  if (typeof valor !== 'string' || !/^-?\d+(\.\d+)?$/.test(valor)) return NaN
+  return Number(valor)
+}
+
+module.exports = { validarLargos, LARGOS, mensajeDeDuplicado, aNumero }

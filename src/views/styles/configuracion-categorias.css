@@ -1,7 +1,7 @@
 /* ===== VARIABLES ===== */
 :root {
   --verde-primario: #2d7a4f;
-  --verde-secundario: #3a9e65;
+  --verde-secundario: #2f8456;
   --verde-oscuro: #1a6b3a;
   --bg-page: #f0f7f3;
   --card-bg: #ffffff;
@@ -112,11 +112,11 @@ body {
 .tipo-nombre.inactivo { opacity: 0.5; text-decoration: line-through; }
 .tipo-acciones { display: flex; gap: 6px; }
 
-.sin-tipos { padding: 10px 16px 12px 32px; color: #8aa596; font-size: 0.85rem; font-style: italic; }
+.sin-tipos { padding: 10px 16px 12px 32px; color: #4a6356; font-size: 0.85rem; font-style: italic; }
 
 /* Badges de estado */
-.badge-activo   { background-color: #d1f5e0; color: var(--verde-oscuro); font-size: 0.72rem; padding: 3px 9px; border-radius: 20px; font-weight: 600; }
-.badge-inactivo { background-color: #fde8e8; color: var(--danger);       font-size: 0.72rem; padding: 3px 9px; border-radius: 20px; font-weight: 600; }
+.badge-activo   { background-color: #d1f5e0; color: var(--verde-oscuro); font-size: 0.8125rem; padding: 3px 9px; border-radius: 20px; font-weight: 600; }
+.badge-inactivo { background-color: #fde8e8; color: var(--danger);       font-size: 0.8125rem; padding: 3px 9px; border-radius: 20px; font-weight: 600; }
 
 /* Botones de accion chicos */
 .btn-mini {
@@ -140,7 +140,7 @@ body {
   box-shadow: var(--card-shadow);
   padding: 24px;
   text-align: center;
-  color: #8aa596;
+  color: #4a6356;
   font-size: 0.9rem;
 }
 
@@ -161,7 +161,7 @@ body {
   box-shadow: var(--card-shadow);
   padding: 40px 20px;
   text-align: center;
-  color: #6c8a7a;
+  color: #4a6356;
 }
 
 /* ===== RESPONSIVE ===== */

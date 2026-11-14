@@ -101,7 +101,7 @@ Si el administrador de tu empresa te dio de alta, tu **contraseña es tu DNI**.
 ### Me olvidé la contraseña
 
 El sistema no manda correos. **Pedíselo al administrador de tu empresa**: en
-*Usuarios* aprieta **Resetear contraseña** y tu contraseña vuelve a ser tu DNI.
+*Usuarios* aprieta **Volver a la contraseña inicial** (la llave) y tu contraseña vuelve a ser tu DNI.
 Al entrar, el sistema te pide una nueva.
 
 Si sos el administrador de la empresa y te olvidaste la tuya, se lo pedís al
@@ -127,6 +127,9 @@ Es la parte de **Movimientos**: todo lo que entró y salió de la caja.
    **¿Este movimiento es de algún servicio?** Casi siempre queda vacío.
 6. Tocá **Registrar**.
 
+> Si elegís algo como *Compra de mercadería* o *Venta minorista*, abajo te avisa que esa
+> plata quizá ya la cargó el depósito desde Stock: fijate en la lista antes de seguir.
+
 > **¿Vendiste o compraste mercadería?** No la cargues acá: usá
 > [Registrar una venta](#registrar-una-venta) o
 > [Registrar una compra](#registrar-una-compra), que descuentan o suman el stock y
@@ -135,7 +138,9 @@ Es la parte de **Movimientos**: todo lo que entró y salió de la caja.
 ### Ver lo que entró y salió
 
 En **Movimientos** ves la lista, lo último cargado arriba, y tres números: lo que
-**entró**, lo que **salió** y el **balance** (la diferencia).
+**entró**, lo que **salió** y el **resultado** (la diferencia). Arriba de los tres dice
+de qué período son: sin filtros, es **todo lo cargado hasta hoy** (el panel de inicio,
+en cambio, muestra el mes).
 
 Con los **filtros** elegís el período (*Este mes*, *El mes pasado*, *Este año* o
 fechas a mano), sólo lo que entró o sólo lo que salió, una categoría o un servicio.
@@ -146,13 +151,16 @@ Los números de arriba se recalculan con lo que filtraste.
 
 ### Me equivoqué en un movimiento
 
-Los movimientos **no se borran ni se editan: se anulan**. Tocá el botón de
-**Anular** en esa fila y elegí:
+Los movimientos **no se borran ni se editan: se anulan**. Tocá **Anular o corregir**
+en esa fila y elegí:
 
-- **Anular y corregir**: lo anula y te abre el formulario **con los mismos datos**,
-  para que cambies sólo lo que estaba mal (el monto, la fecha, de qué fue) y toques
-  **Registrar**. Es lo que conviene si te equivocaste al cargarlo.
-- **Anular**: sólo lo anula, para algo que no tendría que haberse cargado.
+- **Anular y corregir**: te abre el formulario **con los mismos datos**, para que
+  cambies sólo lo que estaba mal (el monto, la fecha, de qué fue) y toques **Guardar la
+  corrección**. Recién ahí se anula el de antes: **si cancelás, queda todo como estaba**.
+- **Sólo anular**: lo anula ya, para algo que no tendría que haberse cargado.
+
+> **La plata de una venta o una compra** no se corrige desde acá: el cartel te manda a
+> Stock, donde se corrige junto con la mercadería.
 
 Un movimiento anulado **no suma en ningún total**, pero queda en la lista (con
 **Ver anulados**) para que se sepa qué pasó. **Anular no se puede deshacer**, pero
@@ -212,8 +220,8 @@ cuánto hay.
 1. En **Stock**, tocá **Registrar una compra** (o el botón del camión en la fila).
 2. Contestá **¿Qué compraste?**, **cuánto** y **lo que pagaste por unidad**. Aparece
    escrito el costo que tenía el producto.
-3. Si pagaste un precio distinto, aparece tildada la casilla **Guardar $… como el
-   costo**: así el costo del producto queda al día. Destildala si fue una compra rara.
+3. Si pagaste un precio distinto, aparece tildada la casilla **Desde ahora, … nos
+   cuesta $…**: así el costo del producto queda al día. Destildala si fue una compra rara.
 4. Tocá **Registrar la compra**.
 
 ### Registrar una rotura, un robo o un ajuste
@@ -232,7 +240,7 @@ cuando contaste y no coincide.
 
 ### Ver cuánto hay y qué hay que reponer
 
-En **Stock**, la pestaña **Existencias** muestra cuánto hay de cada producto y, si
+En **Stock**, la pestaña **Cuánto hay** muestra cuánto hay de cada producto y, si
 hace falta, un cartel:
 
 | Cartel | Qué quiere decir |
@@ -249,11 +257,18 @@ cargó.
 
 ### Me equivoqué en una venta o una compra
 
-En **Stock → Entradas y salidas**, tocá **Anular** en esa fila.
+En **Stock → Entradas y salidas**, tocá **Anular** en esa fila y elegí:
 
-- **Se anula también su plata.** El cartel te dice cuánta plata se va antes de
-  confirmar.
-- La existencia se corrige sola.
+- **Anular y corregir**: se abre la venta (o la compra) con lo que habías cargado.
+  Cambiás la cantidad, el precio, la fecha o el detalle y tocás **Guardar la
+  corrección**: la de antes se anula **junto con su plata** y queda la nueva. Si
+  cancelás, no pasa nada. El producto no se cambia: si te equivocaste de producto,
+  usá *Sólo anular* y cargala de nuevo.
+- **Sólo anular**: se anula ya, **también su plata**. El cartel te dice cuánta plata se
+  va antes de confirmar.
+
+Además:
+- Lo que hay se corrige solo.
 - No se puede anular una entrada si esa mercadería ya se vendió (el stock quedaría
   negativo): primero hay que anular las ventas posteriores.
 - **Anular no se puede deshacer.**
@@ -277,8 +292,9 @@ Después, cada vez que cargues una plata que vino de ese servicio, elegilo en
 ### Saber cuánto me deja cada servicio
 
 *Administrador o tesorero.* En **Servicios**, tocá **Cuánto deja cada uno**: te lleva
-a Movimientos con la lista de servicios, lo que cobraste, lo que pagaste y lo que
-**deja** cada uno en el período, del que más deja al que menos.
+a **Reportes**, vista **Por servicio**, con lo que cobraste, lo que pagaste y lo que
+**deja** cada uno en el período que elijas arriba, del que más deja al que menos. Desde
+ahí también lo podés descargar.
 
 ---
 
@@ -312,19 +328,22 @@ costó, **por motivo** y **por producto**.
 
 ## Otras empresas
 
-Es la parte de **Articulación**.
+Es la parte de **Buscar empresas**.
 
 ### Buscar quién me vende algo
 
-1. Andá a **Articulación** (o usá el buscador del panel de inicio).
+1. Andá a **Buscar empresas** (o usá el buscador del panel de inicio).
 2. En **¿Qué necesitás?** escribí lo que buscás, por ejemplo *papel*. Si querés,
    elegí un **rubro**.
 3. Aparecen las empresas que lo ofrecen, **de la más cercana a la más lejana**.
-4. Tocá una para ver su **ficha**: dónde está, qué ofrece, cómo contactarla y un mapa
-   aproximado de su zona.
+4. Tocá una para ver su **ficha**: dónde está, qué ofrece y un mapa aproximado de su
+   zona. Para comprarle o consultarle, usá **Escribir un email** o **Llamar**:
+   CooperApp no manda mensajes.
 
 > Para que el orden por cercanía funcione, tu empresa tiene que tener cargada su
-> **localidad** (en *Mi empresa*).
+> **localidad** (en *Mi empresa*). Por ahora la lista tiene el Gran Buenos Aires, la
+> Ciudad y La Plata: si la tuya no está, dejá *Sin elegir* y vas a aparecer igual, sin
+> la distancia.
 
 ### Que otras empresas me encuentren
 
@@ -350,13 +369,13 @@ Es la parte de **Articulación**.
 3. Guardá y **avisale que su contraseña es su DNI**. Al entrar, el sistema le pide
    una nueva.
 
-Desde la misma lista podés **editar** sus datos, **resetear** su contraseña o **darlo
+Desde la misma lista podés **editar** sus datos, **volver a su contraseña inicial** (la llave) o **darlo
 de baja** (deja de poder entrar en el momento). Una baja se puede **reactivar**.
 
 ### Prender o apagar partes del sistema
 
 En **Configuración → Módulos del sistema** prendés o apagás cada parte:
-*Productos*, *Servicios*, *Reportes* y *Articulación*. *Movimientos* no se puede apagar:
+*Productos*, *Servicios*, *Reportes* y *Buscar empresas*. *Movimientos* no se puede apagar:
 es la base.
 
 **Apagar no borra nada**: sólo lo esconde del menú. Si lo volvés a prender, está todo
@@ -382,7 +401,7 @@ En **Configuración → Motivos de stock** están las razones por las que se mue
 mercadería. Cada motivo dice:
 
 - **¿Qué le hace al stock?**: suma (entrada) o resta (salida).
-- **¿Qué le hace al dinero?**: entra plata, sale plata o nada.
+- **¿Qué le hace al dinero?**: *Entra plata*, *Sale plata* o *No mueve plata*.
 - Si mueve plata, **¿en qué categoría de movimientos va esa plata?** Se elige una
   sola vez, y por eso al vender no hay que clasificar nada.
 
@@ -412,7 +431,7 @@ Entrás a **Empresas**. En la pestaña **Para aprobar** están las que se regist
 3. Si no corresponde, **Rechazar**: nadie de esa empresa puede entrar. No se borra
    nada, y desde **Todas** se puede **Habilitar de nuevo**.
 
-En **Todas** también podés **resetear la contraseña** del administrador de una
+En **Todas** también podés **volver a la contraseña inicial** del administrador de una
 empresa: vuelve a ser su DNI.
 
 ---
@@ -426,13 +445,15 @@ empresa: vuelve a ser su DNI.
 | **Entradas y salidas** | Los registros de mercadería (en *Stock*) |
 | **Anular** | Un movimiento ya cargado deja de contar. **No se deshace** |
 | **Dar de baja / Reactivar** | Dejar de usar algo (un producto, una categoría, una persona) y volver a usarlo. **Sí se deshace** |
-| **Existencia** | Cuánto hay de un producto ahora |
+| **Cuánto hay** | La existencia: cuánto hay de un producto ahora |
+| **Resultado** | Lo que entró menos lo que salió. Abajo dice si quedó a favor o en contra |
 | **Stock mínimo** | Debajo de esto, el sistema avisa que hay que reponer |
 | **Costo** | Lo que te cuesta a vos una unidad |
 | **Precio de venta** | Lo que le cobrás al cliente por una unidad |
 | **Motivo** | Por qué entra o sale mercadería |
 | **Módulo** | Una parte del sistema que se prende o se apaga |
 | **Rubro** | La lista común que usan todas las empresas para encontrarse en el buscador |
+| **Buscar empresas** | La parte del sistema para encontrar a otras empresas cercanas (en el código se llama *Articulación*) |
 
 ---
 

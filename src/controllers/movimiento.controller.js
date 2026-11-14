@@ -4,6 +4,7 @@ const productoModel = require('../models/producto.model')
 const moduloModel = require('../models/modulo.model')
 const { parsearFecha, validarFechaDeCarga } = require('../services/fecha.service')
 const { resolver: resolverPeriodo } = require('../services/periodo.service')
+const { aNumero } = require('../services/validacion.service')
 
 const NATURALEZAS = ['ingreso', 'egreso']
 
@@ -50,7 +51,7 @@ const parsearMonto = (valor) => {
   // monto valido. Solo se aceptan numeros o texto que represente un numero.
   if (typeof valor !== 'number' && typeof valor !== 'string') return null
 
-  const numero = Number(valor)
+  const numero = aNumero(valor)
 
   // Rechaza si no es un numero finito (NaN, infinito).
   if (!Number.isFinite(numero)) return null
@@ -143,26 +144,49 @@ exports.getPeriodo = (req, res) => {
   res.json(periodo)
 }
 
-exports.getResumenPorServicio = async (req, res) => {
+// getResumenPorServicio se sacó: el panel se mudó a Reportes (H-16), que usa
+// movimientoModel.resumenPorServicio directo.
+// Las reglas de un movimiento de plata, escritas una vez: las usan el alta y
+// la correccion. Devuelve { error } o { datos } listos para guardar.
+const validarMovimiento = async (body, id_empresa) => {
 
-  try {
-    const id_empresa = req.session.user.empresa.id
+  // El tipo debe existir, ser de esta empresa y estar activo.
+  const tipo = await categoriaModel.findTipoById(body.id_tipo, id_empresa)
+  if (!tipo) {
+    return { error: 'El tipo de movimiento no es válido' }
+  }
+  if (!tipo.activo) {
+    return { error: 'No se puede usar un tipo de movimiento dado de baja' }
+  }
 
-    // Si la empresa no tiene el modulo, no hay servicios de que hablar. Se
-    // devuelve vacio en vez de un error: la pantalla simplemente no muestra
-    // el panel, y esto no es un pedido invalido, es una empresa que no usa
-    // esa parte del sistema.
-    if (!await moduloModel.estaActivo(id_empresa, 'servicios')) {
-      return res.json([])
-    }
+  // Tambien hay que mirar la categoria: un tipo activo colgado de una
+  // categoria dada de baja no se puede usar.
+  if (!tipo.categoria_activa) {
+    return { error: 'No se puede usar un tipo cuya categoría está dada de baja' }
+  }
 
-    const { desde, hasta } = filtrosDeQuery(req.query)
-    const filas = await movimientoModel.resumenPorServicio(id_empresa, { desde, hasta })
-    res.json(filas)
+  const monto = parsearMonto(body.monto)
+  if (monto === null) {
+    return { error: 'El monto debe ser un número mayor a cero' }
+  }
 
-  } catch (error) {
-    console.error(error)
-    res.status(500).json({ error: 'Error al obtener el resumen por servicio' })
+  // Un movimiento no se puede fechar en el futuro (todavia no paso) ni en un
+  // año absurdo: casi siempre es un error de tipeo en el año.
+  const revision = validarFechaDeCarga(body.fecha)
+  if (revision.error) {
+    return { error: revision.error }
+  }
+
+  const descripcion = typeof body.descripcion === 'string' ? body.descripcion.trim().slice(0, 255) : null
+
+  // De donde salio la plata. Opcional: casi siempre viene vacio.
+  const origen = await validarServicio(body.id_servicio, id_empresa)
+  if (origen.error) {
+    return { error: origen.error }
+  }
+
+  return {
+    datos: { id_tipo: tipo.id_tipo, monto, descripcion, fecha: revision.fecha, id_servicio: origen.id_servicio }
   }
 }
 
@@ -172,52 +196,62 @@ exports.crearMovimiento = async (req, res) => {
     const id_empresa = req.session.user.empresa.id
     const id_usuario = req.session.user.id
 
-    // El tipo debe existir, ser de esta empresa y estar activo.
-    const tipo = await categoriaModel.findTipoById(req.body.id_tipo, id_empresa)
-    if (!tipo) {
-      return res.status(400).json({ error: 'El tipo de movimiento no es válido' })
-    }
-    if (!tipo.activo) {
-      return res.status(400).json({ error: 'No se puede usar un tipo de movimiento dado de baja' })
+    const { error, datos } = await validarMovimiento(req.body, id_empresa)
+    if (error) {
+      return res.status(400).json({ error })
     }
 
-    // Tambien hay que mirar la categoria: un tipo activo colgado de una
-    // categoria dada de baja no se puede usar.
-    if (!tipo.categoria_activa) {
-      return res.status(400).json({ error: 'No se puede usar un tipo cuya categoría está dada de baja' })
-    }
-
-    const monto = parsearMonto(req.body.monto)
-    if (monto === null) {
-      return res.status(400).json({ error: 'El monto debe ser un número mayor a cero' })
-    }
-
-    // Un movimiento no se puede fechar en el futuro (todavia no paso) ni en un
-    // año absurdo: casi siempre es un error de tipeo en el año.
-    const revision = validarFechaDeCarga(req.body.fecha)
-    if (revision.error) {
-      return res.status(400).json({ error: revision.error })
-    }
-    const fecha = revision.fecha
-
-    const descripcion = typeof req.body.descripcion === 'string' ? req.body.descripcion.trim().slice(0, 255) : null
-
-    // De donde salio la plata. Opcional: casi siempre viene vacio.
-    const origen = await validarServicio(req.body.id_servicio, id_empresa)
-    if (origen.error) {
-      return res.status(400).json({ error: origen.error })
-    }
-
-    const id_movimiento = await movimientoModel.create({
-      id_tipo: tipo.id_tipo, monto, descripcion, fecha, id_empresa, id_usuario,
-      id_servicio: origen.id_servicio
-    })
+    const id_movimiento = await movimientoModel.create({ ...datos, id_empresa, id_usuario })
 
     res.status(201).json({ id_movimiento, message: 'Movimiento registrado correctamente' })
 
   } catch (error) {
     console.error(error)
     res.status(500).json({ error: 'Error al registrar el movimiento' })
+  }
+}
+
+// Corregir = anular el original y cargar el bueno, en un solo paso (HU-87,
+// arreglado por QA final C1 y UX F-01). Los movimientos siguen sin editarse:
+// el original queda en el historial, anulado.
+exports.corregirMovimiento = async (req, res) => {
+
+  try {
+    const id_empresa = req.session.user.empresa.id
+    const id_usuario = req.session.user.id
+
+    const original = await movimientoModel.findById(req.params.id, id_empresa)
+    if (!original) {
+      return res.status(404).json({ error: 'No se encontró el movimiento' })
+    }
+    if (original.anulado) {
+      return res.status(400).json({ error: 'Ese movimiento ya estaba anulado: cargá uno nuevo' })
+    }
+
+    // La plata de una venta o una compra se corrige desde Stock. Desde acá la
+    // copia quedaria suelta de la venta, Stock diria "Sin registrar el cobro"
+    // y, si alguien lo registraba, la misma venta quedaba cobrada dos veces.
+    if (original.de_stock) {
+      return res.status(400).json({
+        error: 'Esta plata es de una venta o una compra de Stock: corregila desde Stock, así sigue atada a la mercadería'
+      })
+    }
+
+    const { error, datos } = await validarMovimiento(req.body, id_empresa)
+    if (error) {
+      return res.status(400).json({ error })
+    }
+
+    const id_movimiento = await movimientoModel.corregir(original.id_movimiento, id_empresa, { ...datos, id_usuario })
+    if (!id_movimiento) {
+      return res.status(400).json({ error: 'Ese movimiento ya estaba anulado: cargá uno nuevo' })
+    }
+
+    res.status(201).json({ id_movimiento, message: 'Movimiento corregido: el anterior quedó anulado' })
+
+  } catch (error) {
+    console.error(error)
+    res.status(500).json({ error: 'Error al corregir el movimiento' })
   }
 }
 

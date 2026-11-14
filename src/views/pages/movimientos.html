@@ -24,7 +24,7 @@
     </div>
     <div class="header-acciones">
       <a class="btn btn-config d-none" id="btn-configurar" href="/pages/configuracion-categorias.html">
-        <i class="fa-solid fa-sitemap me-2"></i>Categorías
+        <i class="fa-solid fa-sitemap me-2"></i>Categorías de movimientos
       </a>
       <button class="btn btn-nuevo d-none" id="btn-nuevo-mov" data-bs-toggle="modal" data-bs-target="#modalNuevoMov">
         <i class="fa-solid fa-plus me-2"></i>Nuevo movimiento
@@ -49,55 +49,30 @@
 
     <div id="panel-finanzas" class="d-none">
 
-      <!-- Resumen -->
+      <!-- Resumen. Arriba dice de qué período son los números (UX F-03): sin
+           filtro suman TODO lo cargado, y el panel de inicio muestra el mes;
+           dos números distintos para "lo que entró" sin explicación se leían
+           como un error. Las palabras son las del alta (Entró / Salió). -->
+      <p class="resumen-periodo" id="resumen-periodo">Todo lo cargado hasta hoy</p>
       <div class="resumen">
         <div class="resumen-card ingresos">
-          <h6><i class="fa-solid fa-arrow-down me-1"></i>Ingresos</h6>
+          <h6><i class="fa-solid fa-arrow-down me-1"></i>Entró</h6>
           <div class="valor" id="total-ingresos">$0</div>
         </div>
         <div class="resumen-card egresos">
-          <h6><i class="fa-solid fa-arrow-up me-1"></i>Egresos</h6>
+          <h6><i class="fa-solid fa-arrow-up me-1"></i>Salió</h6>
           <div class="valor" id="total-egresos">$0</div>
         </div>
         <div class="resumen-card balance">
-          <h6><i class="fa-solid fa-scale-balanced me-1"></i>Balance</h6>
+          <h6><i class="fa-solid fa-scale-balanced me-1"></i>Resultado</h6>
           <div class="valor" id="total-balance">$0</div>
         </div>
       </div>
 
-      <!-- Cuánto deja cada servicio.
-           Los tres casilleros de arriba dicen cuánto entró y cuánto salió en
-           total; esto dice qué parte trajo cada servicio. Van uno al lado del
-           otro porque la pregunta es cuál conviene sostener, y eso se contesta
-           comparando: filtrando de a uno por vez no se ve.
-           Arranca cerrado para no empujar la lista hacia abajo. -->
-      <div class="d-none" id="zona-por-servicio">
-        <button class="btn-por-servicio" id="btn-por-servicio" aria-expanded="false">
-          <i class="fa-solid fa-chevron-right" id="flecha-por-servicio"></i>
-          <i class="fa-solid fa-screwdriver-wrench"></i>
-          Cuánto deja cada servicio
-        </button>
-
-        <div class="panel-por-servicio d-none" id="panel-por-servicio">
-          <p class="panel-periodo" id="panel-periodo"></p>
-          <div class="table-responsive">
-            <table class="table mb-0 tabla-servicios">
-              <thead>
-                <tr>
-                  <!-- "Cobramos / Pagamos" y no "Entró / Salió": en esta misma
-                       pantalla, Entró / Salió es la columna de la dirección de
-                       cada movimiento, y acá son importes (UX 28/09). -->
-                  <th>Servicio</th>
-                  <th class="text-end">Cobramos</th>
-                  <th class="text-end">Pagamos</th>
-                  <th class="text-end">Deja</th>
-                </tr>
-              </thead>
-              <tbody id="tabla-por-servicio"></tbody>
-            </table>
-          </div>
-        </div>
-      </div>
+      <!-- "Cuánto deja cada servicio" se mudó a Reportes (decisión H-16, UX
+           final): eran dos pantallas que contestaban la misma pregunta con
+           números distintos según el período. Elegir un servicio en los
+           filtros de acá sigue mostrando en los casilleros lo que dejó ese. -->
 
       <!-- Filtros. En el celular van plegados detrás de un botón (H-05). -->
       <div class="filtros filtros-plegables">
@@ -189,17 +164,14 @@
     <div class="modal-dialog modal-dialog-centered">
       <div class="modal-content">
         <div class="modal-header">
-          <h5 class="modal-title fw-bold"><i class="fa-solid fa-plus me-2"></i>Nuevo movimiento</h5>
+          <h5 class="modal-title fw-bold" id="mov-titulo"><i class="fa-solid fa-plus me-2"></i>Nuevo movimiento</h5>
           <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
         </div>
         <div class="modal-body">
           <form id="form-nuevo-mov" novalidate>
             <!-- Aparece cuando el formulario se abrió copiando un movimiento
                  anulado (HU-87). -->
-            <div class="alert alert-info py-2 small d-none" id="mov-copia">
-              <i class="fa-solid fa-copy me-1"></i>Copiamos los datos del movimiento anulado.
-              Cambiá lo que estaba mal y tocá <strong>Registrar</strong>.
-            </div>
+            <div class="alert alert-info py-2 small d-none" id="mov-copia"></div>
             <!-- La primera pregunta del formulario: entró o salió plata.
                  Antes era un desplegable rotulado "Naturaleza", que es jerga
                  contable y era lo primero que había que contestar para cargar
@@ -256,7 +228,7 @@
               </div>
               <div class="col-12">
                 <label class="form-label">Descripción <span class="text-muted fw-normal">(opcional)</span></label>
-                <input type="text" class="form-control" name="descripcion" maxlength="255" placeholder="Ej: Venta de conservas">
+                <input type="text" class="form-control" name="descripcion" maxlength="255" placeholder="Ej: Venta de conservas" id="mov-descripcion">
               </div>
               <!-- De dónde salió la plata. Sólo aparece si la empresa tiene el
                    módulo de Servicios; si no, es una pregunta sobre algo que
@@ -280,7 +252,7 @@
         <div class="modal-footer">
           <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
           <button type="button" id="btn-guardar-mov" class="btn fw-bold px-4" style="background-color:#2d7a4f;color:white;">
-            <i class="fa-solid fa-floppy-disk me-2"></i>Registrar
+            <i class="fa-solid fa-floppy-disk me-2"></i><span id="mov-texto-boton">Registrar</span>
           </button>
         </div>
       </div>
@@ -297,12 +269,15 @@
         </div>
         <div class="modal-body">
           <p class="mb-2" id="anular-detalle"></p>
+          <!-- La plata de una venta o una compra no se corrige desde acá: la
+               copia quedaría suelta de la venta (QA final, C1). -->
+          <div class="alert alert-secondary py-2 small d-none" id="anular-de-stock"></div>
           <div class="alert alert-warning mb-0 py-2 small">
             <i class="fa-solid fa-circle-info me-1"></i>
             No se borra: el movimiento queda registrado pero marcado como anulado y deja de
-            sumar en los totales. <strong>Si te equivocaste en algo</strong>, tocá
-            <em>Anular y corregir</em>: se abre el formulario con los mismos datos para que
-            cambies sólo lo que estaba mal.
+            sumar en los totales. <span id="anular-ayuda-corregir"><strong>Si te equivocaste en algo</strong>, tocá
+            <em>Anular y corregir</em>: se abre el formulario con los mismos datos, cambiás lo que
+            estaba mal, y el de antes se anula recién cuando guardás la corrección.</span>
           </div>
           <div id="anular-error" class="text-danger small mt-2 d-none"></div>
         </div>
@@ -310,11 +285,12 @@
           <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
           <!-- La mayoría de las anulaciones son para corregir un error de
                tipeo (HU-87). Antes había que anular y escribir todo de nuevo. -->
-          <button type="button" id="btn-anular-corregir" class="btn fw-bold btn-outline-danger">
+          <!-- Corregir va primero y lleno: es lo que se hace casi siempre (UX F-11). -->
+          <button type="button" id="btn-anular-corregir" class="btn fw-bold px-4" style="background-color:#a01c1c;color:white;">
             <i class="fa-solid fa-pen me-2"></i>Anular y corregir
           </button>
-          <button type="button" id="btn-confirmar-anular" class="btn fw-bold px-4" style="background-color:#a01c1c;color:white;">
-            <i class="fa-solid fa-ban me-2"></i>Anular
+          <button type="button" id="btn-confirmar-anular" class="btn fw-bold btn-outline-danger">
+            <i class="fa-solid fa-ban me-2"></i>Sólo anular
           </button>
         </div>
       </div>
@@ -422,16 +398,10 @@
       await cargarServicios()
       await cargarMovimientos()
 
-      // Se llega desde el botón de la pantalla de Servicios
-      // (?ver=servicios) con el panel ya abierto: ahí es donde la persona se
-      // hizo la pregunta, y la respuesta vive acá porque acá está el período.
-      //
-      // Sólo si la zona existe. La dirección se puede escribir a mano, y sin
-      // este control una empresa sin el módulo terminaba con el panel abierto
-      // adentro de un contenedor escondido, pidiendo datos que no va a mostrar.
-      const zona = document.getElementById('zona-por-servicio')
-      if (new URLSearchParams(location.search).get('ver') === 'servicios' && !zona.classList.contains('d-none')) {
-        document.getElementById('btn-por-servicio').click()
+      // El viejo atajo ?ver=servicios lleva a donde vive ahora (H-16).
+      if (new URLSearchParams(location.search).get('ver') === 'servicios' && moduloActivo('reportes')) {
+        location.replace('/pages/reportes.html?vista=servicio')
+        return
       }
 
       // Si se llega desde los accesos rapidos del dashboard (?nuevo=ingreso o
@@ -499,88 +469,7 @@
         '<option value="">Todos</option>' +
         agrupar(servicios, s => `<option value="${s.id_producto}">${esc(s.nombre)}${s.activo ? '' : ' (de baja)'}</option>`)
 
-      document.getElementById('zona-por-servicio').classList.remove('d-none')
     }
-
-    // Cuánto deja cada servicio en el período elegido (HU-49).
-    //
-    // Toma SÓLO las fechas, no los demás filtros. Con "Sólo lo que entró"
-    // puesto, todos los servicios mostrarían "Salió $0" y parecerían pura
-    // ganancia: un resultado necesita los dos lados o no es un resultado.
-    // Por eso el panel dice arriba de qué período está hablando.
-    async function cargarPorServicio() {
-      if (document.getElementById('panel-por-servicio').classList.contains('d-none')) return
-
-      const desde = document.getElementById('filtro-desde').value
-      const hasta = document.getElementById('filtro-hasta').value
-
-      const params = new URLSearchParams()
-      if (desde) params.set('desde', desde)
-      if (hasta) params.set('hasta', hasta)
-
-      const fecha = (f) => new Date(f + 'T00:00:00').toLocaleDateString('es-AR')
-      const periodo =
-          desde && hasta ? `Del ${fecha(desde)} al ${fecha(hasta)}`
-        : desde          ? `Desde el ${fecha(desde)}`
-        : hasta          ? `Hasta el ${fecha(hasta)}`
-        : 'Todo lo cargado hasta hoy'
-
-      // Si hay otros filtros puestos, los casilleros de arriba muestran una
-      // cosa y este panel otra, y sin explicación eso se lee como un error del
-      // sistema. Se avisa por qué, en vez de dejar que no cierre.
-      const otrosFiltros =
-        document.getElementById('filtro-naturaleza').value ||
-        document.getElementById('filtro-categoria').value ||
-        document.getElementById('filtro-servicio').value
-
-      document.getElementById('panel-periodo').innerHTML = esc(periodo) + (otrosFiltros
-        ? ' · <strong>Acá no valen los otros filtros</strong>: para saber qué deja un servicio hacen falta las dos partes, lo que entró y lo que salió.'
-        : '')
-
-      const filas = await fetch('/movimientos/resumen-por-servicio?' + params.toString())
-        .then(r => r.ok ? r.json() : []).catch(() => [])
-
-      const tbody = document.getElementById('tabla-por-servicio')
-
-      if (!filas.length) {
-        tbody.innerHTML = '<tr><td colspan="4" class="text-center py-3 text-muted">Todavía no hay servicios cargados.</td></tr>'
-        return
-      }
-
-      // Un bloque por categoría del servicio, con lo que deja arriba. Los que
-      // se ofrecen y los que se contratan no se comparan entre sí: en un solo
-      // ranking, el flete contratado quedaba último y en rojo, como si fuera
-      // el servicio que anduvo peor (UX 28/09, H-03).
-      tbody.innerHTML = filas.map((s, i) => `
-        ${i === 0 || filas[i - 1].id_categoria !== s.id_categoria ? filaDeBloque(s, 4) : ''}
-        <tr class="${s.activo ? '' : 'fila-inactiva'}">
-          <td>${esc(s.nombre)}${s.activo ? '' : ' <span class="chico-gris">(de baja)</span>'}
-            ${s.cantidad === 0 ? '<div class="chico-gris">Sin movimientos en el período</div>' : ''}</td>
-          <td class="text-end">${s.total_ingresos ? formatMoneda(s.total_ingresos) : '<span class="chico-gris">—</span>'}</td>
-          <td class="text-end">${s.total_egresos ? formatMoneda(s.total_egresos) : '<span class="chico-gris">—</span>'}</td>
-          <td class="text-end fw-bold ${s.resultado > 0 ? 'positivo' : s.resultado < 0 ? 'negativo' : 'text-muted'}">${formatMoneda(s.resultado)}</td>
-        </tr>`).join('')
-    }
-
-    // El título de un bloque de servicios: la categoría y lo que deja entera.
-    function filaDeBloque(s, columnas) {
-      const clase = s.deja_categoria > 0 ? 'positivo' : s.deja_categoria < 0 ? 'negativo' : 'text-muted'
-      return `<tr class="fila-bloque"><td colspan="${columnas}">
-        ${esc(s.categoria)}
-        <span class="deja-bloque ${clase}">${s.deja_categoria < 0 ? 'se lleva' : 'deja'} ${formatMoneda(Math.abs(s.deja_categoria))}</span>
-      </td></tr>`
-    }
-
-    document.getElementById('btn-por-servicio').addEventListener('click', () => {
-      const panel = document.getElementById('panel-por-servicio')
-      const abierto = panel.classList.toggle('d-none') === false
-
-      document.getElementById('btn-por-servicio').setAttribute('aria-expanded', String(abierto))
-      document.getElementById('flecha-por-servicio').className =
-        abierto ? 'fa-solid fa-chevron-down' : 'fa-solid fa-chevron-right'
-
-      if (abierto) cargarPorServicio()
-    })
 
     // Llena el filtro por categoria respetando la naturaleza elegida: si el
     // filtro de naturaleza esta en "ingreso" solo muestra categorias de ingreso
@@ -617,6 +506,16 @@
       balanceEl.textContent = formatMoneda(resumen.balance)
       balanceEl.className = 'valor ' + (resumen.balance >= 0 ? 'positivo' : 'negativo')
 
+      // De qué período son estos números (UX F-03).
+      const desde = document.getElementById('filtro-desde').value
+      const hasta = document.getElementById('filtro-hasta').value
+      const enFecha = (f) => new Date(f + 'T00:00:00').toLocaleDateString('es-AR')
+      document.getElementById('resumen-periodo').textContent =
+          desde && hasta ? `Del ${enFecha(desde)} al ${enFecha(hasta)}`
+        : desde          ? `Desde el ${enFecha(desde)}`
+        : hasta          ? `Hasta el ${enFecha(hasta)}`
+        : 'Todo lo cargado hasta hoy'
+
       // Tabla
       const tbody = document.getElementById('tabla-movimientos')
 
@@ -628,11 +527,20 @@
         // no cuenta como filtro: no esconde nada.
         const filtros = new URLSearchParams(query)
         filtros.delete('incluirAnulados')
+
+        // Sin filtros y sin nada vigente puede ser que todo lo cargado esté
+        // anulado: decir "todavía no cargaste nada" sería falso (QA final, B2).
+        const hayAnulados = !filtros.toString() && !query.includes('incluirAnulados') &&
+          await fetch('/movimientos?limit=1&incluirAnulados=true').then(r => r.ok ? r.json() : []).then(l => l.length > 0)
+
         tbody.innerHTML = `<tr class="fila-aviso"><td colspan="8"><div class="tabla-vacia">${
           filtros.toString()
             ? `No hay movimientos con estos filtros.
                <div class="mt-2"><button type="button" class="btn btn-sm btn-limpiar" data-limpiar>
                  <i class="fa-solid fa-eraser me-1"></i>Limpiar filtros</button></div>`
+          : hayAnulados
+            ? `No hay movimientos vigentes: los que cargaste están anulados.
+               <div class="mt-2">Prendé <strong>Ver anulados</strong> para verlos, o tocá <strong>Nuevo movimiento</strong>.</div>`
             : `Todavía no cargaste ningún movimiento.
                <div class="mt-2">Tocá <strong>Nuevo movimiento</strong> para cargar lo primero que entró o salió.</div>`
         }</div></td></tr>`
@@ -666,16 +574,14 @@
                 // Uno anulado se puede volver a cargar con los mismos datos
                 // (HU-87): si se anuló por un error, no hay que escribirlo todo.
                 ? `<span class="badge-anulado">Anulado</span>
-                   <button class="btn-accion btn-recargar" data-recargar="${m.id_movimiento}" title="Cargar de nuevo con estos datos"><i class="fa-solid fa-copy me-1"></i>Cargar de nuevo</button>`
-                : `<button class="btn-accion" data-id="${m.id_movimiento}" data-detalle="${signo}${formatMoneda(m.monto)} · ${esc(m.tipo_nombre)}" title="Anular"><i class="fa-solid fa-ban"></i></button>`
+                   ${m.de_stock ? '' : `<button class="btn-accion btn-recargar" data-recargar="${m.id_movimiento}" title="Cargar de nuevo con estos datos"><i class="fa-solid fa-copy me-1"></i>Cargar de nuevo</button>`}`
+                // "Anular o corregir" con texto (UX F-11): con el ícono rojo solo,
+                // quien buscaba corregir no se animaba a tocar lo que parecía borrar.
+                : `<button class="btn-accion" data-id="${m.id_movimiento}" data-detalle="${signo}${formatMoneda(m.monto)} · ${esc(m.tipo_nombre)}" title="Anular o corregir"><i class="fa-solid fa-ban me-1"></i>Anular o corregir</button>`
             }</td>
           </tr>`
       }).join('')
 
-      // Si el panel de servicios está abierto, se recalcula con los mismos
-      // filtros de fecha. Va acá y no en cada listener para que no haya forma
-      // de cambiar un filtro y que el panel quede mostrando lo de antes.
-      cargarPorServicio()
     }
 
     // --- Alta: los dos botones escriben el campo oculto ---
@@ -703,6 +609,10 @@
       const puedeIrAStock = usuarioActual.rol === 'admin_empresa' && moduloActivo('productos')
       document.getElementById('aviso-venta-stock').classList.toggle('d-none', !(puedeIrAStock && naturaleza === 'ingreso'))
       document.getElementById('aviso-compra-stock').classList.toggle('d-none', !(puedeIrAStock && naturaleza === 'egreso'))
+
+      // El ejemplo de la descripción va con lo que se tocó (UX F-21).
+      document.getElementById('mov-descripcion').placeholder =
+        naturaleza === 'egreso' ? 'Ej: Luz de octubre' : 'Ej: Venta de conservas'
 
       llenarTipos(naturaleza)
     })
@@ -755,9 +665,19 @@
     function mostrarCategoriaElegida() {
       const id = Number(document.getElementById('mov-tipo').value)
       const tipo = tiposActivos.find(t => t.id_tipo === id)
-      document.getElementById('mov-tipo-ayuda').innerHTML = tipo
+      let ayuda = tipo
         ? `Va en <strong>${esc(tipo.categoria_nombre)} › ${esc(tipo.nombre)}</strong>.`
         : 'Están agrupados por categoría.'
+      // Es donde cae la plata de las ventas o las compras de Stock (UX F-02):
+      // el depósito ya la pudo haber cargado, y quedaría dos veces.
+      if (tipo && tipo.destino_de_stock) {
+        const queEs = tipo.naturaleza === 'ingreso' ? 'una venta de mercadería' : 'una compra de mercadería'
+        const desde = tipo.naturaleza === 'ingreso' ? 'Registrar una venta' : 'Registrar una compra'
+        ayuda += `<div class="aviso-stock mt-1"><i class="fa-solid fa-boxes-stacked me-1"></i>Si esto es ${queEs}, ` +
+          `se carga desde Stock con <strong>${desde}</strong> y la plata se carga sola. ` +
+          'Antes de seguir, fijate en la lista que no esté ya cargada.</div>'
+      }
+      document.getElementById('mov-tipo-ayuda').innerHTML = ayuda
     }
 
     document.getElementById('mov-tipo').addEventListener('change', mostrarCategoriaElegida)
@@ -774,15 +694,23 @@
       document.getElementById('mov-fecha').value = fechaDeHoy()
       document.getElementById('mov-error').classList.add('d-none')
       document.getElementById('mov-copia').classList.add('d-none')
+      correccionDe = null
+      document.getElementById('mov-titulo').innerHTML = '<i class="fa-solid fa-plus me-2"></i>Nuevo movimiento'
+      document.getElementById('mov-texto-boton').textContent = 'Registrar'
       llenarTipos('')
     }
+
+    // Si el formulario está corrigiendo un movimiento, su id. Al guardar, el
+    // servidor anula ése y crea el nuevo en el mismo paso: hasta entonces no
+    // se toca nada, y Cancelar deja todo como estaba (UX F-01).
+    let correccionDe = null
 
     document.getElementById('btn-nuevo-mov').addEventListener('click', limpiarFormulario)
 
     // Abre el alta con los datos de un movimiento (HU-87), para corregirlo sin
     // escribirlo todo de nuevo. Si el tipo o el servicio ya no se pueden usar
     // (se dieron de baja), quedan sin elegir y la persona elige otro.
-    function abrirCopia(m) {
+    function abrirCopia(m, corregir = false) {
       limpiarFormulario()
       const form = document.getElementById('form-nuevo-mov')
 
@@ -799,7 +727,18 @@
       form.descripcion.value = m.descripcion || ''
       if (m.id_servicio && form.id_servicio) form.id_servicio.value = String(m.id_servicio)
 
-      document.getElementById('mov-copia').classList.remove('d-none')
+      const aviso = document.getElementById('mov-copia')
+      if (corregir) {
+        correccionDe = m.id_movimiento
+        document.getElementById('mov-titulo').innerHTML = '<i class="fa-solid fa-pen me-2"></i>Corregir movimiento'
+        document.getElementById('mov-texto-boton').textContent = 'Guardar la corrección'
+        aviso.innerHTML = '<i class="fa-solid fa-pen me-1"></i>Cambiá lo que estaba mal y tocá <strong>Guardar la corrección</strong>. ' +
+          'El de antes se anula recién ahí: si cancelás, queda todo como estaba.'
+      } else {
+        aviso.innerHTML = '<i class="fa-solid fa-copy me-1"></i>Copiamos los datos del movimiento anulado. ' +
+          'Cambiá lo que estaba mal y tocá <strong>Registrar</strong>.'
+      }
+      aviso.classList.remove('d-none')
       bootstrap.Modal.getOrCreateInstance(document.getElementById('modalNuevoMov')).show()
     }
 
@@ -820,7 +759,7 @@
 
       boton.disabled = true
 
-      const res = await fetch('/movimientos', {
+      const res = await fetch(correccionDe ? `/movimientos/${correccionDe}/corregir` : '/movimientos', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -863,22 +802,43 @@
         return
       }
 
+      const m = buscarEnPantalla(boton.dataset.id)
       document.getElementById('anular-detalle').innerHTML = `¿Confirmás anular el movimiento <strong>${esc(boton.dataset.detalle)}</strong>?`
       document.getElementById('anular-error').classList.add('d-none')
       document.getElementById('btn-confirmar-anular').dataset.id = boton.dataset.id
+
+      // La plata de una venta o una compra de Stock no se corrige desde acá
+      // (QA final, C1): la copia quedaría suelta y la venta, cobrada dos veces.
+      const deStock = !!(m && m.de_stock)
+      const queEs = m && m.naturaleza === 'ingreso' ? 'una venta' : 'una compra'
+      const aviso = document.getElementById('anular-de-stock')
+      aviso.innerHTML = deStock
+        ? `<i class="fa-solid fa-boxes-stacked me-1"></i>Esta plata es de <strong>${queEs}</strong> registrada en Stock. ` +
+          'Si te equivocaste en el precio o la cantidad, corregila desde <strong>Stock → Entradas y salidas → ' +
+          'Anular y corregir</strong>: así la plata sigue atada a la mercadería.'
+        : ''
+      aviso.classList.toggle('d-none', !deStock)
+      document.getElementById('btn-anular-corregir').classList.toggle('d-none', deStock)
+      document.getElementById('anular-ayuda-corregir').classList.toggle('d-none', deStock)
+
       new bootstrap.Modal(document.getElementById('modalAnular')).show()
     })
 
-    // Los dos botones del cartel anulan igual; "Anular y corregir" además abre
-    // el alta con los datos del que se acaba de anular.
+    // "Sólo anular": anula ya. "Anular y corregir" NO anula acá: abre el alta
+    // en modo corrección y el servidor anula recién al guardar (UX F-01).
     async function anular(corregir) {
       const id = document.getElementById('btn-confirmar-anular').dataset.id
+      if (corregir) {
+        const m = buscarEnPantalla(id)
+        const modalAnular = document.getElementById('modalAnular')
+        // El alta se abre recién cuando el cartel terminó de cerrarse: con dos
+        // modales a la vez, Bootstrap deja el fondo gris trabado.
+        if (m) modalAnular.addEventListener('hidden.bs.modal', () => abrirCopia(m, true), { once: true })
+        bootstrap.Modal.getInstance(modalAnular).hide()
+        return
+      }
       const errorDiv = document.getElementById('anular-error')
       const botones = [document.getElementById('btn-confirmar-anular'), document.getElementById('btn-anular-corregir')]
-      // Se guarda antes de recargar la lista: después de anular ya no estaría
-      // si "Ver anulados" está apagado.
-      const copia = buscarEnPantalla(id)
-
       botones.forEach(b => { b.disabled = true })
       const res = await fetch(`/movimientos/${id}/anular`, { method: 'PUT' })
       const resultado = await res.json()
@@ -890,13 +850,7 @@
         return
       }
 
-      const modalAnular = document.getElementById('modalAnular')
-      // El alta se abre recién cuando el cartel terminó de cerrarse: con dos
-      // modales a la vez, Bootstrap deja el fondo gris trabado.
-      if (corregir && copia) {
-        modalAnular.addEventListener('hidden.bs.modal', () => abrirCopia(copia), { once: true })
-      }
-      bootstrap.Modal.getInstance(modalAnular).hide()
+      bootstrap.Modal.getInstance(document.getElementById('modalAnular')).hide()
       mostrarToast(resultado.message)
       cargarMovimientos()
     }

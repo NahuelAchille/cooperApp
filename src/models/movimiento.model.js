@@ -55,7 +55,11 @@ const findByEmpresa = async (id_empresa, filtros = {}) => {
            t.id_tipo, t.nombre AS tipo_nombre,
            c.id_categoria, c.nombre AS categoria_nombre, c.naturaleza,
            u.nombre AS usuario_nombre, u.apellido AS usuario_apellido,
-           m.id_servicio, sv.nombre AS servicio_nombre
+           m.id_servicio, sv.nombre AS servicio_nombre,
+           -- Si esta plata es la de una venta o una compra de Stock. Esa no se
+           -- corrige desde Movimientos: la copia quedaria suelta de la venta y
+           -- el cobro se terminaba cargando dos veces (QA final, C1).
+           EXISTS (SELECT 1 FROM movimientos_stock ms WHERE ms.id_movimiento = m.id_movimiento) AS de_stock
     FROM movimientos m
     JOIN tipos_movimiento t      ON t.id_tipo = m.id_tipo
     JOIN categorias_movimiento c ON c.id_categoria = t.id_categoria
@@ -75,7 +79,8 @@ const findByEmpresa = async (id_empresa, filtros = {}) => {
 const findById = async (id_movimiento, id_empresa) => {
 
   const [rows] = await db.query(`
-    SELECT m.id_movimiento, m.monto, m.descripcion, m.fecha, m.anulado, m.id_tipo
+    SELECT m.id_movimiento, m.monto, m.descripcion, m.fecha, m.anulado, m.id_tipo,
+           EXISTS (SELECT 1 FROM movimientos_stock ms WHERE ms.id_movimiento = m.id_movimiento) AS de_stock
     FROM movimientos m
     WHERE m.id_movimiento = ? AND m.id_empresa = ?
   `, [id_movimiento, id_empresa])
@@ -113,6 +118,39 @@ const anular = async (id_movimiento, id_empresa, ejecutor = db) => {
     [id_movimiento, id_empresa]
   )
   return result.affectedRows === 1
+}
+
+// Corregir un movimiento (HU-87, arreglado por QA final y UX F-01): anula el
+// original y crea el nuevo EN LA MISMA TRANSACCION. Antes la pantalla anulaba
+// primero y abria el formulario despues: si la persona cancelaba, la plata
+// quedaba anulada y sin reemplazo, sin ningun aviso.
+//
+// Devuelve el id del nuevo, o null si el original ya estaba anulado (otro
+// pedido se le adelanto): en ese caso no se crea nada.
+const corregir = async (id_original, id_empresa, datos) => {
+
+  const conexion = await db.getConnection()
+
+  try {
+    await conexion.beginTransaction()
+
+    if (!await anular(id_original, id_empresa, conexion)) {
+      await conexion.rollback()
+      return null
+    }
+
+    const id_nuevo = await create({ ...datos, id_empresa }, conexion)
+
+    await conexion.commit()
+    return id_nuevo
+
+  } catch (error) {
+    await conexion.rollback()
+    throw error
+
+  } finally {
+    conexion.release()
+  }
 }
 
 // Totales de ingresos, egresos y balance, respetando los mismos filtros que
@@ -234,4 +272,4 @@ const resumenPorServicio = async (id_empresa, { desde, hasta } = {}) => {
     .map(sv => ({ ...sv, deja_categoria: centavosPorBloque[id] / 100 })))
 }
 
-module.exports = { findByEmpresa, findById, create, anular, resumen, resumenPorServicio }
+module.exports = { findByEmpresa, findById, create, anular, corregir, resumen, resumenPorServicio }

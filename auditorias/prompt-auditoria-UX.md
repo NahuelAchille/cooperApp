@@ -100,10 +100,15 @@ informe. Lo que sí sirve es decir si la solución **no alcanzó**, con el recor
   finanzas y no puede resolverla. Para el admin y el tesorero dice *"Sin registrar el cobro"* o
   *"… el pago"*.
 
-**Lo que sigue abierto a propósito**: el panel *Cuánto deja cada servicio* (en Movimientos) y el
-reporte *Por servicio* (en Reportes) muestran la misma tabla (H-16 del 28/09). Es una decisión
-de producto que el informe marcó *a validar con usuarios*: si la ves, sumá lo que observes, no
-la vuelvas a describir.
+**Resuelto en la auditoría final (14/11/2026)**: *cuánto deja cada servicio* vive **sólo en
+Reportes**, vista *Por servicio* (H-16); el módulo se llama **Buscar empresas** en todo lo que se
+ve; los casilleros dicen **Entró / Salió / Resultado**; *Anular y corregir* no anula nada hasta
+guardar; el gris de texto es uno solo (`#4a6356`, 6,5:1) y ningún badge baja de 13 px.
+
+**Lo que sigue abierto a propósito** (anotado en el informe final): renombrar *Ajuste positivo /
+negativo* (*a validar con usuarios*), que el operador vea lo cobrado en sus ventas (decisión del
+grupo) y la regla de 14 px para todo dato (backlog). Si los ves, sumá lo que observes, no los
+vuelvas a describir.
 
 ---
 
@@ -438,5 +443,6 @@ sistema que se usa para decidir, no para registrar.
 | 15/09/2026 | Sprint 08 | 26 hallazgos (4 bloquean, 8 hacen perder tiempo, 8 generan duda, 6 molestan) + 16 términos a renombrar + 3 bugs. Informe en `informes-UX/informe-UX-2026-09-15.md` | **16/09**: los 4 que bloquean (H-01 a H-04) + se sacó la matrícula del sistema + el largo mínimo de contraseña + 1 bug encontrado al corregir. El resto, al backlog: HU-84 a HU-88 en el Sprint 13. El vocabulario queda para decidir en grupo. Detalle al final del informe |
 | 16/09/2026 | *(sin auditoría nueva: se aplicó lo pendiente de la anterior)* | — | **HU-84** (vocabulario, decidido por el grupo), **HU-85** (listados como tarjetas en el celular, con hoja compartida) y **HU-86** (configuración agrupada en el menú principal). Las tres estaban planificadas para el Sprint 13 y se adelantaron al 09, porque arreglaban justo lo que el módulo de Servicios iba a duplicar |
 | 28/09/2026 | **Sprints 09 y 10 juntos** (Servicios completo · Reportes completo) | 17 hallazgos (2 bloquean, 4 hacen perder tiempo, 8 generan duda, 3 molestan) + 9 términos + 3 bugs. Informe en `informes-UX/informe-UX-2026-09-28.md` | **28/09: el plan entero**, incluido lo que se sugería dejar para el Sprint 13, menos H-16 (a validar con usuarios). Encontrado al corregir: la categoría de dinero "Servicios" venía en la **siembra de toda empresa nueva**, no sólo en la demo. Dos patrones compartidos nuevos: `filtros-plegables` (Stock pasó de 653 a 404 px para el primer dato) y los bloques por categoría en el ranking de servicios. Detalle al final del informe. Lo verificado que **sí** alcanzó: HU-84 (también en los mensajes del servidor), HU-85 (ninguna tabla se corta a 375 px, lo nuevo lo heredó gratis), HU-86 y los módulos sin pantalla. Lo grueso ahora está **en los archivos que salen**, no en las pantallas |
+| 14/11/2026 | **Sprint 13, auditoría final** (HU-64). Foco en lo nunca auditado: venta y compra en un paso, buscador y ficha de empresas, superadmin rehecho, Primeros pasos y vacíos (HU-88), alta con un desplegable y *Anular y corregir* (HU-87) | 21 hallazgos, numerados **F-01 a F-21** (0 bloquean, 11 generan duda, 6 hacen perder tiempo, 4 molestan) + 12 términos + tabla de contraste medida texto por texto + 4 bugs + **recomendación sobre H-16: una sola puerta, en Reportes**. Informe en `informes-UX/informe-UX-final.md`. Lo más grave: *Anular y corregir* + *Cancelar* deja la plata anulada sin aviso (F-01); el login entre 1,9 y 2,8 : 1 y seis grises distintos por debajo de 4,5 : 1; la tabla de Motivos de stock no entra a 375 px (606 en 343). Corrida en una copia aparte (`cooperApp_ux`, puerto 3002) porque QA usaba la base y el puerto de siempre: **las cookies de `localhost` se comparten entre puertos**, hay que usar `127.0.0.1` | *(pendiente: lo decide el chat de desarrollo)* |
 
 *(Completar después de cada corrida.)*

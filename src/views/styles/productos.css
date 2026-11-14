@@ -1,7 +1,7 @@
 /* ===== VARIABLES ===== */
 :root {
   --verde-primario: #2d7a4f;
-  --verde-secundario: #3a9e65;
+  --verde-secundario: #2f8456;
   --verde-oscuro: #1a6b3a;
   --bg-page: #f0f7f3;
   --card-bg: #ffffff;
@@ -100,7 +100,7 @@ body {
   margin-top: 12px;
   flex-wrap: wrap;
 }
-.contador { color: #6c8a7a; font-size: 0.85rem; font-weight: 600; }
+.contador { color: #4a6356; font-size: 0.85rem; font-weight: 600; }
 
 .btn-limpiar {
   background: none;
@@ -132,18 +132,18 @@ body {
 .table tbody td { vertical-align: middle; }
 
 .prod-nombre { font-weight: 600; }
-.prod-descripcion { color: #6c8a7a; font-size: 0.82rem; }
+.prod-descripcion { color: #4a6356; font-size: 0.82rem; }
 /* Lo que la empresa eligió mostrar en el buscador entre empresas
    (Articulación). Servicios usa esta misma hoja. */
-.badge-visible { color: #2d7a4f; font-size: 0.76rem; font-weight: 600; margin-top: 2px; }
+.badge-visible { color: #2d7a4f; font-size: 0.8125rem; font-weight: 600; margin-top: 2px; }
 .fila-inactiva .prod-nombre { text-decoration: line-through; opacity: 0.6; }
 
 /* La subcategoría es opcional: cuando no tiene, se marca con un guion suave
    en vez de dejar la celda vacía, que se lee como un error. */
-.sin-dato { color: #b3c7bc; }
+.sin-dato { color: #4a6356; }
 
 .badge-estado {
-  font-size: 0.72rem;
+  font-size: 0.8125rem;
   padding: 3px 9px;
   border-radius: 20px;
   font-weight: 600;
@@ -155,7 +155,7 @@ body {
 .badge-unidad {
   background-color: #eef4f1;
   color: #4a6b5a;
-  font-size: 0.75rem;
+  font-size: 0.8125rem;
   padding: 3px 9px;
   border-radius: 6px;
   font-weight: 600;
@@ -178,7 +178,7 @@ body {
 .btn-mini.peligro:hover { background-color: #fde8e8; }
 .btn-mini:disabled { opacity: 0.5; }
 
-.tabla-vacia { padding: 32px 20px; text-align: center; color: #8aa596; font-size: 0.9rem; }
+.tabla-vacia { padding: 32px 20px; text-align: center; color: #4a6356; font-size: 0.9rem; }
 
 /* ===== MODALES ===== */
 .modal-content { border-radius: 12px; overflow: hidden; border: none; }
@@ -198,7 +198,7 @@ body {
   box-shadow: var(--card-shadow);
   padding: 40px 20px;
   text-align: center;
-  color: #6c8a7a;
+  color: #4a6356;
 }
 
 /* ===== RESPONSIVE ===== */

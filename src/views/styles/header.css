@@ -155,7 +155,7 @@
   width: 30px;
   height: 30px;
   border-radius: 50%;
-  background: linear-gradient(135deg, #2d7a4f, #19de75);
+  background: linear-gradient(135deg, #2d7a4f, #1e5c3a);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -225,3 +225,8 @@
     font-size: 1.3rem;
   }
 }
+
+/* base.css (que usan el tablero, Mi empresa y el login) le pone width: 100% a
+   TODOS los botones: el del menú y el del usuario bajaban a un segundo renglón
+   de ancho completo, y el encabezado medía 107 px en vez de 64 (UX F-20). */
+#main-header button { width: auto; }

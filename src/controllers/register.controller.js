@@ -72,11 +72,20 @@ exports.registerEmpresa = async (req, res) => {
       return res.status(400).json({ error: 'El email del administrador no tiene un formato válido', campo: 'email' })
     }
 
-    if (!/^\d{11}$/.test(String(empresa_cuit).replace(/[-\s]/g, ''))) {
+    // Se guarda LO MISMO que se valida: el CUIT sin guiones ni espacios y el
+    // DNI sin puntos ni espacios. Antes se validaba limpio y se guardaba como
+    // venía: un CUIT con guiones (el formato de la constancia de AFIP) rebotaba
+    // con "Error del servidor" (la columna es un número), y un DNI con puntos
+    // se colaba como si fuera otro, con la contraseña temporal con puntos
+    // (QA final, A1 y M1).
+    const cuitLimpio = String(empresa_cuit).replace(/[-\s]/g, '')
+    const dniLimpio = String(dni).replace(/[.\s]/g, '')
+
+    if (!/^\d{11}$/.test(cuitLimpio)) {
       return res.status(400).json({ error: 'El CUIT debe tener 11 dígitos', campo: 'empresa_cuit' })
     }
 
-    if (!/^\d{7,9}$/.test(String(dni).replace(/[.\s]/g, ''))) {
+    if (!/^\d{7,9}$/.test(dniLimpio)) {
       return res.status(400).json({ error: 'El DNI debe tener entre 7 y 9 dígitos', campo: 'dni' })
     }
 
@@ -84,7 +93,7 @@ exports.registerEmpresa = async (req, res) => {
       return res.status(400).json({ error: 'Ya existe una empresa con ese email', campo: 'empresa_email' })
     }
 
-    if (await empresaModel.findByCuit(empresa_cuit)) {
+    if (await empresaModel.findByCuit(cuitLimpio)) {
       return res.status(400).json({ error: 'Ya existe una empresa con ese CUIT', campo: 'empresa_cuit' })
     }
 
@@ -92,7 +101,7 @@ exports.registerEmpresa = async (req, res) => {
       return res.status(400).json({ error: 'Ya existe un usuario con ese email', campo: 'email' })
     }
 
-    if (await userModel.findByDni(dni)) {
+    if (await userModel.findByDni(dniLimpio)) {
       return res.status(400).json({ error: 'Ya existe un usuario con ese DNI', campo: 'dni' })
     }
 
@@ -112,13 +121,13 @@ exports.registerEmpresa = async (req, res) => {
       {
         nombre: empresa_nombre,
         email: empresa_email,
-        cuit: empresa_cuit,
+        cuit: cuitLimpio,
         federacion: empresa_federacion,
         domicilio: empresa_domicilio,
         ...ubicacion
       },
       {
-        nombre, apellido, email, dni,
+        nombre, apellido, email, dni: dniLimpio,
         password_hash: hashedPassword,
         id_rol: ID_ROL_ADMIN
       }

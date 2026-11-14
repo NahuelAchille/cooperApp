@@ -328,7 +328,14 @@
       document.getElementById('campo-desde').max = fechaDeHoy()
       document.getElementById('campo-hasta').max = fechaDeHoy()
 
-      cargarReporte()
+      // ?vista=servicio llega desde "Cuánto deja cada uno" de Servicios (H-16).
+      // Sólo las vistas que existen y que la empresa tiene a la vista.
+      const pedida = new URLSearchParams(location.search).get('vista')
+      const boton = ['movimientos', 'categoria', 'producto', 'servicio', 'perdidas'].includes(pedida)
+        ? document.querySelector(`.btn-vista[data-vista="${pedida}"]`)
+        : null
+      if (boton && !boton.classList.contains('d-none') && !boton.closest('.d-none')) boton.click()
+      else cargarReporte()
     }
 
     // Arma el querystring del período, que comparten las dos consultas.

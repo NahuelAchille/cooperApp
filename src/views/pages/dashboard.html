@@ -39,11 +39,12 @@
         return { desde: fmt(primero), hasta: fmt(ultimo) }
     }
 
-    // Calcula la variacion % de este mes contra el anterior.
-    function variacion(actual, anterior) {
-        if (anterior === 0) return actual === 0 ? 'Sin datos del mes anterior' : 'Nuevo este mes'
-        const pct = ((actual - anterior) / anterior) * 100
-        return `${pct >= 0 ? '+' : ''}${pct.toFixed(0)}% vs mes anterior`
+    // Cómo le fue el mes pasado, en plata (UX F-04). Antes era un porcentaje
+    // ("+2542% vs mes anterior"): con un mes anterior chico se disparaba, el
+    // mes en curso va por la mitad, y "vs" no es castellano. Comparar dos
+    // montos es lo que la persona sabe hacer.
+    function elMesPasado(anterior) {
+        return `El mes pasado: ${formatMoneda(anterior)}`
     }
 
     async function cargarDashboard() {
@@ -77,16 +78,11 @@
             cargarResumen()
             cargarRecientes()
         } else {
-            document.getElementById('tabla-recientes').innerHTML =
-                `<tr><td class="text-muted">${hayModulo
-                    ? 'Tu usuario no tiene acceso a los movimientos.'
-                    : 'El módulo de Movimientos no está activo en tu empresa.'}</td></tr>`
-            // Los tres casilleros de la plata quedaban en "—" sin explicar por
-            // qué: se leia como que el sistema no anda (HU-88).
-            const motivo = hayModulo ? 'Sin acceso' : 'Módulo no activo'
-            ;['kpi-ingresos', 'kpi-egresos', 'kpi-balance'].forEach(id => {
-                document.getElementById(id).closest('.dashboard-kpi').querySelector('h5').textContent = motivo
-            })
+            // Lo que este rol no usa NO se dibuja (UX F-17). Al operador, tres
+            // de cuatro casilleros le decían "Sin acceso" y su dato (lo que hay
+            // que reponer) quedaba último. El panel muestra lo que le sirve.
+            ;['dashboard-kpis-1', 'dashboard-kpis-2', 'dashboard-kpis-3', 'dashboard-movimientos']
+                .forEach(id => document.getElementById(id).classList.add('d-none'))
         }
 
         // "Ver reporte" llevaba a Movimientos aunque la empresa tuviera Reportes.
@@ -115,6 +111,21 @@
         if (moduloActivo('articulacion')) {
             document.getElementById('buscador-dashboard').classList.remove('d-none')
             document.getElementById('articulacion-apagada').classList.add('d-none')
+        } else {
+            document.getElementById('dashboard-matches').classList.add('d-none')
+        }
+
+        // Al admin, en una sola línea, qué partes están apagadas y dónde se
+        // prenden (UX F-17), en vez de un bloque "no activo" por cada una.
+        if (user.rol === 'admin_empresa') {
+            const apagados = [['productos', 'Productos'], ['servicios', 'Servicios'], ['reportes', 'Reportes'], ['articulacion', 'Buscar empresas']]
+                .filter(([clave]) => !moduloActivo(clave)).map(([, nombre]) => nombre)
+            if (apagados.length) {
+                const aviso = document.getElementById('modulos-apagados')
+                aviso.innerHTML = `<i class="fa-solid fa-toggle-off me-1"></i>Hay partes del sistema apagadas: ${apagados.join(', ')}. ` +
+                    'Las prendés en <a href="/pages/configuracion-modulos.html">Módulos del sistema</a>.'
+                aviso.classList.remove('d-none')
+            }
         }
 
         if (rolDeDeposito && hayProductos) {
@@ -124,15 +135,9 @@
             document.getElementById('link-ver-stock').classList.remove('d-none')
             cargarFaltantes()
         } else {
-            // Se distingue el modulo apagado de la falta de permiso: son dos
-            // problemas distintos y se resuelven de maneras distintas.
-            document.getElementById('tabla-faltantes').innerHTML =
-                `<tr><td class="text-muted">${hayProductos
-                    ? 'Tu usuario no tiene acceso al stock.'
-                    : 'El módulo de Productos no está activo en tu empresa.'}</td></tr>`
-
-            document.getElementById('kpi-faltantes-detalle').textContent =
-                hayProductos ? 'Sin acceso' : 'Módulo no activo'
+            // Mismo criterio que la plata (UX F-17): si este rol no ve el
+            // stock, o la empresa no usa Productos, el bloque no se dibuja.
+            ;['dashboard-kpis-5', 'dashboard-stock'].forEach(id => document.getElementById(id).classList.add('d-none'))
         }
     }
 
@@ -220,9 +225,12 @@
         document.getElementById('kpi-balance').textContent  = formatMoneda(actual.balance)
 
         if (anterior) {
-            document.getElementById('kpi-ingresos-var').textContent = variacion(actual.total_ingresos, anterior.total_ingresos)
-            document.getElementById('kpi-egresos-var').textContent  = variacion(actual.total_egresos, anterior.total_egresos)
+            document.getElementById('kpi-ingresos-var').textContent = elMesPasado(anterior.total_ingresos)
+            document.getElementById('kpi-egresos-var').textContent  = elMesPasado(anterior.total_egresos)
         }
+        // "Quedó a favor / en contra", como en Reportes: el número solo no dice si está bien.
+        document.getElementById('kpi-balance-detalle').textContent =
+            Number(actual.balance) >= 0 ? 'Quedó a favor' : 'Quedó en contra'
     }
 
     // Ultimos 5 movimientos (no anulados, que es el default del endpoint).
@@ -267,7 +275,8 @@
     async function cargarPrimerosPasos() {
         const hayProductos = moduloActivo('productos')
         const [movimientos, existencias, usuarios, empresa] = await Promise.all([
-            fetch('/movimientos?limit=1').then(r => r.ok ? r.json() : []),
+            // Con los anulados: un movimiento anulado también es "ya empezó" (QA final, B2).
+            fetch('/movimientos?limit=1&incluirAnulados=true').then(r => r.ok ? r.json() : []),
             hayProductos ? fetch('/productos/stock').then(r => r.ok ? r.json() : []) : [],
             fetch('/users').then(r => r.ok ? r.json() : []),
             fetch('/empresas/mi-empresa').then(r => r.ok ? r.json() : {})
@@ -280,7 +289,7 @@
         const activos = Array.isArray(usuarios) ? usuarios.filter(u => u.activo).length : 0
         const pasos = [
             { texto: 'Elegí qué partes del sistema vas a usar', link: '/pages/configuracion-modulos.html',
-              ayuda: 'Productos, Servicios, Reportes, Articulación. Las podés prender o apagar cuando quieras.' },
+              ayuda: 'Productos, Servicios, Reportes, Buscar empresas. Las podés prender o apagar cuando quieras.' },
             hayProductos && { texto: 'Cargá tus productos', link: '/pages/productos.html', hecho: existencias.length > 0 },
             hayProductos && { texto: 'Cargá lo que ya tenés en el depósito', link: '/pages/stock.html',
               ayuda: 'Con "Otra entrada o salida" y el motivo Ajuste positivo.' },
@@ -324,7 +333,7 @@
                 <li id="btn-compra" class="d-none"><a href="/pages/stock.html?comprar=1">+ Registrar una compra</a></li>
                 <li id="btn-ingreso" class="d-none"><a href="/pages/movimientos.html?nuevo=ingreso">+ Registrar ingreso</a></li>
                 <li id="btn-egreso" class="d-none"><a href="/pages/movimientos.html?nuevo=egreso">- Registrar egreso</a></li>
-                <li id="btn-stock" class="d-none"><a href="/pages/stock.html">Ajustar stock</a></li>
+                <li id="btn-stock" class="d-none"><a href="/pages/stock.html">Otra entrada o salida</a></li>
                 <li id="btn-reporte" class="d-none"><a href="/pages/movimientos.html">Ver reporte</a></li>
             </ul>
     </nav>
@@ -339,21 +348,22 @@
             <p class="pasos-intro">Para que el sistema empiece a servirte. Este cuadro desaparece cuando cargues tu primer movimiento.</p>
             <ol class="pasos-lista" id="pasos-lista"></ol>
         </section>
+        <p class="modulos-apagados d-none" id="modulos-apagados"></p>
         <section id="dashboard-kpis">
             <section class="dashboard-kpi" id="dashboard-kpis-1">
-                <h3>Ingresos del mes</h3>
+                <h3>Entró en el mes</h3>
                 <h4 id="kpi-ingresos">—</h4>
                 <h5 id="kpi-ingresos-var"></h5>
             </section>
             <section class="dashboard-kpi" id="dashboard-kpis-2">
-                <h3>Egresos del mes</h3>
+                <h3>Salió en el mes</h3>
                 <h4 id="kpi-egresos">—</h4>
                 <h5 id="kpi-egresos-var"></h5>
             </section>
             <section class="dashboard-kpi" id="dashboard-kpis-3">
-                <h3>Balance del mes</h3>
+                <h3>Resultado del mes</h3>
                 <h4 id="kpi-balance">—</h4>
-                <h5>Ingresos − Egresos</h5>
+                <h5 id="kpi-balance-detalle">Lo que entró menos lo que salió</h5>
             </section>
             <section class="dashboard-kpi" id="dashboard-kpis-4">
                 <h3>Usuarios activos</h3>
@@ -398,7 +408,7 @@
                  lleva al buscador con lo escrito. -->
             <section class="dashboard-block" id="dashboard-matches">
                 <div class="dashboard-block-header">
-                    <h3>Buscar entre empresas</h3>
+                    <h3>Buscar empresas</h3>
                 </div>
                 <form id="buscador-dashboard" class="d-none" action="/pages/articulacion.html" method="get" style="padding:12px 4px;margin:0;">
                     <div class="input-group">
@@ -407,7 +417,7 @@
                     </div>
                 </form>
                 <p class="text-muted" id="articulacion-apagada" style="padding:12px 4px;margin:0;">
-                    <i class="fa-solid fa-plug-circle-xmark me-1"></i>El módulo de Articulación no está activo en tu empresa.
+                    <i class="fa-solid fa-plug-circle-xmark me-1"></i>El módulo Buscar empresas no está activo en tu empresa.
                     El administrador puede activarlo desde <em>Módulos del sistema</em>.
                 </p>
             </section>

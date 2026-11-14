@@ -28,7 +28,7 @@
   <div class="content">
 
     <div class="card-blanca text-center d-none" id="aviso-error">
-      <i class="fa-solid fa-circle-info fa-2x mb-3" style="color:#6c8a7a;"></i>
+      <i class="fa-solid fa-circle-info fa-2x mb-3" style="color:#4a6356;"></i>
       <p class="mb-0" id="aviso-error-texto"></p>
     </div>
 
@@ -96,8 +96,20 @@
         filas.push(`<div class="dato-contacto"><i class="fa-solid fa-location-dot"></i>${esc(contacto.domicilio)}</div>`)
       }
 
+      // Qué hacer con los datos (UX F-09): sin esto, alguien podía esperar un
+      // botón para mandarle un mensaje adentro de la app, que no existe.
+      const botones = []
+      if (contacto.email) {
+        botones.push(`<a class="btn btn-contacto" href="mailto:${esc(contacto.email)}"><i class="fa-solid fa-envelope me-2"></i>Escribir un email</a>`)
+      }
+      if (contacto.telefono) {
+        botones.push(`<a class="btn btn-contacto" href="tel:${esc(contacto.telefono.replace(/[^0-9+]/g, ''))}"><i class="fa-solid fa-phone me-2"></i>Llamar</a>`)
+      }
+
       document.getElementById('ficha-contacto').innerHTML = filas.length
-        ? filas.join('')
+        ? '<p class="como-contactar">Para comprarle o consultarle, escribile o llamala: CooperApp no manda mensajes.</p>' +
+          filas.join('') +
+          (botones.length ? `<div class="botones-contacto">${botones.join('')}</div>` : '')
         : '<span class="text-muted">Esta empresa no eligió mostrar datos de contacto.</span>'
     }
 
@@ -108,20 +120,29 @@
         return
       }
 
+      // El rubro viene como "General › Específico". Se agrupa por el general y
+      // adentro por el específico: antes el general se repetía arriba de cada
+      // grupo, tres veces seguidas (UX F-21).
       const grupos = new Map()
       for (const item of ofrece) {
-        if (!grupos.has(item.rubro)) grupos.set(item.rubro, [])
-        grupos.get(item.rubro).push(item)
+        const [general, especifico = ''] = String(item.rubro).split(' › ')
+        if (!grupos.has(general)) grupos.set(general, new Map())
+        const sub = grupos.get(general)
+        if (!sub.has(especifico)) sub.set(especifico, [])
+        sub.get(especifico).push(item)
       }
 
-      document.getElementById('ficha-ofrece').innerHTML = [...grupos.entries()].map(([rubro, items]) => `
-        <div class="grupo-rubro">
-          <div class="rubro">${esc(rubro)}</div>
-          ${items.map(i => `
+      const pintarItems = (items) => items.map(i => `
             <div class="item-ofrece">
               <div>${esc(i.nombre)}${i.es_servicio ? '<span class="etiqueta-servicio">servicio</span>' : ''}</div>
               ${i.descripcion ? `<div class="descripcion">${esc(i.descripcion)}</div>` : ''}
-            </div>`).join('')}
+            </div>`).join('')
+
+      document.getElementById('ficha-ofrece').innerHTML = [...grupos.entries()].map(([general, sub]) => `
+        <div class="grupo-rubro">
+          <div class="rubro">${esc(general)}</div>
+          ${[...sub.entries()].map(([especifico, items]) =>
+            (especifico ? `<div class="rubro-especifico">${esc(especifico)}</div>` : '') + pintarItems(items)).join('')}
         </div>`).join('')
     }
 
@@ -142,7 +163,7 @@
 
       // Un círculo y no un alfiler: un alfiler dice "acá está el local", y lo
       // único que se sabe es la localidad.
-      L.circle(centro, { radius: 1500, color: '#2d7a4f', fillColor: '#3a9e65', fillOpacity: 0.2 })
+      L.circle(centro, { radius: 1500, color: '#2d7a4f', fillColor: '#2f8456', fillOpacity: 0.2 })
         .addTo(mapa)
         .bindTooltip(esc(nombre))
     }
@@ -168,7 +189,7 @@
         return
       }
       if (!moduloActivo('articulacion')) {
-        mostrarError('El módulo de Articulación no está activo en tu empresa. El administrador puede activarlo desde Módulos del sistema.')
+        mostrarError('El módulo Buscar empresas no está activo en tu empresa. El administrador puede activarlo desde Módulos del sistema.')
         return
       }
 
@@ -185,7 +206,10 @@
       document.getElementById('ficha-nombre').textContent = ficha.nombre
 
       const donde = [ficha.localidad, ficha.provincia].filter(Boolean).join(', ') || 'Sin localidad cargada'
-      const distancia = ficha.distancia_km === null ? '' : ` · a ${String(ficha.distancia_km).replace('.', ',')} km de tu empresa`
+      // "a unos 2 km" (UX F-19): es entre los centros de las localidades.
+      const distancia = ficha.distancia_km === null ? ''
+        : ficha.distancia_km < 1 ? ' · en tu misma zona'
+        : ` · a unos ${Math.max(1, Math.round(ficha.distancia_km))} km de tu empresa`
       document.getElementById('ficha-donde').innerHTML =
         `<i class="fa-solid fa-location-dot me-1"></i>${esc(donde)}${esc(distancia)}`
 

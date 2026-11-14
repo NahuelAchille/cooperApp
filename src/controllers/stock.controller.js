@@ -4,6 +4,8 @@ const motivoStockModel = require('../models/motivo-stock.model')
 const movimientoModel = require('../models/movimiento.model')
 const categoriaModel = require('../models/categoria.model')
 const { validarFechaDeCarga, parsearFecha, aFechaISO } = require('../services/fecha.service')
+const { aNumero } = require('../services/validacion.service')
+const { nombreUnidad } = require('../config/unidades-medida')
 
 // Valida una cantidad de mercaderia. Devuelve { valor } o { error }.
 //
@@ -21,7 +23,7 @@ const parsearCantidad = (valor) => {
     return { error: 'La cantidad tiene que ser un número' }
   }
 
-  const numero = Number(valor)
+  const numero = aNumero(valor)
   if (!Number.isFinite(numero)) {
     return { error: 'La cantidad tiene que ser un número' }
   }
@@ -52,7 +54,7 @@ const parsearMonto = (valor, El = 'El monto', tope = 999999999999.99) => {
     return { error: `${El} es obligatorio` }
   }
 
-  const numero = Number(valor)
+  const numero = aNumero(valor)
   if (!Number.isFinite(numero)) {
     return { error: `${El} tiene que ser un número` }
   }
@@ -257,6 +259,9 @@ const OPERACIONES = {
     las: 'las ventas',
     Las: 'Las ventas',
     laPlata: 'su cobro',
+    queEra: 'cobro',
+    La: 'La venta',
+    una: 'una venta',
     noSePuede: 'no se puede vender',
     Precio: 'El precio'
   },
@@ -271,6 +276,9 @@ const OPERACIONES = {
     las: 'las compras',
     Las: 'Las compras',
     laPlata: 'su pago',
+    queEra: 'pago',
+    La: 'La compra',
+    una: 'una compra',
     noSePuede: 'no se puede comprar',
     Precio: 'El costo'
   }
@@ -298,6 +306,42 @@ const esMotivoDe = (clase) => (motivo) =>
 // del grupo, 25/10 y 26/10/2026): es el que esta en el mostrador y el que
 // recibe al proveedor. Sigue sin entrar a Movimientos ni ver el balance; lo
 // unico que puede hacer con la plata es esto.
+// Anula un movimiento de stock y, en el mismo paso, la plata atada (decision
+// del grupo, 02/11/2026). Se usa adentro del candado del producto: al anular
+// desde el historial y al corregir una venta o una compra (UX F-08).
+//
+// Vuelve a mirar el movimiento ADENTRO del candado (FOR UPDATE): otro pedido
+// pudo anularlo, o alguien de finanzas pudo estar atandole el cobro justo
+// ahora. "controlar" es una regla extra que se mira antes de anular; si
+// devuelve un texto, no se anula nada y ese es el error.
+const anularConSuPlata = async (id_movimiento_stock, id_empresa, conexion, controlar) => {
+
+  const [[actual]] = await conexion.query(`
+    SELECT ms.anulado, ms.id_movimiento, m.monto, m.anulado AS dinero_anulado
+    FROM movimientos_stock ms
+    LEFT JOIN movimientos m ON m.id_movimiento = ms.id_movimiento
+    WHERE ms.id_movimiento_stock = ? AND ms.id_empresa = ?
+    FOR UPDATE
+  `, [id_movimiento_stock, id_empresa])
+
+  if (!actual || actual.anulado) {
+    return { error: 'Ese movimiento ya estaba anulado' }
+  }
+
+  const problema = controlar ? controlar() : null
+  if (problema) return { error: problema }
+
+  await stockModel.anularMovimiento(id_movimiento_stock, id_empresa, conexion)
+
+  let dineroAnulado = null
+  if (actual.id_movimiento && !actual.dinero_anulado) {
+    await movimientoModel.anular(actual.id_movimiento, id_empresa, conexion)
+    dineroAnulado = Number(actual.monto)
+  }
+
+  return { dineroAnulado }
+}
+
 const registrarOperacion = async (clase, req, res) => {
 
   const op = OPERACIONES[clase]
@@ -316,6 +360,28 @@ const registrarOperacion = async (clase, req, res) => {
     }
     if (!producto.activo) {
       return res.status(400).json({ error: `Ese producto está dado de baja: ${op.noSePuede}` })
+    }
+
+    // --- Corregir una venta o una compra ya cargada (UX F-08) ---
+    //
+    // Con "reemplaza", la operación vieja (con su plata) se anula y la nueva se
+    // carga EN EL MISMO PASO. Antes el operador que tipeaba mal un precio tenía
+    // que anular y volver a cargar de memoria. Tiene que ser del mismo producto:
+    // si el producto estaba mal, es otra venta, no una corrección.
+    let original = null
+    if (req.body.reemplaza !== undefined && req.body.reemplaza !== null && req.body.reemplaza !== '') {
+      original = await stockModel.findMovimientoById(req.body.reemplaza, id_empresa)
+      if (!original || original.anulado) {
+        return res.status(400).json({ error: `${op.La} que querés corregir no existe o ya estaba anulada` })
+      }
+      if (!esMotivoDe(clase)(original)) {
+        return res.status(400).json({ error: `Ese movimiento no es ${op.una}` })
+      }
+      if (original.id_producto !== producto.id_producto) {
+        return res.status(400).json({
+          error: `Para cambiar el producto, anulá ${op.la} desde el historial y cargala de nuevo`
+        })
+      }
     }
 
     // --- El motivo: si la empresa tiene uno solo de esta clase, se usa ese ---
@@ -403,8 +469,8 @@ const registrarOperacion = async (clase, req, res) => {
     // El movimiento de dinero cuenta qué se vendió o compró, para que en
     // Movimientos se entienda sin ir a buscar al stock. El detalle (el cliente,
     // el proveedor, el remito) va a continuación.
-    const unidad = producto.unidad_medida ? ` ${producto.unidad_medida}` : ''
-    const descripcionDinero = `${motivo.nombre}: ${formatearCantidad(cantidad.valor)}${unidad} de ${producto.nombre}` +
+    const unidad = (c) => producto.unidad_medida ? ` ${nombreUnidad(c, producto.unidad_medida)}` : ''
+    const descripcionDinero = `${motivo.nombre}: ${formatearCantidad(cantidad.valor)}${unidad(cantidad.valor)} de ${producto.nombre}` +
                               (detalle ? ` · ${detalle}` : '')
 
     // Todo adentro del candado del producto: el control del stock, el dinero
@@ -412,7 +478,28 @@ const registrarOperacion = async (clase, req, res) => {
     // queda una venta con el stock descontado y la plata sin cargar.
     const resultado = await stockModel.conProductoTrabado(
       producto.id_producto, id_empresa,
-      async (disponible, conexion) => {
+      async (disponibleAntes, conexion) => {
+
+        // Si corrige otra, primero se anula la vieja (con su plata), y lo que
+        // hay disponible es como si nunca se hubiera cargado.
+        let disponible = disponibleAntes
+        let dineroAnulado = null
+        if (original) {
+          const anulado = await anularConSuPlata(original.id_movimiento_stock, id_empresa, conexion)
+          if (anulado.error) return { error: `${op.La} que querés corregir ya estaba anulada` }
+          dineroAnulado = anulado.dineroAnulado
+          const cantidadVieja = Number(original.cantidad)
+          disponible = op.efecto_stock === 'salida' ? disponible + cantidadVieja : disponible - cantidadVieja
+
+          // Una compra con menos cantidad puede dejar el stock en negativo si
+          // de lo que entró ya se vendió una parte.
+          if (op.efecto_stock === 'entrada' && disponible + cantidad.valor < 0) {
+            return {
+              error: `No se puede corregir así: de esta compra ya salieron ${formatearCantidad(-disponible)}, ` +
+                     `y con ${formatearCantidad(cantidad.valor)} el stock quedaría en negativo.`
+            }
+          }
+        }
 
         // Una compra suma: no hay nada que pueda faltar.
         if (op.efecto_stock === 'salida' && cantidad.valor > disponible) {
@@ -459,7 +546,7 @@ const registrarOperacion = async (clase, req, res) => {
           id_movimiento
         }, conexion)
 
-        return { id_movimiento_stock, id_movimiento, actualizarCosto }
+        return { id_movimiento_stock, id_movimiento, actualizarCosto, dineroAnulado }
       }
     )
 
@@ -467,11 +554,11 @@ const registrarOperacion = async (clase, req, res) => {
       return res.status(400).json({ error: resultado.error })
     }
 
-    const { id_movimiento_stock, id_movimiento, existencia, actualizarCosto } = resultado
+    const { id_movimiento_stock, id_movimiento, existencia, actualizarCosto, dineroAnulado } = resultado
 
     const comoQueda = op.efecto_stock === 'salida'
-      ? `Quedan ${formatearCantidad(existencia)}${unidad}.`
-      : `Ahora hay ${formatearCantidad(existencia)}${unidad}.`
+      ? `Quedan ${formatearCantidad(existencia)}${unidad(existencia)}.`
+      : `Ahora hay ${formatearCantidad(existencia)}${unidad(existencia)}.`
     const avisoCosto = actualizarCosto
       ? ` El costo del producto pasó a ${formatearPlata(precio.valor)}.`
       : ''
@@ -482,8 +569,11 @@ const registrarOperacion = async (clase, req, res) => {
       existencia,
       total,
       costoActualizado: actualizarCosto,
-      message: `${op.Laoperacion} registrada: ${formatearCantidad(cantidad.valor)}${unidad} de ${producto.nombre} por ${formatearPlata(total)}. ` +
-               comoQueda + avisoCosto
+      message: `${op.Laoperacion} ${original ? 'corregida' : 'registrada'}: ${formatearCantidad(cantidad.valor)}${unidad(cantidad.valor)} de ${producto.nombre} por ${formatearPlata(total)}. ` +
+               comoQueda + avisoCosto +
+               (original
+                 ? ` La anterior quedó anulada${dineroAnulado !== null ? `, con su ${op.queEra} de ${formatearPlata(dineroAnulado)}` : ''}.`
+                 : '')
     })
 
   } catch (error) {
@@ -600,36 +690,11 @@ exports.anularMovimiento = async (req, res) => {
       movimiento.id_producto, id_empresa,
       async (disponible, conexion) => {
 
-        // Se vuelve a mirar ADENTRO del candado: entre la consulta de arriba y
-        // este momento, otro pedido pudo haberlo anulado. Sin esto, dos
-        // anulaciones simultaneas contestaban las dos "movimiento anulado",
-        // como si cada una hubiera hecho el trabajo.
+        // Se vuelve a mirar ADENTRO del candado (anularConSuPlata): entre la
+        // consulta de arriba y este momento, otro pedido pudo haberlo anulado.
+        // Sin esto, dos anulaciones simultaneas contestaban las dos
+        // "movimiento anulado", como si cada una hubiera hecho el trabajo.
         //
-        // Lo mismo con la plata: se lee aca, con la fila trabada (FOR UPDATE),
-        // porque alguien de finanzas pudo estar atandole el cobro justo ahora.
-        const [[actual]] = await conexion.query(`
-          SELECT ms.anulado, ms.id_movimiento, m.monto, m.anulado AS dinero_anulado
-          FROM movimientos_stock ms
-          LEFT JOIN movimientos m ON m.id_movimiento = ms.id_movimiento
-          WHERE ms.id_movimiento_stock = ? AND ms.id_empresa = ?
-          FOR UPDATE
-        `, [id, id_empresa])
-
-        if (!actual || actual.anulado) {
-          return { error: 'Ese movimiento ya estaba anulado' }
-        }
-
-        const cantidad = Number(movimiento.cantidad)
-
-        if (movimiento.efecto_stock === 'entrada' && cantidad > disponible) {
-          return {
-            error: `No se puede anular: este movimiento sumó ${formatearCantidad(cantidad)} y hoy quedan ${formatearCantidad(disponible)}. ` +
-                   'Anularlo dejaría el stock en negativo, así que primero hay que anular las salidas que se cargaron después.'
-          }
-        }
-
-        await stockModel.anularMovimiento(id, id_empresa, conexion)
-
         // La plata atada se anula EN EL MISMO PASO (decision del grupo,
         // 02/11/2026, por el hallazgo C1 de QA). Antes no se tocaba, con dos
         // razones que dejaron de valer cuando la venta y la compra pasaron a
@@ -644,13 +709,13 @@ exports.anularMovimiento = async (req, res) => {
         //     que nadie se enterara.
         // Una venta es una sola cosa: si no paso, no paso ni la mercaderia ni
         // la plata. Anular la plata sola desde Movimientos sigue igual.
-        let dineroAnulado = null
-        if (actual.id_movimiento && !actual.dinero_anulado) {
-          await movimientoModel.anular(actual.id_movimiento, id_empresa, conexion)
-          dineroAnulado = Number(actual.monto)
-        }
-
-        return { dineroAnulado }
+        const cantidad = Number(movimiento.cantidad)
+        return anularConSuPlata(id, id_empresa, conexion, () =>
+          movimiento.efecto_stock === 'entrada' && cantidad > disponible
+            ? `No se puede anular: este movimiento sumó ${formatearCantidad(cantidad)} y hoy quedan ${formatearCantidad(disponible)}. ` +
+              'Anularlo dejaría el stock en negativo, así que primero hay que anular las salidas que se cargaron después.'
+            : null
+        )
       }
     )
 

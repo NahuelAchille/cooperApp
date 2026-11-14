@@ -29,7 +29,7 @@
       <!-- Los motivos se usan ACA, en el formulario de entradas y salidas.
            El atajo estaba en Productos, donde no se usan, y no estaba en esta
            pantalla, que es la unica donde hacen falta. -->
-      <a class="btn btn-secundario d-none" id="link-motivos" href="/pages/configuracion-motivos-stock.html">
+      <a class="btn btn-secundario d-none" id="link-motivos" href="/pages/configuracion-motivos-stock.html?desde=stock">
         <i class="fa-solid fa-right-left me-2"></i>Motivos
       </a>
       <!-- "Otra": con la venta y la compra afuera, este formulario queda para
@@ -69,7 +69,7 @@
       <!-- Dos vistas de lo mismo: cuánto hay ahora, y cómo se llegó a eso -->
       <div class="pestanas">
         <button class="pestana activa" data-vista="existencias">
-          <i class="fa-solid fa-boxes-stacked me-2"></i>Existencias
+          <i class="fa-solid fa-boxes-stacked me-2"></i>Cuánto hay
         </button>
         <button class="pestana" data-vista="movimientos">
           <i class="fa-solid fa-clock-rotate-left me-2"></i>Entradas y salidas
@@ -201,7 +201,7 @@
     <div class="modal-dialog modal-dialog-centered">
       <div class="modal-content">
         <div class="modal-header">
-          <h5 class="modal-title fw-bold"><i class="fa-solid fa-right-left me-2"></i>Registrar una entrada o una salida</h5>
+          <h5 class="modal-title fw-bold"><i class="fa-solid fa-right-left me-2"></i>Otra entrada o salida</h5>
           <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
         </div>
         <div class="modal-body">
@@ -271,6 +271,7 @@
 
           <!-- Si falta configurar algo, se dice acá arriba y no se deja guardar -->
           <div class="alert alert-warning py-2 small d-none" id="op-falta-config"></div>
+          <div class="alert alert-info py-2 small d-none" id="op-corrigiendo"></div>
 
           <form id="form-operacion" novalidate>
 
@@ -287,18 +288,21 @@
 
             <div class="row g-2 mb-1">
               <div class="col-6">
-                <label class="form-label">Cantidad *</label>
+                <label class="form-label" for="op-cantidad">Cantidad *</label>
                 <div class="input-group">
-                  <input type="number" class="form-control" name="cantidad" min="0.01" step="0.01" placeholder="0" required>
+                  <input type="number" class="form-control" name="cantidad" id="op-cantidad" min="0.01" step="0.01" placeholder="0" required>
                   <span class="input-group-text d-none" id="op-unidad"></span>
                 </div>
               </div>
               <div class="col-6">
-                <label class="form-label" id="op-pregunta-precio"></label>
+                <label class="form-label" id="op-pregunta-precio" for="op-precio"></label>
                 <div class="input-group">
                   <span class="input-group-text">$</span>
-                  <input type="number" class="form-control" name="precio_unitario" min="0.01" step="0.01" placeholder="0,00" required>
+                  <input type="number" class="form-control" name="precio_unitario" id="op-precio" min="0.01" step="0.01" placeholder="0,00" required>
                 </div>
+                <!-- El campo numérico no muestra separador de miles (UX F-18):
+                     abajo se repite como se lee. -->
+                <div class="form-text" id="op-precio-legible"></div>
               </div>
             </div>
             <div class="form-text mb-3" id="op-ayuda-precio"></div>
@@ -319,11 +323,11 @@
 
             <div class="row g-2 mb-3">
               <div class="col-12 col-sm-5">
-                <label class="form-label">Fecha *</label>
-                <input type="date" class="form-control" name="fecha" required>
+                <label class="form-label" for="op-fecha">Fecha *</label>
+                <input type="date" class="form-control" name="fecha" id="op-fecha" required>
               </div>
               <div class="col-12 col-sm-7">
-                <label class="form-label">Detalle</label>
+                <label class="form-label" for="op-detalle">Detalle</label>
                 <input type="text" class="form-control" name="descripcion" maxlength="200" id="op-detalle">
               </div>
             </div>
@@ -405,8 +409,13 @@
         </div>
         <div class="modal-footer">
           <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
+          <!-- Sólo en una venta o una compra (UX F-08): anula la vieja y carga la
+               corregida en un solo paso, al guardar. -->
+          <button type="button" id="btn-anular-corregir" class="btn fw-bold px-4 d-none" style="background-color:#a01c1c;color:white;">
+            <i class="fa-solid fa-pen me-2"></i>Anular y corregir
+          </button>
           <button type="button" id="btn-confirmar-anular" class="btn fw-bold px-4" style="background-color:#a01c1c;color:white;">
-            <i class="fa-solid fa-ban me-2"></i>Anular
+            <i class="fa-solid fa-ban me-2"></i><span id="anular-texto-boton">Anular</span>
           </button>
         </div>
       </div>
@@ -592,7 +601,7 @@
             <td class="td-principal" data-label="Producto"><div class="prod-nombre">${esc(item.nombre)}</div></td>
             <td data-label="Categoría"><span class="prod-clasificacion">${clasificacion}</span></td>
             <td class="text-end td-destacado" data-label="Existencia">
-              <span class="existencia ${estado}">${formatearCantidad(item.existencia)}<span class="unidad">${esc(item.unidad_medida)}</span></span>
+              <span class="existencia ${estado}">${formatearCantidad(item.existencia)}<span class="unidad">${esc(nombreUnidad(item.existencia, item.unidad_medida))}</span></span>
             </td>
             <td class="text-end" data-label="Mínimo"><span class="minimo-texto">${Number(item.stock_minimo) > 0 ? formatearCantidad(item.stock_minimo) : '—'}</span></td>
             <td data-label="Estado">${aviso}</td>
@@ -600,11 +609,13 @@
               <button class="btn-mini" data-accion="historial" data-id="${item.id_producto}" title="Ver el historial de este producto">
                 <i class="fa-solid fa-clock-rotate-left"></i>
               </button>
+              <!-- En el celular dicen "Comprar" y "Vender" (UX F-15): el camión
+                   solo no se adivina. -->
               <button class="btn-mini" data-accion="comprar" data-id="${item.id_producto}" title="Registrar una compra de este producto">
-                <i class="fa-solid fa-truck-ramp-box"></i>
+                <i class="fa-solid fa-truck-ramp-box"></i><span class="texto-boton">Comprar</span>
               </button>
               <button class="btn-mini" data-accion="vender" data-id="${item.id_producto}" title="Registrar una venta de este producto">
-                <i class="fa-solid fa-cart-shopping"></i>
+                <i class="fa-solid fa-cart-shopping"></i><span class="texto-boton">Vender</span>
               </button>
               <button class="btn-mini" data-accion="mover" data-id="${item.id_producto}" title="Registrar otra entrada o salida">
                 <i class="fa-solid fa-right-left"></i>
@@ -744,13 +755,13 @@
             </td>
             <td data-label="Motivo">
               <span class="badge-motivo ${entra ? 'entrada' : 'salida'}">
-                <i class="fa-solid ${entra ? 'fa-arrow-down' : 'fa-arrow-up'} me-1"></i>${esc(m.motivo_nombre)}
+                ${esc(m.motivo_nombre)}
               </span>
               ${m.anulado ? marcaHuerfana : marcaDinero}
             </td>
             <td class="text-end td-destacado" data-label="Cantidad">
               <span class="cantidad-mov ${entra ? 'entrada' : 'salida'}">
-                ${entra ? '+' : '−'}${formatearCantidad(m.cantidad)}<span class="unidad">${esc(m.unidad_medida)}</span>
+                ${entra ? '+' : '−'}${formatearCantidad(m.cantidad)}<span class="unidad">${esc(nombreUnidad(m.cantidad, m.unidad_medida))}</span>
               </span>
             </td>
             <td data-label="Detalle"><span class="detalle-mov">${m.descripcion ? esc(m.descripcion) : '<span class="sin-dato">—</span>'}</span></td>
@@ -872,7 +883,7 @@
       document.getElementById('ayuda-motivo').textContent = motivo
         ? (motivo.efecto_dinero === 'ninguno'
             ? 'Este motivo no mueve dinero.'
-            : `Este motivo genera un ${motivo.efecto_dinero} de dinero.`)
+            : (motivo.efecto_dinero === 'ingreso' ? 'Con este motivo entra plata.' : 'Con este motivo sale plata.'))
         : 'El motivo define si la cantidad suma o resta.'
 
       if (!producto) {
@@ -885,7 +896,7 @@
       const cantidad = Number(form.cantidad.value)
 
       if (!motivo || !Number.isFinite(cantidad) || cantidad <= 0) {
-        div.innerHTML = `<i class="fa-solid fa-box me-1"></i>Ahora hay <strong>${formatearCantidad(hay)} ${unidad}</strong> de ${esc(producto.nombre)}.`
+        div.innerHTML = `<i class="fa-solid fa-box me-1"></i>Ahora hay <strong>${cuanto(hay, producto.unidad_medida)}</strong> de ${esc(producto.nombre)}.`
         return
       }
 
@@ -893,11 +904,11 @@
 
       if (queda < 0) {
         div.classList.add('alerta')
-        div.innerHTML = `<i class="fa-solid fa-triangle-exclamation me-1"></i>Hay <strong>${formatearCantidad(hay)} ${unidad}</strong> y estás sacando ${formatearCantidad(cantidad)}. No alcanza.`
+        div.innerHTML = `<i class="fa-solid fa-triangle-exclamation me-1"></i>Hay <strong>${cuanto(hay, producto.unidad_medida)}</strong> y estás sacando ${formatearCantidad(cantidad)}. No alcanza. Si en el depósito hay más, primero cargá lo que entró (Registrar una compra, u Otra entrada o salida).`
         return
       }
 
-      div.innerHTML = `<i class="fa-solid fa-box me-1"></i>Hay ${formatearCantidad(hay)} ${unidad} · después del movimiento queda <span class="queda">${formatearCantidad(queda)} ${unidad}</span>.`
+      div.innerHTML = `<i class="fa-solid fa-box me-1"></i>Hay ${cuanto(hay, producto.unidad_medida)} · después del movimiento queda <span class="queda">${cuanto(queda, producto.unidad_medida)}</span>.`
     }
 
     document.getElementById('select-producto').addEventListener('change', actualizarResumen)
@@ -1010,11 +1021,28 @@
 
     // Qué motivo es de cada clase: por lo que hace, no por cómo se llama.
     // Mismo criterio que el servidor.
+    // Plurales de las unidades (UX final): "hay 6 bolsas", no "hay 6 bolsa".
+    // Es la misma lista que src/config/unidades-medida.js.
+    const PLURALES = { unidad: 'unidades', litro: 'litros', metro: 'metros', caja: 'cajas', paquete: 'paquetes', bolsa: 'bolsas' }
+    function nombreUnidad(cantidad, clave) {
+      if (!clave) return ''
+      return Number(cantidad) === 1 ? clave : (PLURALES[clave] || clave)
+    }
+    // "6 bolsas", ya escapado para ir adentro de innerHTML.
+    function cuanto(cantidad, clave) {
+      return `${formatearCantidad(cantidad)} ${esc(nombreUnidad(cantidad, clave))}`.trim()
+    }
+    // "por kg", "por bolsa", "por unidad"
+    function porUnidad(clave) {
+      return 'por ' + (clave || 'unidad')
+    }
+
     const esMotivoDe = (clase) => (m) =>
       m.efecto_stock === OPERACIONES[clase].efecto_stock &&
       m.efecto_dinero === OPERACIONES[clase].efecto_dinero
 
     let claseOp = 'venta'     // la que está abierta ahora
+    let opReemplaza = null    // si se está corrigiendo una venta o una compra, cuál (UX F-08)
     let opProductos = []      // activos, con su existencia, su precio y su costo
     let opMotivos = []        // los motivos activos de la clase abierta
 
@@ -1023,12 +1051,14 @@
       return Number(numero).toLocaleString('es-AR', { style: 'currency', currency: 'ARS' })
     }
 
-    async function abrirModalOperacion(clase, idProducto) {
+    async function abrirModalOperacion(clase, idProducto, original = null) {
       claseOp = clase
+      opReemplaza = original ? original.id_movimiento_stock : null
       const op = OPERACIONES[clase]
       const form = document.getElementById('form-operacion')
       form.reset()
       document.getElementById('op-error').classList.add('d-none')
+      form.id_producto.disabled = false
 
       // Las palabras de esta operación
       document.getElementById('op-titulo').innerHTML = op.titulo
@@ -1037,7 +1067,10 @@
       document.getElementById('op-pregunta-precio').textContent = op.preguntaPrecio
       document.getElementById('op-texto-total').textContent = op.textoTotal
       document.getElementById('op-detalle').placeholder = op.placeholderDetalle
-      document.getElementById('op-texto-boton').textContent = op.boton
+      document.getElementById('op-texto-boton').textContent = original ? 'Guardar la corrección' : op.boton
+      if (original) {
+        document.getElementById('op-titulo').innerHTML = '<i class="fa-solid fa-pen me-2"></i>Corregir ' + op.la
+      }
 
       // La existencia se pide entera y no se toma del listado de la pantalla:
       // ése puede estar filtrado, y el producto quedaría afuera.
@@ -1058,7 +1091,7 @@
       document.getElementById('op-producto').innerHTML =
         '<option value="">Elegí un producto</option>' +
         opProductos.map(p =>
-          `<option value="${p.id_producto}">${esc(p.nombre)} (hay ${formatearCantidad(p.existencia)} ${esc(p.unidad_medida)})</option>`
+          `<option value="${p.id_producto}">${esc(p.nombre)} (hay ${cuanto(p.existencia, p.unidad_medida)})</option>`
         ).join('')
 
       // Si hay un solo motivo de esta clase, ni se pregunta.
@@ -1072,7 +1105,41 @@
       form.fecha.max = fechaDeHoy()
 
       if (idProducto) form.id_producto.value = idProducto
+
+      // Corrigiendo: lo que ya estaba cargado, para cambiar sólo lo que estaba
+      // mal. El producto no se cambia (si estaba mal, es otra venta), y lo que
+      // hay se cuenta como si la vieja no existiera.
+      const avisoCorrige = document.getElementById('op-corrigiendo')
+      if (original) {
+        const cantidad = Number(original.cantidad)
+        const producto = opProductos.find(p => p.id_producto === original.id_producto)
+        if (producto) {
+          producto.existencia += clase === 'venta' ? cantidad : -cantidad
+          // La opción ya se dibujó con lo de antes: se reescribe con lo que hay
+          // para esta corrección.
+          const opcion = form.id_producto.querySelector(`option[value="${producto.id_producto}"]`)
+          if (opcion) opcion.textContent = `${producto.nombre} (hay ${formatearCantidad(producto.existencia)} ${nombreUnidad(producto.existencia, producto.unidad_medida)})`
+        }
+        form.id_producto.value = original.id_producto
+        form.id_producto.disabled = true
+        avisoCorrige.innerHTML = `<i class="fa-solid fa-pen me-1"></i>Cambiá lo que estaba mal y tocá <strong>Guardar la corrección</strong>. ` +
+          `${op.la.charAt(0).toUpperCase() + op.la.slice(1)} de antes se anula recién ahí, con su plata: si cancelás, queda todo como estaba.`
+      }
+      avisoCorrige.classList.toggle('d-none', !original)
+
       alElegirProductoOp()
+
+      if (original) {
+        if (opMotivos.some(m => m.id_motivo_stock === original.id_motivo_stock)) form.id_motivo_stock.value = original.id_motivo_stock
+        form.cantidad.value = Number(original.cantidad)
+        if (original.dinero_monto && Number(original.cantidad) > 0) {
+          form.precio_unitario.value = Math.round(Number(original.dinero_monto) / Number(original.cantidad) * 100) / 100
+        }
+        form.fecha.value = /^\d{4}-\d{2}-\d{2}$/.test(original.fecha)
+          ? original.fecha
+          : new Date(original.fecha).toLocaleDateString('sv-SE')
+        form.descripcion.value = original.descripcion || ''
+      }
 
       revisarConfiguracionOp()
       actualizarOp()
@@ -1088,7 +1155,7 @@
       const boton = document.getElementById('btn-guardar-op')
       const esAdmin = usuarioActual.rol === 'admin_empresa'
       const linkMotivos = esAdmin
-        ? ' <a href="/pages/configuracion-motivos-stock.html">Ir a Motivos de stock</a>'
+        ? ' <a href="/pages/configuracion-motivos-stock.html?desde=stock">Ir a Motivos de stock</a>'
         : ''
 
       let problema = ''
@@ -1126,8 +1193,13 @@
       const unidad = document.getElementById('op-unidad')
       const ayuda = document.getElementById('op-ayuda-precio')
 
-      unidad.textContent = producto ? producto.unidad_medida : ''
+      unidad.textContent = producto ? nombreUnidad(2, producto.unidad_medida) : ''
       unidad.classList.toggle('d-none', !producto)
+
+      // "Precio por kg" y no "por unidad" cuando se vende por kilo (UX).
+      document.getElementById('op-pregunta-precio').textContent = producto
+        ? op.preguntaPrecio.replace('por unidad', porUnidad(producto.unidad_medida))
+        : op.preguntaPrecio
 
       const sugerido = producto ? op.sugerido(producto) : null
       if (!producto) {
@@ -1160,6 +1232,12 @@
         : 0
       document.getElementById('op-total').textContent = formatearPlata(centavos / 100)
 
+      // El precio como se lee, con separador de miles (UX F-18): en el campo
+      // numérico, 12500 y 125000 se confunden de un vistazo.
+      document.getElementById('op-precio-legible').textContent = precio > 0
+        ? `= ${formatearPlata(precio)} ${porUnidad(producto?.unidad_medida)}`
+        : ''
+
       // La casilla del costo: sólo en la compra y sólo si lo pagado es
       // distinto de lo cargado. Si es igual, no hay nada que actualizar.
       const precioRedondo = Math.round(precio * 100) / 100
@@ -1170,9 +1248,8 @@
       document.getElementById('op-bloque-costo').classList.toggle('d-none', !ofrecerCosto)
       if (ofrecerCosto) {
         document.getElementById('op-texto-costo').textContent =
-          `Guardar ${formatearPlata(precioRedondo)} como el costo de ${producto.nombre}` +
-          (costoCargado === null ? '.' : ` (antes: ${formatearPlata(costoCargado)}).`) +
-          ' Es el que usa el reporte de pérdidas.'
+          `Desde ahora, ${producto.nombre} nos cuesta ${formatearPlata(precioRedondo)} ${porUnidad(producto.unidad_medida)}` +
+          (costoCargado === null ? '.' : ` (antes ${formatearPlata(costoCargado)}).`)
       }
 
       const div = document.getElementById('op-resumen')
@@ -1187,22 +1264,22 @@
       const unidad = esc(producto.unidad_medida)
 
       if (!(cantidad > 0)) {
-        div.innerHTML = `<i class="fa-solid fa-box me-1"></i>Hay <strong>${formatearCantidad(hay)} ${unidad}</strong> de ${esc(producto.nombre)}.`
+        div.innerHTML = `<i class="fa-solid fa-box me-1"></i>Hay <strong>${cuanto(hay, producto.unidad_medida)}</strong> de ${esc(producto.nombre)}.`
         return
       }
 
       if (claseOp === 'compra') {
-        div.innerHTML = `<i class="fa-solid fa-box me-1"></i>Hay ${formatearCantidad(hay)} ${unidad} · después de la compra va a haber <span class="queda">${formatearCantidad(hay + cantidad)} ${unidad}</span>.`
+        div.innerHTML = `<i class="fa-solid fa-box me-1"></i>Hay ${cuanto(hay, producto.unidad_medida)} · después de la compra va a haber <span class="queda">${cuanto(hay + cantidad, producto.unidad_medida)}</span>.`
         return
       }
 
       if (cantidad > hay) {
         div.classList.add('alerta')
-        div.innerHTML = `<i class="fa-solid fa-triangle-exclamation me-1"></i>Hay <strong>${formatearCantidad(hay)} ${unidad}</strong> y estás vendiendo ${formatearCantidad(cantidad)}. No alcanza.`
+        div.innerHTML = `<i class="fa-solid fa-triangle-exclamation me-1"></i>Hay <strong>${cuanto(hay, producto.unidad_medida)}</strong> y estás vendiendo ${formatearCantidad(cantidad)}. No alcanza. Si en el depósito hay más, primero cargá lo que entró (Registrar una compra, u Otra entrada o salida).`
         return
       }
 
-      div.innerHTML = `<i class="fa-solid fa-box me-1"></i>Hay ${formatearCantidad(hay)} ${unidad} · después de la venta quedan <span class="queda">${formatearCantidad(hay - cantidad)} ${unidad}</span>.`
+      div.innerHTML = `<i class="fa-solid fa-box me-1"></i>Hay ${cuanto(hay, producto.unidad_medida)} · después de la venta quedan <span class="queda">${cuanto(hay - cantidad, producto.unidad_medida)}</span>.`
     }
 
     document.getElementById('btn-vender').addEventListener('click', () => abrirModalOperacion('venta', null))
@@ -1220,6 +1297,10 @@
       errorDiv.classList.add('d-none')
 
       const datos = Object.fromEntries(new FormData(form))
+      // Un <select> apagado no viaja en el FormData: al corregir, el producto
+      // está fijo y apagado.
+      datos.id_producto = form.id_producto.value
+      if (opReemplaza) datos.reemplaza = opReemplaza
 
       if (!datos.id_producto) return mostrarError(errorDiv, op.faltaProducto)
       if (opMotivos.length > 1 && !datos.id_motivo_stock) return mostrarError(errorDiv, `Elegí qué tipo ${op.de} es.`)
@@ -1345,14 +1426,21 @@
     // ================= HU-46 · ANULAR =================
     function abrirModalAnular(movimiento) {
       const entra = movimiento.efecto_stock === 'entrada'
+      // Una venta o una compra se nombran así, no "la salida" o "la entrada"
+      // (UX F-08): es lo que la persona registró.
+      const clase = esMotivoDe('venta')(movimiento) ? 'venta' : esMotivoDe('compra')(movimiento) ? 'compra' : null
+      const nombre = clase || (entra ? 'entrada' : 'salida')
 
       document.getElementById('anular-pregunta').innerHTML =
-        `¿Anular la ${entra ? 'entrada' : 'salida'} de <strong>${formatearCantidad(movimiento.cantidad)} ${esc(movimiento.unidad_medida)}</strong> ` +
+        `¿Anular la ${nombre} de <strong>${cuanto(movimiento.cantidad, movimiento.unidad_medida)}</strong> ` +
         `de <strong>${esc(movimiento.producto_nombre)}</strong> del ${formatearFecha(movimiento.fecha)}?`
 
       // Se dice qué va a pasar con el número, que es lo que la persona quiere
-      // saber antes de confirmar.
-      let aviso = '<i class="fa-solid fa-circle-info me-1"></i>No se borra: queda en el historial marcado como anulado, y la existencia se recalcula sola.'
+      // saber antes de confirmar, con palabras de todos los días.
+      const queLePasa = entra
+        ? `se descuenta de lo que hay de ${esc(movimiento.producto_nombre)}`
+        : `${esc(movimiento.producto_nombre)} vuelve al stock`
+      let aviso = `<i class="fa-solid fa-circle-info me-1"></i>No se borra: queda en el historial como anulada, y ${queLePasa}.`
 
       // La plata atada se anula junto con la mercadería (decisión del grupo,
       // 02/11): se dice cuánta, porque es lo que va a dejar de estar en el
@@ -1368,8 +1456,27 @@
       const btn = document.getElementById('btn-confirmar-anular')
       btn.dataset.id = movimiento.id_movimiento_stock
 
+      // Corregir sólo una venta o una compra: es donde se tipea un precio o una
+      // cantidad mal. El resto (una rotura, un ajuste) se anula y listo.
+      const corregir = document.getElementById('btn-anular-corregir')
+      corregir.classList.toggle('d-none', !clase)
+      corregir.dataset.id = movimiento.id_movimiento_stock
+      document.getElementById('anular-texto-boton').textContent = clase ? 'Sólo anular' : 'Anular'
+
       new bootstrap.Modal(document.getElementById('modalAnular')).show()
     }
+
+    // "Anular y corregir": no anula acá. Abre la venta o la compra con sus
+    // datos y el servidor anula la vieja recién al guardar la corrección.
+    document.getElementById('btn-anular-corregir').addEventListener('click', (evento) => {
+      const movimiento = window.movimientosCargados.find(m => String(m.id_movimiento_stock) === evento.currentTarget.dataset.id)
+      if (!movimiento) return
+      const clase = esMotivoDe('venta')(movimiento) ? 'venta' : 'compra'
+      const modal = document.getElementById('modalAnular')
+      // Con dos modales a la vez Bootstrap deja el fondo gris trabado.
+      modal.addEventListener('hidden.bs.modal', () => abrirModalOperacion(clase, movimiento.id_producto, movimiento), { once: true })
+      bootstrap.Modal.getInstance(modal).hide()
+    })
 
     document.getElementById('btn-confirmar-anular').addEventListener('click', async (evento) => {
       const boton = evento.currentTarget
@@ -1406,7 +1513,7 @@
         abrirModalDinero(movimiento, {
           naturaleza: movimiento.efecto_dinero,
           id_tipo: movimiento.motivo_id_tipo,
-          descripcion: `${movimiento.motivo_nombre}: ${formatearCantidad(movimiento.cantidad)} ${movimiento.unidad_medida} de ${movimiento.producto_nombre}`
+          descripcion: `${movimiento.motivo_nombre}: ${formatearCantidad(movimiento.cantidad)} ${nombreUnidad(movimiento.cantidad, movimiento.unidad_medida)} de ${movimiento.producto_nombre}`
         })
       }
     })

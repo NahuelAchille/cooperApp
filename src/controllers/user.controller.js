@@ -61,7 +61,8 @@ exports.login = async (req, res) => {
       }
 
       if (user.empresa_estado === 'suspendida') {
-        return res.status(403).json({ error: 'Tu empresa está suspendida' })
+        // En el panel del superadmin este estado se llama "Rechazada": misma palabra acá.
+        return res.status(403).json({ error: 'Tu empresa fue rechazada. Si creés que es un error, comunicate con quien administra CooperApp.' })
       }
 
     }
@@ -149,7 +150,12 @@ exports.crearUsuario = async (req, res) => {
       return res.status(400).json({ error: 'El email no tiene un formato válido' })
     }
 
-    if (!/^\d{7,9}$/.test(String(dni).replace(/[.\s]/g, ''))) {
+    // El DNI se guarda como se valida: sin puntos ni espacios. Si no, "41.111.111"
+    // pasaba como otro DNI distinto de "41111111", y la contraseña temporal
+    // quedaba con puntos: "tu contraseña es tu DNI" dejaba de ser cierto
+    // (QA final, M1).
+    const dniLimpio = String(dni).replace(/[.\s]/g, '')
+    if (!/^\d{7,9}$/.test(dniLimpio)) {
       return res.status(400).json({ error: 'El DNI debe tener entre 7 y 9 dígitos' })
     }
 
@@ -162,22 +168,22 @@ exports.crearUsuario = async (req, res) => {
       return res.status(400).json({ error: 'Ya existe un usuario con ese email' })
     }
 
-    if (await userModel.findByDni(dni)) {
+    if (await userModel.findByDni(dniLimpio)) {
       return res.status(400).json({ error: 'Ya existe un usuario con ese DNI' })
     }
 
     // Contraseña temporal = dni del usuario
-    const hashedPassword = await bcrypt.hash(dni, 10)
+    const hashedPassword = await bcrypt.hash(dniLimpio, 10)
 
     await userModel.createInterno({
-      nombre, apellido, email, dni,
+      nombre, apellido, email, dni: dniLimpio,
       password_hash: hashedPassword,
       id_rol,
       id_empresa,
       debe_cambiar_password: 1
     })
 
-    res.status(201).json({ message: `Usuario creado. Contraseña temporal: ${dni}` })
+    res.status(201).json({ message: `Usuario creado. Contraseña temporal: ${dniLimpio}` })
 
   } catch (error) {
     console.error(error)
@@ -208,7 +214,8 @@ exports.actualizarUsuario = async (req, res) => {
 
     const { nombre, apellido, email, dni, id_rol } = req.body
 
-    if (!nombre?.trim() || !apellido?.trim() || !email?.trim() || !dni?.trim() || !id_rol) {
+    // String(): un número o una lista en vez de texto daba 500 al hacer .trim()
+    if ([nombre, apellido, email, dni].some(v => typeof v !== 'string' || !v.trim()) || !id_rol) {
       return res.status(400).json({ error: 'Todos los campos son obligatorios' })
     }
 
@@ -231,7 +238,14 @@ exports.actualizarUsuario = async (req, res) => {
       return res.status(400).json({ error: 'Ya existe otro usuario con ese email' })
     }
 
-    if (await userModel.findByDniExcluyendo(dni.trim(), objetivo.id)) {
+    // Mismo criterio que el alta: sin puntos ni espacios. La edición ni
+    // siquiera revisaba el formato.
+    const dniLimpio = String(dni).replace(/[.\s]/g, '')
+    if (!/^\d{7,9}$/.test(dniLimpio)) {
+      return res.status(400).json({ error: 'El DNI debe tener entre 7 y 9 dígitos' })
+    }
+
+    if (await userModel.findByDniExcluyendo(dniLimpio, objetivo.id)) {
       return res.status(400).json({ error: 'Ya existe otro usuario con ese DNI' })
     }
 
@@ -239,7 +253,7 @@ exports.actualizarUsuario = async (req, res) => {
       nombre: nombre.trim(),
       apellido: apellido.trim(),
       email: emailLimpio,
-      dni: dni.trim(),
+      dni: dniLimpio,
       id_rol: Number(id_rol)
     })
 
@@ -313,7 +327,7 @@ exports.resetearPassword = async (req, res) => {
     if (solicitante.rol === 'superadmin') {
 
       if (objetivo.id_rol !== ID_ROL_ADMIN_EMPRESA) {
-        return res.status(403).json({ error: 'Sólo podés resetear la contraseña de los administradores de empresa' })
+        return res.status(403).json({ error: 'Sólo podés volver a la contraseña inicial a los administradores de empresa' })
       }
 
     } else {
@@ -324,7 +338,7 @@ exports.resetearPassword = async (req, res) => {
       }
 
       if (objetivo.id_rol === ID_ROL_ADMIN_EMPRESA || objetivo.id_rol === ID_ROL_SUPERADMIN) {
-        return res.status(403).json({ error: 'No podés resetear la contraseña de otro administrador' })
+        return res.status(403).json({ error: 'No podés volver a la contraseña inicial a otro administrador' })
       }
 
     }
@@ -332,11 +346,11 @@ exports.resetearPassword = async (req, res) => {
     const hashedPassword = await bcrypt.hash(objetivo.dni, 10)
     await userModel.resetPassword(objetivo.id, hashedPassword)
 
-    res.json({ message: `Contraseña reseteada. La nueva contraseña temporal es el DNI: ${objetivo.dni}` })
+    res.json({ message: `Listo: la contraseña volvió a ser el DNI (${objetivo.dni}). Al entrar va a tener que elegir una nueva.` })
 
   } catch (error) {
     console.error(error)
-    res.status(500).json({ error: 'Error al resetear la contraseña' })
+    res.status(500).json({ error: 'Error al volver a la contraseña inicial' })
   }
 
 }

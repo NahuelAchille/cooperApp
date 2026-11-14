@@ -3,13 +3,15 @@
   --verde-oscuro: #128c4a;
   --accent-magenta: #c13e96;
   --kpi-bg: #ffffff;
-  --kpi-border-top-1: #9c1919;
-  --kpi-border-top-2: #19939c;
-  --kpi-border-top-3: #199c19;
+  /* Los mismos colores que Movimientos (UX F-05): antes Ingresos era rojo,
+     que en toda la app es la plata que sale. */
+  --kpi-border-top-1: #2d7a4f;
+  --kpi-border-top-2: #a01c1c;
+  --kpi-border-top-3: #1f5fa8;
   --kpi-border-top-4: #9c199c;
   --kpi-border-top-5: #9c9c19;
   --card-bg: #ffffff;
-  --muted: #aaaaaa;
+  --muted: #4a6356;  /* 6,5:1; antes #aaa daba 2,3:1 (UX final, contraste) */
   --table-alt: #f7f9f8;
   --card-shadow: 0 4px 8px rgba(0,0,0,0.10);
 }
@@ -115,9 +117,9 @@
 }
 
 /* Ajustes tipográficos para que no ocupen tanto espacio vertical */
-.dashboard-kpi h3 { font-size: 0.85rem; margin: 0 0 6px 0; color: var(--muted, #aaaaaa); }
+.dashboard-kpi h3 { font-size: 0.85rem; margin: 0 0 6px 0; color: var(--muted, #4a6356); }
 .dashboard-kpi h4 { font-size: 1.4rem; margin: 0 0 4px 0; }
-.dashboard-kpi h5 { font-size: 0.8rem; margin: 0; color: var(--muted, #aaaaaa); }
+.dashboard-kpi h5 { font-size: 0.8rem; margin: 0; color: var(--muted, #4a6356); }
 
 /* colores top para cada KPI (mantener los originales) */
 #dashboard-kpis-1 { border-top-color: var(--kpi-border-top-1); }
@@ -403,14 +405,14 @@
 }
 /* Estado de un producto en el bloque de alertas de stock */
 .badge-stock {
-    font-size: 0.72rem;
+    font-size: 0.8125rem;
     font-weight: 600;
     padding: 3px 9px;
     border-radius: 20px;
     white-space: nowrap;
 }
 .badge-stock.sin  { background-color: #fde8e8; color: #a01c1c; }
-.badge-stock.bajo { background-color: #fdf0dc; color: #b5650a; }
+.badge-stock.bajo { background-color: #fdf0dc; color: #8a4b00; }
 
 /* ===== PRIMEROS PASOS (HU-88) =====
    Lo ve el administrador de una empresa que todavía no cargó nada. */
@@ -420,6 +422,24 @@
 .pasos-lista li { line-height: 1.35; }
 .pasos-lista a { color: var(--verde-primario); font-weight: 700; text-decoration: none; }
 .pasos-lista a:hover { text-decoration: underline; }
-.pasos-lista small { display: block; color: #7a8a80; }
+.pasos-lista small { display: block; color: #4a6356; }
 /* Lo que ya hizo se ve tachado y en gris: queda a la vista lo que falta. */
-.pasos-lista li.hecho a { color: #7a8a80; text-decoration: line-through; font-weight: 600; }
+.pasos-lista li.hecho a { color: #4a6356; text-decoration: line-through; font-weight: 600; }
+
+/* Qué partes del sistema están apagadas, en una línea, para el admin (UX F-17) */
+.modulos-apagados { margin: 0; color: #4a6356; font-size: 0.9rem; }
+.modulos-apagados a { color: var(--verde-primario); font-weight: 700; }
+
+/* base.css centra a los hijos de <main> sin estirarlos: los bloques tomaban
+   el ancho de su contenido más largo y medían 386 px en una pantalla de 375
+   (UX final, bug). Ocupan el ancho que hay y el contenido se acomoda adentro. */
+#dashboard-main > * { align-self: stretch; min-width: 0; }
+#dashboard-charts > .dashboard-block { min-width: 0; }
+.dashboard-table td { overflow-wrap: anywhere; }
+/* "Movimientos recientes" en el celular: sin la categoría, que es lo que
+   menos sirve de un vistazo; así entran la descripción, el monto y la fecha. */
+@media (max-width: 767px) {
+  #tabla-recientes td:nth-child(2) { display: none; }
+  /* Tenía min-width: 360px, que no entra en el bloque de 331 px. */
+  .dashboard-table { min-width: 0; }
+}

@@ -534,7 +534,7 @@ INSERT INTO modulos (clave, nombre, descripcion, opcional, activo_por_defecto, o
 -- se lee como "lo estoy apretando mal". Ahora existe y da un reporte de
 -- verdad, asi que la razon de apagarlo ya no corre.
 ('reportes',     'Reportes',     'Reportes por período, categoría, producto y servicio, con descarga.',                        1, 1, 4),
-('articulacion', 'Articulación', 'Buscar qué empresas cercanas ofrecen lo que necesitás, y mostrar lo tuyo a las demás.',      1, 0, 5);
+('articulacion', 'Buscar empresas', 'Buscar qué empresas cercanas ofrecen lo que necesitás, y mostrar lo tuyo a las demás.',      1, 0, 5);
 
 -- =============================================
 -- UBICACION: la lista de localidades para el buscador entre empresas

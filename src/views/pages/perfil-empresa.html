@@ -13,7 +13,7 @@
     body { background-color: #f0f7f3; }
 
     .page-header {
-      background: linear-gradient(135deg, #2d7a4f, #3a9e65);
+      background: linear-gradient(135deg, #2d7a4f, #2f8456);
       color: white;
       padding: 20px 32px;
       display: flex;
@@ -121,7 +121,7 @@
           <div class="col-md-6">
             <label class="form-label">Localidad</label>
             <select class="form-select" name="id_localidad" id="select-localidad"></select>
-            <div class="form-text">Con esto las empresas cercanas te encuentran primero.</div>
+            <div class="form-text">Con esto las empresas cercanas te encuentran primero. Por ahora la lista tiene el Gran Buenos Aires, la Ciudad y La Plata. Si tu localidad no está, dejá Sin elegir: vas a aparecer igual en el buscador, pero sin la distancia.</div>
           </div>
           <div class="col-md-6">
             <label class="form-label">Teléfono</label>
@@ -130,7 +130,7 @@
         </div>
 
         <!-- Qué datos de contacto aparecen en la ficha de la empresa cuando otra
-             la encuentra en el buscador de Articulación. La localidad se ve
+             la encuentra en el buscador de empresas. La localidad se ve
              siempre: sin ella no hay "cerca". -->
         <p class="seccion-titulo">Qué ven las otras empresas en tu ficha</p>
 
@@ -148,7 +148,7 @@
             <label class="form-check-label" for="mostrar-domicilio">El domicilio</label>
           </div>
           <div class="form-text">
-            Tu ficha aparece en el buscador de Articulación cuando marcás algún producto o servicio
+            Tu ficha aparece en el buscador de empresas cuando marcás algún producto o servicio
             para "Mostrar a otras empresas". La localidad se ve siempre.
             <a href="#" id="link-mi-ficha" class="d-none">Ver mi ficha como la ven las demás</a>
           </div>
@@ -255,7 +255,13 @@
       const localidades = await fetch('/localidades').then(r => r.ok ? r.json() : [])
       document.getElementById('select-localidad').innerHTML =
         '<option value="">Sin elegir</option>' +
-        localidades.map(l => `<option value="${l.id_localidad}">${esc(l.nombre)} (${esc(l.provincia_nombre)})</option>`).join('')
+        // Agrupadas por provincia (UX F-10): ordenadas por provincia y nombre.
+        localidades.slice().sort((a, b) => a.provincia_nombre.localeCompare(b.provincia_nombre) || a.nombre.localeCompare(b.nombre)).reduce((html, l, i, lista) =>
+          html + (i === 0 || lista[i - 1].provincia_nombre !== l.provincia_nombre
+            ? (i ? '</optgroup>' : '') + `<optgroup label="${esc(l.provincia_nombre)}">`
+            : '') +
+          `<option value="${l.id_localidad}">${esc(l.nombre)}</option>` +
+          (i === lista.length - 1 ? '</optgroup>' : ''), '')
     }
 
     // Trae los datos de la empresa y los pone en el formulario

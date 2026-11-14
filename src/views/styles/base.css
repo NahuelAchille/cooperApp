@@ -45,11 +45,11 @@ button {
 
 /* Botones genéricos */
 button.primary {
-  background: linear-gradient(180deg, #19de75 0%, #128c4a 100%);
+  background: linear-gradient(180deg, #2d7a4f 0%, #1e5c3a 100%);
   color: #fff;
 }
 button.primary:hover {
-  background: linear-gradient(180deg, #9fc1cb 0%, #19de75 100%);
+  background: linear-gradient(180deg, #1e5c3a 0%, #17482e 100%);
 }
 
 /* ===== Tablas ===== */

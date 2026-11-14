@@ -157,7 +157,7 @@
                   <span class="input-group-text">$</span>
                   <input type="number" class="form-control" name="precio_venta" min="0.01" step="0.01" placeholder="Dejalo vacío si no tiene precio fijo">
                 </div>
-                <div class="form-text">
+                <div class="form-text" id="ayuda-precio">
                   A cuánto le cobrás una unidad al cliente. Aparece ya escrito al registrar una venta, y ahí se puede cambiar.
                 </div>
               </div>
@@ -170,14 +170,14 @@
                 <!-- La pregunta dice la unidad del producto: el queso se mide en
                      kilos, y quien leía "uno" podía cargar el precio de la horma
                      entera y dejar mal todo el reporte de pérdidas (UX 28/09, H-14). -->
-                <label class="form-label"><span id="pregunta-costo">¿Cuánto te cuesta perder uno?</span> <span class="text-muted fw-normal">(opcional)</span></label>
+                <label class="form-label"><span id="pregunta-costo">¿Cuánto te cuesta comprar uno?</span> <span class="text-muted fw-normal">(opcional)</span></label>
                 <div class="input-group">
                   <span class="input-group-text">$</span>
                   <input type="number" class="form-control" name="costo_referencia" min="0.01" step="0.01" placeholder="Dejalo vacío si no lo sabés">
                 </div>
                 <div class="form-text" id="ayuda-costo">
-                  Lo que te costó a vos una unidad, no lo que la vendés. Sirve para saber cuánta plata
-                  te llevan las roturas y los faltantes. Si no lo sabés, dejalo vacío.
+                  Lo que le pagás vos al proveedor, no lo que lo vendés. Aparece escrito al registrar una
+                  compra y sirve para saber cuánta plata se va en roturas. Si no lo sabés, dejalo vacío.
                 </div>
               </div>
             </div>
@@ -414,13 +414,20 @@
       const ayuda = document.getElementById('ayuda-costo')
       const una = UNA_UNIDAD[document.getElementById('select-unidad').value]
 
+      // La pregunta del costo habla de COMPRAR (UX final, vocabulario): desde
+      // el 26/10 es también lo que aparece escrito al registrar una compra, y
+      // nadie que cargaba su precio de compra lo reconocía en "perder".
       document.getElementById('pregunta-costo').textContent = una
-        ? `¿Cuánto te cuesta perder ${una}?`
-        : '¿Cuánto te cuesta perder uno?'
+        ? `¿Cuánto te cuesta comprar ${una}?`
+        : '¿Cuánto te cuesta comprar uno?'
+
+      // El precio de venta también dice la unidad: el queso se vende por kilo.
+      document.getElementById('ayuda-precio').textContent =
+        `A cuánto le cobrás ${una || 'una unidad'} al cliente. Aparece ya escrito al registrar una venta, y ahí se puede cambiar.`
 
       const base = una
-        ? `Lo que te costó a vos ${una}, no lo que la vendés. Sirve para saber cuánta plata te llevan las roturas y los faltantes. Si no lo sabés, dejalo vacío.`
-        : 'Elegí primero la unidad de medida: el costo es por esa unidad. Lo que te costó a vos, no lo que la vendés. Si no lo sabés, dejalo vacío.'
+        ? `Lo que le pagás vos al proveedor por ${una}, no lo que lo vendés. Aparece escrito al registrar una compra y sirve para saber cuánta plata se va en roturas. Si no lo sabés, dejalo vacío.`
+        : 'Elegí primero la unidad de medida: el costo es por esa unidad. Lo que le pagás vos al proveedor, no lo que lo vendés. Si no lo sabés, dejalo vacío.'
 
       if (!producto?.costo_actualizado_en) {
         ayuda.textContent = base

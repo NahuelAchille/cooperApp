@@ -30,9 +30,9 @@
         <i class="fa-solid fa-sitemap me-2"></i>Categorías
       </a>
       <!-- La pregunta "cuál conviene sostener" se la hace quien está mirando
-           esta pantalla, pero la respuesta vive en Movimientos, que es donde
-           está el período. El botón lleva hasta ahí con el panel abierto. -->
-      <a class="btn btn-secundario" id="link-cuanto-deja" href="/pages/movimientos.html?ver=servicios">
+           esta pantalla, y la respuesta vive en Reportes, vista Por servicio
+           (H-16, UX final): ahí el período está arriba y se puede descargar. -->
+      <a class="btn btn-secundario" id="link-cuanto-deja" href="/pages/reportes.html?vista=servicio">
         <i class="fa-solid fa-chart-simple me-2"></i>Cuánto deja cada uno
       </a>
       <!-- Acá NO va el botón de Stock: un servicio se presta, no se guarda. -->
@@ -234,6 +234,13 @@
       if (!usuarioActual || usuarioActual.error) {
         window.location.href = '/pages/login.html'
         return
+      }
+
+      // Sin Reportes, el tesorero no tiene a dónde ir con "Cuánto deja cada
+      // uno" ni lo puede prender. Al admin sí se le muestra: Reportes le dice
+      // que el módulo está apagado y dónde se prende (H-16).
+      if (!moduloActivo('reportes') && usuarioActual.rol !== 'admin_empresa') {
+        document.getElementById('link-cuanto-deja').classList.add('d-none')
       }
 
       // El catálogo de servicios lo arma el administrador. El tesorero lo

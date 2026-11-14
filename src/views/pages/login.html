@@ -82,7 +82,7 @@
       animation: slideDown 0.3s ease;
     }
     .toast-cooperapp.success {
-      background: linear-gradient(135deg, #19de75, #128c4a);
+      background: linear-gradient(135deg, #2d7a4f, #1e5c3a);
       color: white;
     }
     .toast-cooperapp.error {
@@ -115,7 +115,7 @@
 
     <p class="text-white mt-2">
       ¿No tenés cuenta?
-      <a href="#" class="text-success fw-bold" data-bs-toggle="modal" data-bs-target="#modalRegistro">
+      <a href="#" class="link-registro fw-bold" data-bs-toggle="modal" data-bs-target="#modalRegistro">
         Registrar mi empresa
       </a>
     </p>
@@ -161,6 +161,7 @@
               <div class="col-md-6">
                 <label class="form-label">Localidad</label>
                 <select class="form-select form-control-registro" name="empresa_localidad" id="registro-localidad"></select>
+                <div class="form-text texto-ayuda-registro">Por ahora la lista tiene el Gran Buenos Aires, la Ciudad y La Plata. Si tu localidad no está, dejá Sin elegir: vas a aparecer igual en el buscador, pero sin la distancia.</div>
               </div>
               <div class="col-md-6">
                 <label class="form-label">Cámara o federación a la que pertenece</label>
@@ -328,7 +329,13 @@
       const esc = (t) => String(t).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
       document.getElementById('registro-localidad').innerHTML =
         '<option value="">Sin elegir (se puede completar después)</option>' +
-        localidades.map(l => `<option value="${l.id_localidad}">${esc(l.nombre)} (${esc(l.provincia_nombre)})</option>`).join('')
+        // Agrupadas por provincia (UX F-10): ordenadas por provincia y nombre.
+        localidades.slice().sort((a, b) => a.provincia_nombre.localeCompare(b.provincia_nombre) || a.nombre.localeCompare(b.nombre)).reduce((html, l, i, lista) =>
+          html + (i === 0 || lista[i - 1].provincia_nombre !== l.provincia_nombre
+            ? (i ? '</optgroup>' : '') + `<optgroup label="${esc(l.provincia_nombre)}">`
+            : '') +
+          `<option value="${l.id_localidad}">${esc(l.nombre)}</option>` +
+          (i === lista.length - 1 ? '</optgroup>' : ''), '')
     }).catch(() => {})
 
     document.getElementById('btn-enviar-registro').addEventListener('click', async () => {
