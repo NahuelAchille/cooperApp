@@ -21,7 +21,7 @@
   <div class="page-header">
     <div>
       <h4 class="mb-0 fw-bold"><i class="fa-solid fa-users me-2"></i>Usuarios de la empresa</h4>
-      <small style="opacity:0.8;" id="nombre-empresa"></small>
+      <small>Las personas que usan el sistema en tu empresa, y qué puede hacer cada una</small>
     </div>
     <button class="btn btn-nuevo" id="btn-nuevo-usuario" data-bs-toggle="modal" data-bs-target="#modalNuevoUsuario">
       <i class="fa-solid fa-user-plus me-2"></i>Nuevo usuario
@@ -89,15 +89,16 @@
               <div class="col-12">
                 <label class="form-label">Rol</label>
                 <select class="form-select" name="id_rol" required>
-                  <option value="">Seleccioná un rol...</option>
-                  <option value="2">Tesorero</option>
-                  <option value="3">Operador</option>
+                  <!-- Qué hace cada uno (UX E-10): "operador" no dice "depósito". -->
+                  <option value="">Elegí un rol...</option>
+                  <option value="2">Tesorero — la plata: movimientos y reportes. No entra al stock</option>
+                  <option value="3">Operador — el depósito: productos, stock, ventas y compras. No ve los totales de plata</option>
                 </select>
               </div>
             </div>
             <div class="alert alert-warning mt-3 mb-0 py-2 small">
               <i class="fa-solid fa-circle-info me-1"></i>
-              La contraseña temporal será el <strong>DNI</strong> del usuario. Deberá cambiarla en el primer ingreso.
+              La contraseña inicial es el <strong>DNI</strong> de la persona. La va a tener que cambiar la primera vez que entre.
             </div>
             <div id="form-error" class="text-danger small mt-2 d-none"></div>
           </form>
@@ -143,8 +144,8 @@
               <div class="col-12">
                 <label class="form-label">Rol</label>
                 <select class="form-select" name="id_rol" required>
-                  <option value="2">Tesorero</option>
-                  <option value="3">Operador</option>
+                  <option value="2">Tesorero — la plata: movimientos y reportes. No entra al stock</option>
+                  <option value="3">Operador — el depósito: productos, stock, ventas y compras. No ve los totales de plata</option>
                 </select>
               </div>
             </div>
@@ -269,7 +270,6 @@
         if (!usuarioActual) return
       }
 
-      document.getElementById('nombre-empresa').textContent = usuarioActual.empresa?.nombre || ''
 
       if (usuarioActual.rol !== 'admin_empresa') {
         document.getElementById('aviso-permiso').classList.remove('d-none')
@@ -297,7 +297,7 @@
           <td data-label="DNI">${esc(u.dni)}</td>
           <td data-label="Rol"><span class="badge-rol">${esc(NOMBRE_ROL[u.rol] || u.rol)}</span></td>
           <td data-label="Estado">
-            ${!u.activo ? '<span class="badge-inactivo">De baja</span>' : u.debe_cambiar_password ? '<span class="badge-temp">Contraseña temporal</span>' : '<span class="badge-activo">Activo</span>'}
+            ${!u.activo ? '<span class="badge-inactivo">De baja</span>' : u.debe_cambiar_password ? '<span class="badge-temp">Con la contraseña inicial</span>' : '<span class="badge-activo">Activo</span>'}
           </td>
           <td class="td-oculto-movil" data-label="Fecha registro">${new Date(u.fecha_registro).toLocaleDateString('es-AR', { day: '2-digit', month: '2-digit', year: 'numeric' })}</td>
           <td class="text-end ${puedeGestionar(u) ? 'td-acciones' : 'td-oculto-movil'}" data-label="Acciones">${botonesAccion(u)}</td>

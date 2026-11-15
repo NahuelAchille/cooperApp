@@ -169,6 +169,12 @@ main {
 .marca-login img { height: 40px; width: auto; }
 .marca-login span { color: #fff; font-size: 1.6rem; font-weight: 800; letter-spacing: 0.02em; }
 
-/* Los campos, del mismo ancho que el botón de Ingresar (revisión visual). */
-#formulario-login { max-width: 280px; margin-left: auto; margin-right: auto; }
-#boton-login button { max-width: 280px; }
+/* Los campos al ancho de la tarjeta, como el botón, y con su rótulo arriba
+   (UX E-16): medían 144 px y "marta@laesperanza.com.ar" no entraba. */
+#form-login { width: 100%; }
+#formulario-login { max-width: 100% !important; padding-left: 0; padding-right: 0; }
+.rotulo-login { color: rgba(255, 255, 255, 0.92); font-size: 0.9rem; font-weight: 600; margin-bottom: 4px; }
+#formulario-login .input-con-icono { margin-bottom: 1rem; }
+#boton-login, #boton-login button { width: 100%; max-width: none; }
+#formulario-login { margin: 0.5rem 0 1rem !important; }
+#formulario-login input { margin-bottom: 0.75rem; }

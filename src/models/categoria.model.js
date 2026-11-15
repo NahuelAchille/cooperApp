@@ -132,12 +132,14 @@ const findTipoById = async (id_tipo, id_empresa) => {
 }
 
 // El tipo nace con el mismo estado que su categoria: si la categoria esta
-// dada de baja, no tiene sentido que el tipo nuevo quede activo.
+// dada de baja, no tiene sentido que el tipo nuevo quede activo. Y si nace de
+// baja por eso, lleva la marca de la cascada, para volver con la categoria
+// (QA de la entrega, B6).
 const createTipo = async ({ nombre, id_categoria, activo = 1 }) => {
 
   const [result] = await db.query(
-    'INSERT INTO tipos_movimiento (nombre, id_categoria, activo) VALUES (?, ?, ?)',
-    [nombre, id_categoria, activo]
+    'INSERT INTO tipos_movimiento (nombre, id_categoria, activo, baja_en_cascada) VALUES (?, ?, ?, ?)',
+    [nombre, id_categoria, activo, activo ? 0 : 1]
   )
 
   return result.insertId

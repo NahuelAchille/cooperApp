@@ -38,6 +38,15 @@ const armar = (anio, mes, dia) =>
 // La etiqueta se calcula ACA y no en la pantalla: es el texto que va a
 // encabezar el reporte y el nombre del archivo descargado. Si se
 // escribiera en los dos lados, el dia que cambie uno el otro queda mintiendo.
+// "del 1 al 14 de noviembre de 2026": el archivo se abre una semana después,
+// y "hasta hoy" ya no dice qué día era (UX E-07).
+const hastaHoy = (anio, mesDesde, dia, mesHasta) => {
+  if (mesDesde === mesHasta) {
+    return dia === 1 ? `1 de ${MESES[mesHasta - 1]} de ${anio}` : `del 1 al ${dia} de ${MESES[mesHasta - 1]} de ${anio}`
+  }
+  return `del 1 de ${MESES[mesDesde - 1]} al ${dia} de ${MESES[mesHasta - 1]} de ${anio}`
+}
+
 const resolver = ({ periodo, desde, hasta } = {}) => {
 
   const clave = CLAVES.includes(periodo) ? periodo : 'mes-actual'
@@ -49,7 +58,7 @@ const resolver = ({ periodo, desde, hasta } = {}) => {
     return {
       desde: armar(anio, mes, 1),
       hasta: fechaDeHoy(),
-      etiqueta: `${MESES[mes - 1]} de ${anio}, hasta hoy`
+      etiqueta: hastaHoy(anio, mes, hoy.getDate(), mes)
     }
   }
 
@@ -71,7 +80,7 @@ const resolver = ({ periodo, desde, hasta } = {}) => {
     return {
       desde: armar(anio, 1, 1),
       hasta: fechaDeHoy(),
-      etiqueta: `${anio}, hasta hoy`
+      etiqueta: hastaHoy(anio, 1, hoy.getDate(), mes)
     }
   }
 

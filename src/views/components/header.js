@@ -111,6 +111,28 @@ async function cargarHeader() {
     modulosEmpresa = []
   }
 
+  // --- Dónde se está (UX E-15) ---
+  // Todos los links del menú se veían iguales, también el de la pantalla
+  // abierta. Productos y Servicios son la misma página, así que se compara la
+  // dirección completa y no el archivo.
+  const aqui = location.pathname
+  document.querySelectorAll('#main-nav a[href^="/pages/"]').forEach(a => {
+    if (new URL(a.href).pathname !== aqui) return
+    a.classList.add('actual')
+    a.setAttribute('aria-current', 'page')
+    // Una pantalla de Configuración marca también el desplegable.
+    a.closest('#nav-configuracion')?.querySelector('.dropdown-toggle')?.classList.add('actual')
+  })
+
+  // --- El aviso de módulo apagado le habla a quien lo lee (UX E-12) ---
+  // Decía "El administrador puede activarlo" también a la administradora.
+  const comoPrenderlo = document.querySelector('#aviso-modulo p.small')
+  if (comoPrenderlo) {
+    comoPrenderlo.innerHTML = esAdmin
+      ? 'Lo prendés en <a href="/pages/configuracion-modulos.html">Módulos del sistema</a>.'
+      : 'Si lo necesitás, pedíselo al administrador de tu empresa.'
+  }
+
   // --- La hamburguesa del celular ---
   // El menú arranca cerrado (lo decide el CSS por debajo de 1024 px). Acá sólo
   // se prende y se apaga la clase.

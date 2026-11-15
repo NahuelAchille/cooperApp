@@ -17,9 +17,13 @@
   <script src="/components/util.js"></script>
   <script src="/components/header.js"></script>
 
+  <!-- El título y el subtítulo juntos en un bloque: sueltos, en la
+       computadora el subtítulo iba a la derecha del título (UX E-22). -->
   <div class="page-header">
-    <h4><i class="fa-solid fa-handshake me-2"></i>Buscar empresas</h4>
-    <small>Escribí lo que necesitás y te mostramos quién lo ofrece, de la empresa más cercana a la más lejana</small>
+    <div>
+      <h4><i class="fa-solid fa-handshake me-2"></i>Buscar empresas</h4>
+      <small>Escribí lo que necesitás y te mostramos quién lo ofrece, de la empresa más cercana a la más lejana</small>
+    </div>
   </div>
 
   <div class="content">
@@ -189,10 +193,7 @@
     async function iniciar() {
       const user = await cargarHeader()
 
-      if (!user || user.error) {
-        window.location.href = '/pages/login.html'
-        return
-      }
+      if (!user) return   // cargarHeader ya mandó al login o a cambiar la contraseña
 
       if (!['admin_empresa', 'tesorero', 'operador'].includes(user.rol)) {
         document.getElementById('aviso-permiso').classList.remove('d-none')

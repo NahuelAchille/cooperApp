@@ -236,13 +236,13 @@ SET @tesorero := (SELECT id FROM usuarios WHERE email = 'roberto@laesperanza.com
 
 INSERT INTO categorias_movimiento (nombre, naturaleza, id_empresa) VALUES
   ('Ventas',    'ingreso', @empresa),
-  ('Otros ingresos', 'ingreso', @empresa),
+  ('Otras entradas', 'ingreso', @empresa),
   ('Sueldos',   'egreso',  @empresa),
   ('Gastos fijos', 'egreso',  @empresa),
   ('Insumos',   'egreso',  @empresa);
 
 SET @cat_ventas    := (SELECT id_categoria FROM categorias_movimiento WHERE id_empresa = @empresa AND naturaleza = 'ingreso' AND nombre = 'Ventas');
-SET @cat_subsidios := (SELECT id_categoria FROM categorias_movimiento WHERE id_empresa = @empresa AND naturaleza = 'ingreso' AND nombre = 'Otros ingresos');
+SET @cat_subsidios := (SELECT id_categoria FROM categorias_movimiento WHERE id_empresa = @empresa AND naturaleza = 'ingreso' AND nombre = 'Otras entradas');
 SET @cat_sueldos   := (SELECT id_categoria FROM categorias_movimiento WHERE id_empresa = @empresa AND naturaleza = 'egreso'  AND nombre = 'Sueldos');
 SET @cat_fijos     := (SELECT id_categoria FROM categorias_movimiento WHERE id_empresa = @empresa AND naturaleza = 'egreso'  AND nombre = 'Gastos fijos');
 SET @cat_insumos   := (SELECT id_categoria FROM categorias_movimiento WHERE id_empresa = @empresa AND naturaleza = 'egreso'  AND nombre = 'Insumos');
@@ -440,7 +440,7 @@ INSERT INTO productos (nombre, descripcion, unidad_medida, stock_minimo, id_cate
   ('Fideos secos 500g',  'Paquete de medio kilo',   'paquete', 24,   @cat_alimentos, @sub_no_perec,    @empresa, 1,   950.00, NOW()),
   ('Arroz largo fino',   NULL,                      'kg',      15,   @cat_alimentos, @sub_no_perec,    @empresa, 1,  1800.00, NOW()),
   ('Milanesas de soja',  'Caja x 12 unidades',      'caja',    4,    @cat_alimentos, @sub_congelados,  @empresa, 1,  6400.00, NOW()),
-  ('Bolsa de pan',       'Sin subcategoría',        'bolsa',   0,    @cat_alimentos, NULL,             @empresa, 1,     NULL, NULL),
+  ('Bolsa de pan',       'Pan del día, bolsa de 1 kg', 'bolsa',   0,    @cat_alimentos, NULL,             @empresa, 1,     NULL, NULL),
   ('Agua mineral 2L',    NULL,                      'unidad',  36,   @cat_bebidas,   @sub_sin_alcohol, @empresa, 1,  1200.00, NOW()),
   ('Gaseosa cola 2,25L', 'Producto discontinuado',  'unidad',  0,    @cat_bebidas,   @sub_sin_alcohol, @empresa, 0,     NULL, NULL);
 

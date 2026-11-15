@@ -148,3 +148,19 @@
   /* Un dato vacío no merece un renglón con su etiqueta al lado. */
   .tabla-tarjetas tbody td:empty { display: none; }
 }
+
+/* Tablet (768 a 1023 px): las tarjetas de a dos (UX E-28). Con una por renglón
+   medían 720 px, con la etiqueta a la izquierda y el valor 360 px más allá, y
+   entraban tres productos por pantalla. Los avisos (lista vacía, "Cargando...")
+   siguen ocupando todo el ancho. */
+@media (min-width: 768px) and (max-width: 1023px) {
+  .tabla-tarjetas tbody {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 12px;
+  }
+  .tabla-tarjetas tbody tr { margin-bottom: 0; min-width: 0; }
+  .tabla-tarjetas tbody tr.fila-aviso,
+  .tabla-tarjetas tbody tr:has(> td[colspan]) { grid-column: 1 / -1; }
+  .tabla-tarjetas tbody td.td-acciones { flex-wrap: wrap; }
+}

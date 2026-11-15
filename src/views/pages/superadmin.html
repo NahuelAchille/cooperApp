@@ -446,10 +446,7 @@
 
       const user = await cargarHeader()
 
-      if (!user || user.error) {
-        window.location.href = '/pages/login.html'
-        return
-      }
+      if (!user) return   // cargarHeader ya mandó al login o a cambiar la contraseña
 
       if (user.rol !== 'superadmin') {
         window.location.href = '/pages/dashboard.html'

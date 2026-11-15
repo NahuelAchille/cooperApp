@@ -131,6 +131,12 @@ Movimientos, ni Reportes. No lo reportes como falta de información.
 - Productos y Servicios son la **misma pantalla**, que muestra lo de cada uno: si algo de
   Productos aparece en Servicios (o al revés), eso sí reportalo.
 
+- Desde el 15/11 (auditoría de la entrega): el panel tiene franja con saludo y los meses por
+  nombre; el menú marca la pantalla actual; *Anular o corregir* en las ventas y compras de
+  Stock; *Historial* con texto y atajos de período; cada rol dice qué hace; un solo aviso de
+  *No alcanza*; *Por producto* explica que no es toda la plata; en la tablet las tarjetas van de
+  a dos y los botones de la franja debajo del título.
+
 **Lo que sigue abierto a propósito** (anotado en el informe final): renombrar *Ajuste positivo /
 negativo* (*a validar con usuarios*) y la regla de 14 px para todo dato (backlog). Si los ves,
 sumá lo que observes, no los vuelvas a describir.
@@ -453,7 +459,9 @@ después.
 
 Levantá MariaDB de XAMPP, recreá la base desde cero con los dos .sql y poné la
 app a andar: `npm install` y después `npm start` desde cooperApp/
-(`node_modules` no viaja en el repo). Si ya hay otra copia de la app andando
+(`node_modules` no viaja en el repo). Si manejás Edge sin ventana, usá un puerto de
+depuración propio: el 14/11 QA y UX usaron el mismo y uno le manejaba el navegador al otro.
+Si ya hay otra copia de la app andando
 (otra base y otro puerto), entrá por `127.0.0.1`: las cookies de `localhost` se
 comparten entre puertos y una sesión pisa a la otra.
 
@@ -499,6 +507,7 @@ sistema que se usa para decidir, no para registrar.
 | 16/09/2026 | *(sin auditoría nueva: se aplicó lo pendiente de la anterior)* | — | **HU-84** (vocabulario, decidido por el grupo), **HU-85** (listados como tarjetas en el celular, con hoja compartida) y **HU-86** (configuración agrupada en el menú principal). Las tres estaban planificadas para el Sprint 13 y se adelantaron al 09, porque arreglaban justo lo que el módulo de Servicios iba a duplicar |
 | 28/09/2026 | **Sprints 09 y 10 juntos** (Servicios completo · Reportes completo) | 17 hallazgos (2 bloquean, 4 hacen perder tiempo, 8 generan duda, 3 molestan) + 9 términos + 3 bugs. Informe en `informes-UX/informe-UX-2026-09-28.md` | **28/09: el plan entero**, incluido lo que se sugería dejar para el Sprint 13, menos H-16 (a validar con usuarios). Encontrado al corregir: la categoría de dinero "Servicios" venía en la **siembra de toda empresa nueva**, no sólo en la demo. Dos patrones compartidos nuevos: `filtros-plegables` (Stock pasó de 653 a 404 px para el primer dato) y los bloques por categoría en el ranking de servicios. Detalle al final del informe. Lo verificado que **sí** alcanzó: HU-84 (también en los mensajes del servidor), HU-85 (ninguna tabla se corta a 375 px, lo nuevo lo heredó gratis), HU-86 y los módulos sin pantalla. Lo grueso ahora está **en los archivos que salen**, no en las pantallas |
 | 14/11/2026 | **Sprint 13, auditoría final** (HU-64). Foco en lo nunca auditado: venta y compra en un paso, buscador y ficha de empresas, superadmin rehecho, Primeros pasos y vacíos (HU-88), alta con un desplegable y *Anular y corregir* (HU-87) | 21 hallazgos, numerados **F-01 a F-21** (0 bloquean, 11 generan duda, 6 hacen perder tiempo, 4 molestan) + 12 términos + tabla de contraste medida texto por texto + 4 bugs + **recomendación sobre H-16: una sola puerta, en Reportes**. Informe en `informes-UX/informe-UX-final.md`. Lo más grave: *Anular y corregir* + *Cancelar* deja la plata anulada sin aviso (F-01); el login entre 1,9 y 2,8 : 1 y seis grises distintos por debajo de 4,5 : 1; la tabla de Motivos de stock no entra a 375 px (606 en 343). Corrida en una copia aparte (`cooperApp_ux`, puerto 3002) porque QA usaba la base y el puerto de siempre: **las cookies de `localhost` se comparten entre puertos**, hay que usar `127.0.0.1` | **14/11: los 21 corregidos**, más el contraste, el vocabulario y H-16 (una sola puerta, en Reportes). Afuera a propósito: *Ajuste positivo/negativo* (a validar con usuarios) y la regla de 14 px. Ese mismo día, una revisión visual con capturas de todas las pantallas unificó los estilos (`comun.css`) y la tablet. Detalle al final del informe |
+| 14/11/2026 (noche) | **Entrega, de punta a punta**, después de la revisión del 14/11 (`453f870`: `comun.css`, tablet, botones con texto, Productos y Servicios en una página). Las 36 tareas con siete usuarios, 54 pantallas medidas a 1280, 800 y 375 px con un script, el CSV abierto en Excel por COM y el PDF | 29 hallazgos, numerados **E-01 a E-29** (1 bloquea, 15 generan duda, 5 hacen perder tiempo, 8 molestan) + 11 términos + 0 bugs. Informe en `informes-UX/informe-UX-entrega.md`. Lo más grave: el tesorero no puede corregir la plata de una venta y el cartel lo manda a Stock, que no tiene (E-01); *Por producto* dice ser "la misma plata" y no cierra con los casilleros, y un producto comprado y no vendido aparece con resultado negativo (E-02); en Stock corregir está detrás de "Anular" (E-03); el Panel a 800 px corta sus dos tablas y la franja de Servicios mide 263 px (E-17). Ninguna pantalla con scroll de costado. Corrida en `cooperApp_ux` / puerto 3002; **ojo: el puerto de depuración de Edge (9341) chocó con el de QA**, usar uno propio | **15/11: los 29 y el vocabulario, corregidos**. Los *a validar* (E-02 la columna *Resultado*, E-06, E-08 el gris, E-09 la comparación, E-11, E-28 las tarjetas de a dos) se hicieron con la propuesta del informe: son lo primero para llevar a la prueba con una persona real. Detalle al final del informe |
 
 *(Completar después de cada corrida.)*
 

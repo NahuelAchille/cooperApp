@@ -18,7 +18,7 @@ exports.requireLogin = async (req, res, next) => {
 
     if (!estado || !estado.activo) {
       return req.session.destroy(() =>
-        res.status(401).json({ error: 'Tu cuenta fue dada de baja. Hablá con el administrador de tu empresa.' })
+        res.status(401).json({ error: 'Tu usuario está dado de baja. Hablá con el administrador de tu empresa.' })
       )
     }
 
@@ -37,6 +37,13 @@ exports.requireLogin = async (req, res, next) => {
         error: 'Tenés que cambiar tu contraseña antes de usar el sistema.',
         debe_cambiar_password: true
       })
+    }
+
+    // El rol también puede cambiar con la sesión abierta (el admin pasa a un
+    // tesorero a operador). requireRol decide con la sesión, así que se pone
+    // al día acá: el cambio vale desde el próximo pedido, igual que la baja.
+    if (estado.rol !== req.session.user.rol) {
+      req.session.user.rol = estado.rol
     }
 
     // Lo que se acaba de mirar queda a mano: /users/me lo devuelve para que la

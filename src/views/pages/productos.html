@@ -153,7 +153,7 @@
               <div class="col-12 col-sm-7">
                 <label class="form-label">Unidad de medida *</label>
                 <select class="form-select" name="unidad_medida" id="select-unidad" required></select>
-                <div class="form-text">En qué se mide: por unidad, por kilo, por litro...</div>
+                <div class="form-text" id="ayuda-unidad">En qué se mide: por unidad, por kilo, por litro...</div>
               </div>
               <div class="col-12 col-sm-5">
                 <label class="form-label">Stock mínimo</label>
@@ -303,7 +303,11 @@
     document.getElementById('link-categorias').href = CATALOGO.categorias
     document.getElementById('texto-categorias').textContent = `Categorías de ${CATALOGO.cosas}`
     document.getElementById('texto-nuevo').textContent = `Nuevo ${CATALOGO.cosa}`
-    document.getElementById('texto-permiso').textContent = `Tu usuario no tiene acceso al catálogo de ${CATALOGO.cosas}.`
+    // A quién pedírselo (UX E-21): el de productos lo trabaja el depósito; el
+    // de servicios lo arma el administrador.
+    document.getElementById('texto-permiso').innerHTML = ES_SERVICIO
+      ? 'El catálogo de servicios lo arma el administrador y lo consulta el tesorero.<br><small>Si necesitás ver algo, pedíselo a ellos.</small>'
+      : 'El catálogo de productos lo trabajan el administrador y los operadores.<br><small>Si necesitás ver algo, pedíselo a ellos.</small>'
     document.getElementById('nombre-modulo').textContent = CATALOGO.Modulo
     document.getElementById('th-nombre').textContent = CATALOGO.cosa[0].toUpperCase() + CATALOGO.cosa.slice(1)
     document.getElementById('label-nombre').textContent = `Nombre del ${CATALOGO.cosa} *`
@@ -326,10 +330,7 @@
     async function iniciar() {
       usuarioActual = await cargarHeader()
 
-      if (!usuarioActual || usuarioActual.error) {
-        window.location.href = '/pages/login.html'
-        return
-      }
+      if (!usuarioActual) return   // cargarHeader ya mandó al login o a cambiar la contraseña
 
       const puedeVer = CATALOGO.puedeVer(usuarioActual.rol)
       puedeEditar = CATALOGO.puedeEditar(usuarioActual.rol)
@@ -451,9 +452,11 @@
               : '<span class="sin-dato">—</span>'}</td>`}
           <td data-label="Estado"><span class="badge-estado ${p.activo ? 'badge-activo' : 'badge-inactivo'}">${p.activo ? 'Activo' : 'De baja'}</span></td>
           ${puedeEditar ? `<td class="text-end td-acciones" data-label="Acciones">
-            <button class="btn-mini" data-accion="editar" data-id="${p.id_producto}" title="Editar"><i class="fa-solid fa-pen"></i></button>
+            <!-- Con texto, como en Usuarios (UX E-20): es una pantalla de todos
+                 los días, no de configuración. -->
+            <button class="btn-mini" data-accion="editar" data-id="${p.id_producto}" title="Editar"><i class="fa-solid fa-pen me-1"></i>Editar</button>
             <button class="btn-mini ${p.activo ? 'peligro' : ''}" data-accion="toggle" data-id="${p.id_producto}" data-nombre="${esc(p.nombre)}" data-activo="${p.activo}" title="${p.activo ? 'Dar de baja' : 'Reactivar'}">
-              <i class="fa-solid ${p.activo ? 'fa-circle-minus' : 'fa-circle-plus'}"></i>
+              <i class="fa-solid ${p.activo ? 'fa-circle-minus' : 'fa-circle-plus'} me-1"></i>${p.activo ? 'Dar de baja' : 'Reactivar'}
             </button>
           </td>` : ''}
         </tr>`).join('')
@@ -504,7 +507,7 @@
       const meses = Math.floor((Date.now() - cargado.getTime()) / (1000 * 60 * 60 * 24 * 30))
 
       ayuda.innerHTML = esc(base) +
-        `<br><span class="${meses >= 6 ? 'costo-viejo' : ''}">Cargado el ${cargado.toLocaleDateString('es-AR', { day: '2-digit', month: '2-digit', year: 'numeric' })}` +
+        `<br><span class="${meses >= 6 ? 'costo-viejo' : ''}">Costo cargado el ${cargado.toLocaleDateString('es-AR', { day: '2-digit', month: '2-digit', year: 'numeric' })}` +
         `${meses >= 6 ? ' — hace más de medio año, puede haber quedado corto' : ''}.</span>`
     }
 
@@ -641,6 +644,8 @@
     async function abrirModalProducto(producto) {
       const form = document.getElementById('form-producto')
       form.reset()
+      form.unidad_medida.disabled = false
+      document.getElementById('ayuda-unidad').textContent = 'En qué se mide: por unidad, por kilo, por litro...'
       document.getElementById('prod-error').classList.add('d-none')
       document.getElementById('aviso-clasificacion').classList.add('d-none')
 
@@ -658,6 +663,13 @@
         form.descripcion.value = producto.descripcion || ''
         if (!ES_SERVICIO) {
           form.unidad_medida.value = producto.unidad_medida
+          // Con entradas o salidas cargadas, la unidad ya no se cambia: el
+          // historial quedaría diciendo otra cosa. El servidor también lo frena.
+          const fija = Number(producto.cantidad_movimientos) > 0
+          form.unidad_medida.disabled = fija
+          document.getElementById('ayuda-unidad').textContent = fija
+            ? 'Ya tiene entradas o salidas cargadas, así que la unidad no se puede cambiar.'
+            : 'En qué se mide: por unidad, por kilo, por litro...'
           form.stock_minimo.value = Number(producto.stock_minimo) > 0 ? Number(producto.stock_minimo) : ''
           // null es "no lo sé": el campo queda vacío, nunca en 0.
           form.costo_referencia.value = producto.costo_referencia !== null ? Number(producto.costo_referencia) : ''
@@ -696,6 +708,8 @@
       errorDiv.classList.add('d-none')
 
       const datos = Object.fromEntries(new FormData(form))
+      // Un campo apagado no viaja en el FormData: la unidad fija se toma igual.
+      if (!ES_SERVICIO) datos.unidad_medida = form.unidad_medida.value
 
       // Validaciones de pantalla, para no hacer un viaje al servidor por algo
       // que ya se ve acá. El servidor igual las vuelve a hacer todas.

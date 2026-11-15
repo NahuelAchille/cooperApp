@@ -57,7 +57,8 @@
     <!-- Se muestra si el rol no llega al stock -->
     <div class="aviso-permiso d-none" id="aviso-permiso">
       <i class="fa-solid fa-lock fa-2x mb-3"></i>
-      <p class="mb-0">Tu usuario no tiene acceso al stock.</p>
+      <p class="mb-1">El stock lo trabajan el administrador y los operadores.</p>
+      <p class="mb-0 small">Si necesitás ver algo, pedíselo a ellos.</p>
     </div>
 
     <!-- Se muestra si la empresa tiene el módulo apagado -->
@@ -101,7 +102,7 @@
             <label class="form-label">Mostrar</label>
             <select class="form-select" id="filtro-vista">
               <option value="">Todos los productos</option>
-              <option value="faltantes">Solo los que faltan</option>
+              <option value="faltantes">Sólo los que faltan</option>
             </select>
           </div>
         </div>
@@ -120,7 +121,7 @@
               <tr>
                 <th>Producto</th>
                 <th>Categoría</th>
-                <th class="text-end">Existencia</th>
+                <th class="text-end">Hay</th>
                 <th class="text-end">Mínimo</th>
                 <th>Estado</th>
                 <th class="text-end">Acciones</th>
@@ -141,6 +142,12 @@
       <div id="vista-movimientos" class="d-none">
 
         <div class="card-filtros filtros-plegables">
+          <!-- Los mismos atajos que Movimientos y Reportes (UX E-19). -->
+          <div class="atajos-periodo" role="group">
+            <button type="button" class="btn-atajo" data-periodo="mes-actual">Este mes</button>
+            <button type="button" class="btn-atajo" data-periodo="mes-anterior">El mes pasado</button>
+            <button type="button" class="btn-atajo" data-periodo="anio-actual">Este año</button>
+          </div>
           <div class="filtros-grid-mov">
             <div>
               <label class="form-label">Producto</label>
@@ -402,7 +409,7 @@
     <div class="modal-dialog modal-dialog-centered">
       <div class="modal-content">
         <div class="modal-header">
-          <h5 class="modal-title fw-bold"><i class="fa-solid fa-ban me-2"></i>Anular movimiento</h5>
+          <h5 class="modal-title fw-bold"><i class="fa-solid fa-ban me-2"></i><span id="anular-titulo">Anular</span></h5>
           <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
         </div>
         <div class="modal-body">
@@ -447,10 +454,7 @@
     async function iniciar() {
       usuarioActual = await cargarHeader()
 
-      if (!usuarioActual || usuarioActual.error) {
-        window.location.href = '/pages/login.html'
-        return
-      }
+      if (!usuarioActual) return   // cargarHeader ya mandó al login o a cambiar la contraseña
 
       puedeDinero = ['admin_empresa', 'tesorero'].includes(usuarioActual.rol) && moduloActivo('movimientos')
 
@@ -480,6 +484,11 @@
         '<option value="">Todas</option>' +
         categorias.map(c => `<option value="${c.id_categoria_producto}">${esc(c.nombre)}${c.activo ? '' : ' (de baja)'}</option>`).join('')
 
+      // Desde las alertas del panel se llega con lo que falta ya filtrado.
+      if (new URLSearchParams(location.search).get('ver') === 'faltantes') {
+        document.getElementById('filtro-vista').value = 'faltantes'
+        window.actualizarFiltrosPlegables?.()
+      }
       cargarExistencias()
 
       // Atajos desde el tablero y desde Movimientos: stock.html?vender=1 abre
@@ -487,6 +496,9 @@
       const atajo = new URLSearchParams(location.search)
       if (atajo.get('vender')) abrirModalOperacion('venta', null)
       else if (atajo.get('comprar')) abrirModalOperacion('compra', null)
+      // ?ver=faltantes (desde las alertas del panel, UX E-18) y ?ver=historial
+      // (desde el cartel de anular de Movimientos).
+      if (atajo.get('ver') === 'historial') mostrarVista('movimientos')
     }
 
     function armarConsulta() {
@@ -582,14 +594,15 @@
           <tr>
             <td class="td-principal" data-label="Producto"><div class="prod-nombre">${esc(item.nombre)}</div></td>
             <td data-label="Categoría"><span class="prod-clasificacion">${clasificacion}</span></td>
-            <td class="text-end td-destacado" data-label="Existencia">
+            <td class="text-end td-destacado" data-label="Hay">
               <span class="existencia ${estado}">${formatearCantidad(item.existencia)}<span class="unidad">${esc(nombreUnidad(item.existencia, item.unidad_medida))}</span></span>
             </td>
             <td class="text-end" data-label="Mínimo"><span class="minimo-texto">${Number(item.stock_minimo) > 0 ? formatearCantidad(item.stock_minimo) : '—'}</span></td>
             <td data-label="Estado">${aviso}</td>
             <td class="text-end td-acciones" data-label="Acciones">
+              <!-- Con texto (UX E-19): es el que contesta "¿qué pasó con el queso?". -->
               <button class="btn-mini" data-accion="historial" data-id="${item.id_producto}" title="Ver el historial de este producto">
-                <i class="fa-solid fa-clock-rotate-left"></i>
+                <i class="fa-solid fa-clock-rotate-left"></i><span class="texto-boton">Historial</span>
               </button>
               <!-- Dicen "Comprar" y "Vender" (UX F-15, y desde el 14/11 también
                    en la computadora): el camión solo no se adivina. -->
@@ -652,7 +665,7 @@
 
       document.getElementById('mov-producto').innerHTML =
         '<option value="">Todos</option>' +
-        todosProductos.map(p => `<option value="${p.id_producto}">${esc(p.nombre)}${p.activo ? '' : ' (de baja)'}</option>`).join('')
+        [...todosProductos].sort(porNombre).map(p => `<option value="${p.id_producto}">${esc(p.nombre)}${p.activo ? '' : ' (de baja)'}</option>`).join('')
 
       document.getElementById('mov-motivo').innerHTML =
         '<option value="">Todos</option>' +
@@ -681,7 +694,7 @@
 
       const tbody = document.getElementById('tabla-movimientos')
       document.getElementById('contador-movimientos').textContent =
-        movimientos.length === 1 ? '1 movimiento' : `${movimientos.length} movimientos`
+        movimientos.length === 1 ? '1 entrada o salida' : `${movimientos.length} entradas y salidas`
 
       if (!movimientos.length) {
         tbody.innerHTML = `<tr class="fila-aviso"><td colspan="7"><div class="tabla-vacia">${
@@ -724,7 +737,7 @@
           : tieneDinero
             ? `<span class="marca-dinero hecho" title="Lo que ${queFalta === 'cobro' ? 'se cobró' : 'se pagó'} en esta ${queFalta === 'cobro' ? 'venta' : 'compra'}"><i class="fa-solid fa-circle-check me-1"></i>${queFalta === 'cobro' ? 'Cobrado' : 'Pagado'}: ${formatMoneda(m.dinero_monto)}</span>`
             : puedeDinero
-              ? `<span class="marca-dinero falta" title="Este movimiento genera dinero y todavía no se registró"><i class="fa-solid fa-circle-exclamation me-1"></i>Sin registrar el ${queFalta}</span>`
+              ? `<span class="marca-dinero falta" title="Esta venta o compra mueve plata, y todavía no se anotó"><i class="fa-solid fa-circle-exclamation me-1"></i>Sin registrar el ${queFalta}</span>`
               : ''
 
         // Un movimiento anulado cuya plata sigue viva. Desde el 02/11 la
@@ -761,8 +774,10 @@
                   <button class="btn-mini" data-accion="cargar-dinero" data-id="${m.id_movimiento_stock}" title="Completar la plata">
                     <i class="fa-solid fa-dollar-sign me-1"></i>Completar la plata
                   </button>` : ''}
-                <button class="btn-mini peligro" data-accion="anular" data-id="${m.id_movimiento_stock}" title="Anular">
-                  <i class="fa-solid fa-ban me-1"></i>Anular
+                <!-- Una venta o una compra se corrige desde acá: el botón lo dice,
+                     como en Movimientos (UX E-03). Una rotura o un ajuste se anula. -->
+                <button class="btn-mini peligro" data-accion="anular" data-id="${m.id_movimiento_stock}" title="${mueveDinero ? 'Anular o corregir' : 'Anular'}">
+                  <i class="fa-solid fa-ban me-1"></i>${mueveDinero ? 'Anular o corregir' : 'Anular'}
                 </button>`}
             </td>
           </tr>`
@@ -786,7 +801,41 @@
       cargarMovimientos()
     })
 
+    // Los atajos de período. Las fechas se arman acá con la misma regla que
+    // periodo.service.js (el mes hasta hoy, el mes anterior entero, el año
+    // hasta hoy): /movimientos/periodo es de finanzas y el operador no entra.
+    function fechasDelAtajo(clave) {
+      const hoy = fechaDeHoy()
+      const [a, m] = hoy.split('-').map(Number)
+      const dos = n => String(n).padStart(2, '0')
+      if (clave === 'mes-actual') return { desde: `${a}-${dos(m)}-01`, hasta: hoy }
+      if (clave === 'anio-actual') return { desde: `${a}-01-01`, hasta: hoy }
+      const ma = m === 1 ? 12 : m - 1
+      const aa = m === 1 ? a - 1 : a
+      const ultimo = new Date(aa, ma, 0).getDate()
+      return { desde: `${aa}-${dos(ma)}-01`, hasta: `${aa}-${dos(ma)}-${dos(ultimo)}` }
+    }
+    function marcarAtajoStock(clave) {
+      document.querySelectorAll('#vista-movimientos .btn-atajo')
+        .forEach(b => b.classList.toggle('elegido', b.dataset.periodo === clave))
+    }
+    document.querySelectorAll('#vista-movimientos .btn-atajo').forEach(boton => {
+      boton.addEventListener('click', () => {
+        const { desde, hasta } = fechasDelAtajo(boton.dataset.periodo)
+        document.getElementById('mov-desde').value = desde
+        document.getElementById('mov-hasta').value = hasta
+        document.getElementById('mov-hasta').min = desde
+        document.getElementById('mov-desde').max = hasta
+        marcarAtajoStock(boton.dataset.periodo)
+        window.actualizarFiltrosPlegables?.()
+        cargarMovimientos()
+      })
+    })
+    ;['mov-desde', 'mov-hasta'].forEach(id =>
+      document.getElementById(id).addEventListener('input', () => marcarAtajoStock(null)))
+
     document.getElementById('btn-limpiar-mov').addEventListener('click', () => {
+      marcarAtajoStock(null)
       for (const id of ['mov-producto', 'mov-motivo', 'mov-desde', 'mov-hasta']) {
         document.getElementById(id).value = ''
       }
@@ -834,7 +883,9 @@
         fetch('/productos/stock').then(r => r.ok ? r.json() : []),
         fetch('/productos/motivos?soloActivos=true').then(r => r.ok ? r.json() : [])
       ])
-      productos = catalogo
+      // En orden alfabético, como la tabla (UX E-27): el catálogo viene por
+      // categoría, que el desplegable no muestra.
+      productos = [...catalogo].sort(porNombre)
       existenciasDelFormulario = stock
 
       // Las ventas y las compras no van por acá: tienen su formulario, que
@@ -867,13 +918,15 @@
       const form = document.getElementById('form-movimiento')
       const div = document.getElementById('resumen-movimiento')
       div.classList.remove('alerta')
+      const botonMov = document.getElementById('btn-guardar-mov')
+      botonMov.disabled = false
 
       const producto = existenciasDelFormulario.find(p => String(p.id_producto) === form.id_producto.value)
       const motivo = motivos.find(m => String(m.id_motivo_stock) === form.id_motivo_stock.value)
 
       document.getElementById('ayuda-motivo').textContent = motivo
         ? (motivo.efecto_dinero === 'ninguno'
-            ? 'Este motivo no mueve dinero.'
+            ? 'Este motivo no mueve plata.'
             : (motivo.efecto_dinero === 'ingreso' ? 'Con este motivo entra plata.' : 'Con este motivo sale plata.'))
         : 'El motivo define si la cantidad suma o resta.'
 
@@ -893,13 +946,17 @@
 
       const queda = motivo.efecto_stock === 'entrada' ? hay + cantidad : hay - cantidad
 
+      // Mientras no alcanza, el botón queda apagado (UX E-14): el servidor iba a
+      // rechazarlo igual, con otro consejo, y quedaban los dos a la vista.
       if (queda < 0) {
         div.classList.add('alerta')
         div.innerHTML = `<i class="fa-solid fa-triangle-exclamation me-1"></i>Hay <strong>${cuanto(hay, producto.unidad_medida)}</strong> y estás sacando ${formatearCantidad(cantidad)}. No alcanza. Si en el depósito hay más, primero cargá lo que entró (Registrar una compra, u Otra entrada o salida).`
+        botonMov.disabled = true
         return
       }
 
-      div.innerHTML = `<i class="fa-solid fa-box me-1"></i>Hay ${cuanto(hay, producto.unidad_medida)} · después del movimiento queda <span class="queda">${cuanto(queda, producto.unidad_medida)}</span>.`
+      const esta = motivo.efecto_stock === 'entrada' ? 'esta entrada' : 'esta salida'
+      div.innerHTML = `<i class="fa-solid fa-box me-1"></i>Hay ${cuanto(hay, producto.unidad_medida)} · después de ${esta} ${quedaN(queda)} <span class="queda">${cuanto(queda, producto.unidad_medida)}</span>.`
     }
 
     document.getElementById('select-producto').addEventListener('change', actualizarResumen)
@@ -1011,6 +1068,9 @@
     // Plurales de las unidades ("hay 6 bolsas"): nombreUnidad viene de
     // /components/unidades.js, compartido con el panel de inicio.
     // "6 bolsas", ya escapado para ir adentro de innerHTML.
+    const porNombre = (a, b) => a.nombre.localeCompare(b.nombre, 'es')
+    // "queda 1 kg" / "quedan 5 kg" (UX E-26)
+    const quedaN = (n) => Number(n) === 1 ? 'queda' : 'quedan'
     function cuanto(cantidad, clave) {
       return `${formatearCantidad(cantidad)} ${esc(nombreUnidad(cantidad, clave))}`.trim()
     }
@@ -1027,6 +1087,13 @@
     let opReemplaza = null    // si se está corrigiendo una venta o una compra, cuál (UX F-08)
     let opProductos = []      // activos, con su existencia, su precio y su costo
     let opMotivos = []        // los motivos activos de la clase abierta
+    let opFaltaConfig = false // al motivo le falta decir dónde cae la plata
+    let opNoAlcanza = false   // la venta saca más de lo que hay
+
+    // El botón se apaga por cualquiera de las dos cosas (UX E-14).
+    function refrescarBotonOp() {
+      document.getElementById('btn-guardar-op').disabled = opFaltaConfig || opNoAlcanza
+    }
 
 
     async function abrirModalOperacion(clase, idProducto, original = null) {
@@ -1058,7 +1125,7 @@
         fetch('/productos/motivos?soloActivos=true').then(r => r.ok ? r.json() : [])
       ])
 
-      opProductos = catalogo.map(p => ({
+      opProductos = [...catalogo].sort(porNombre).map(p => ({
         ...p,
         existencia: Number(stock.find(s => s.id_producto === p.id_producto)?.existencia || 0)
       }))
@@ -1096,7 +1163,9 @@
           // La opción ya se dibujó con lo de antes: se reescribe con lo que hay
           // para esta corrección.
           const opcion = form.id_producto.querySelector(`option[value="${producto.id_producto}"]`)
-          if (opcion) opcion.textContent = `${producto.nombre} (hay ${formatearCantidad(producto.existencia)} ${nombreUnidad(producto.existencia, producto.unidad_medida)})`
+          // "sin esta compra", no "hay": la tabla de atrás muestra lo que hay
+          // con la compra, y parecía que el sistema había perdido mercadería (UX E-04).
+          if (opcion) opcion.textContent = `${producto.nombre} (sin esta ${clase}: ${formatearCantidad(producto.existencia)} ${nombreUnidad(producto.existencia, producto.unidad_medida)})`
         }
         form.id_producto.value = original.id_producto
         form.id_producto.disabled = true
@@ -1159,7 +1228,8 @@
 
       aviso.innerHTML = problema ? `<i class="fa-solid fa-triangle-exclamation me-1"></i>${problema}${linkMotivos}` : ''
       aviso.classList.toggle('d-none', !problema)
-      boton.disabled = !!problema
+      opFaltaConfig = !!problema
+      refrescarBotonOp()
     }
 
     // Al elegir el producto: su unidad al lado de la cantidad, y el precio
@@ -1232,6 +1302,8 @@
 
       const div = document.getElementById('op-resumen')
       div.classList.remove('alerta')
+      opNoAlcanza = false
+      refrescarBotonOp()
 
       if (!producto) {
         div.innerHTML = '<i class="fa-solid fa-circle-info me-1"></i>Elegí un producto para ver cuánto hay.'
@@ -1239,25 +1311,32 @@
       }
 
       const hay = producto.existencia
-      const unidad = esc(producto.unidad_medida)
+      // Corrigiendo, lo que hay se cuenta sin la operación vieja, y se dice
+      // así (UX E-04): "hay 5,5 kg" con la tabla diciendo 25,5 parecía una pérdida.
+      const hayTexto = opReemplaza
+        ? `Sin esta ${claseOp}, hay ${cuanto(hay, producto.unidad_medida)}`
+        : `Hay ${cuanto(hay, producto.unidad_medida)}`
+      const despues = opReemplaza ? 'con la corrección' : `después de la ${claseOp}`
 
       if (!(cantidad > 0)) {
-        div.innerHTML = `<i class="fa-solid fa-box me-1"></i>Hay <strong>${cuanto(hay, producto.unidad_medida)}</strong> de ${esc(producto.nombre)}.`
+        div.innerHTML = `<i class="fa-solid fa-box me-1"></i>${hayTexto} de ${esc(producto.nombre)}.`
         return
       }
 
       if (claseOp === 'compra') {
-        div.innerHTML = `<i class="fa-solid fa-box me-1"></i>Hay ${cuanto(hay, producto.unidad_medida)} · después de la compra va a haber <span class="queda">${cuanto(hay + cantidad, producto.unidad_medida)}</span>.`
+        div.innerHTML = `<i class="fa-solid fa-box me-1"></i>${hayTexto} · ${despues} va a haber <span class="queda">${cuanto(hay + cantidad, producto.unidad_medida)}</span>.`
         return
       }
 
       if (cantidad > hay) {
         div.classList.add('alerta')
-        div.innerHTML = `<i class="fa-solid fa-triangle-exclamation me-1"></i>Hay <strong>${cuanto(hay, producto.unidad_medida)}</strong> y estás vendiendo ${formatearCantidad(cantidad)}. No alcanza. Si en el depósito hay más, primero cargá lo que entró (Registrar una compra, u Otra entrada o salida).`
+        div.innerHTML = `<i class="fa-solid fa-triangle-exclamation me-1"></i>${hayTexto} y estás vendiendo ${formatearCantidad(cantidad)}. No alcanza. Si en el depósito hay más, primero cargá lo que entró (Registrar una compra, u Otra entrada o salida).`
+        opNoAlcanza = true
+        refrescarBotonOp()
         return
       }
 
-      div.innerHTML = `<i class="fa-solid fa-box me-1"></i>Hay ${cuanto(hay, producto.unidad_medida)} · después de la venta quedan <span class="queda">${cuanto(hay - cantidad, producto.unidad_medida)}</span>.`
+      div.innerHTML = `<i class="fa-solid fa-box me-1"></i>${hayTexto} · ${despues} ${quedaN(hay - cantidad)} <span class="queda">${cuanto(hay - cantidad, producto.unidad_medida)}</span>.`
     }
 
     document.getElementById('btn-vender').addEventListener('click', () => abrirModalOperacion('venta', null))
@@ -1409,6 +1488,7 @@
       // (UX F-08): es lo que la persona registró.
       const clase = esMotivoDe('venta')(movimiento) ? 'venta' : esMotivoDe('compra')(movimiento) ? 'compra' : null
       const nombre = clase || (entra ? 'entrada' : 'salida')
+      document.getElementById('anular-titulo').textContent = clase ? `Anular o corregir la ${clase}` : `Anular la ${nombre}`
 
       document.getElementById('anular-pregunta').innerHTML =
         `¿Anular la ${nombre} de <strong>${cuanto(movimiento.cantidad, movimiento.unidad_medida)}</strong> ` +

@@ -32,7 +32,8 @@
     <!-- Se muestra si el usuario no es admin -->
     <div class="aviso-permiso d-none" id="aviso-permiso">
       <i class="fa-solid fa-lock fa-2x mb-3"></i>
-      <p class="mb-0">Solo el administrador de la empresa puede configurar la clasificación de movimientos.</p>
+      <p class="mb-1">Sólo el administrador de la empresa configura las categorías de movimientos.</p>
+      <p class="mb-0 small">Si hay que cambiar algo, pedíselo.</p>
     </div>
 
     <!-- Se muestra si la empresa tiene el módulo apagado -->
@@ -169,10 +170,7 @@
     async function iniciar() {
       usuarioActual = await cargarHeader()
 
-      if (!usuarioActual || usuarioActual.error) {
-        window.location.href = '/pages/login.html'
-        return
-      }
+      if (!usuarioActual) return   // cargarHeader ya mandó al login o a cambiar la contraseña
 
       if (usuarioActual.rol !== 'admin_empresa') {
         document.getElementById('aviso-permiso').classList.remove('d-none')

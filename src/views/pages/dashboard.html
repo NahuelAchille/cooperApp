@@ -31,8 +31,15 @@
     // ("+2542% vs mes anterior"): con un mes anterior chico se disparaba, el
     // mes en curso va por la mitad, y "vs" no es castellano. Comparar dos
     // montos es lo que la persona sabe hacer.
-    function elMesPasado(anterior) {
-        return `El mes pasado: ${formatMoneda(anterior)}`
+    //
+    // Con el nombre del mes (UX E-09): "el mes" eran 14 días y "el mes pasado"
+    // 31, y ningún casillero decía de qué mes se hablaba.
+    const MESES = ['enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio', 'julio',
+                   'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre']
+    const mesDe = (fechaISO) => MESES[Number(fechaISO.slice(5, 7)) - 1]
+    const conMayuscula = (t) => t.charAt(0).toUpperCase() + t.slice(1)
+    function elMesPasado(anterior, nombreMes) {
+        return `${conMayuscula(nombreMes)} entero: ${formatMoneda(anterior)}`
     }
 
     async function cargarDashboard() {
@@ -45,6 +52,9 @@
             window.location.href = '/pages/superadmin.html'
             return
         }
+
+        document.getElementById('saludo').textContent = `Hola, ${user.nombre}`
+        document.getElementById('saludo-empresa').textContent = `Panel general · ${user.empresa?.nombre || ''}`
 
         // Hacen falta las dos cosas: el rol y que la empresa tenga el módulo.
         // Se guardan por separado para poder explicar cuál de las dos falló.
@@ -168,11 +178,16 @@
         // --- KPI ---
         document.getElementById('kpi-faltantes').textContent = faltantes.length
         const sinStock = faltantes.filter(p => p.sinStock).length
-        document.getElementById('kpi-faltantes-detalle').textContent = faltantes.length === 0
+        const detalleFaltantes = document.getElementById('kpi-faltantes-detalle')
+        detalleFaltantes.textContent = faltantes.length === 0
             ? 'Todo en orden'
             : sinStock > 0
                 ? `${sinStock} sin stock`
                 : 'Llegó al mínimo'
+        // Con algo para reponer, el casillero lleva a la lista ya filtrada (UX E-18).
+        if (faltantes.length) {
+            detalleFaltantes.insertAdjacentHTML('beforeend', ' · <a href="/pages/stock.html?ver=faltantes">Ver cuáles</a>')
+        }
 
         // --- Listado ---
         const tbody = document.getElementById('tabla-faltantes')
@@ -188,8 +203,7 @@
         // completo. El resto se ve en la pantalla de Stock.
         tbody.innerHTML = faltantes.slice(0, 5).map(p => `
             <tr>
-                <td>${esc(p.nombre)}</td>
-                <td class="text-end">${formatearCantidad(p.existencia)} ${esc(nombreUnidad(p.existencia, p.unidad_medida))}</td>
+                <td>${esc(p.nombre)}<small class="fecha">Hay ${formatearCantidad(p.existencia)} ${esc(nombreUnidad(p.existencia, p.unidad_medida))}</small></td>
                 <td class="text-end">
                     <span class="badge-stock ${p.sinStock ? 'sin' : 'bajo'}">
                         ${p.negativo ? 'Revisar' : p.sinStock ? 'Sin stock' : 'Reponer'}
@@ -197,7 +211,7 @@
                 </td>
             </tr>`).join('') +
             (faltantes.length > 5
-                ? `<tr><td colspan="3" class="text-muted">y ${faltantes.length - 5} más…</td></tr>`
+                ? `<tr><td colspan="2" class="text-muted">y ${faltantes.length - 5} más…</td></tr>`
                 : '')
     }
 
@@ -216,18 +230,29 @@
         // Si no hay permiso (ej: operador) o falla, se dejan los guiones.
         if (!actual) return
 
+        const mesHoy = mesDe(mesActual.desde)
+        const hastaHoy = mesActual.desde === mesActual.hasta ? '' : ' (hasta hoy)'
+        document.querySelector('#dashboard-kpis-1 h3').textContent = `Entró en ${mesHoy}${hastaHoy}`
+        document.querySelector('#dashboard-kpis-2 h3').textContent = `Salió en ${mesHoy}${hastaHoy}`
+        document.querySelector('#dashboard-kpis-3 h3').textContent = `Resultado de ${mesHoy}`
+
         document.getElementById('kpi-ingresos').textContent = formatMoneda(actual.total_ingresos)
         document.getElementById('kpi-egresos').textContent  = formatMoneda(actual.total_egresos)
         document.getElementById('kpi-balance').textContent  = formatMoneda(actual.balance)
         document.getElementById('kpi-balance').className = Number(actual.balance) > 0 ? 'positivo' : Number(actual.balance) < 0 ? 'negativo' : ''
 
         if (anterior) {
-            document.getElementById('kpi-ingresos-var').textContent = elMesPasado(anterior.total_ingresos)
-            document.getElementById('kpi-egresos-var').textContent  = elMesPasado(anterior.total_egresos)
+            const mesAntes = mesDe(mesAnterior.desde)
+            document.getElementById('kpi-ingresos-var').textContent = elMesPasado(anterior.total_ingresos, mesAntes)
+            document.getElementById('kpi-egresos-var').textContent  = elMesPasado(anterior.total_egresos, mesAntes)
         }
-        // "Quedó a favor / en contra", como en Reportes: el número solo no dice si está bien.
-        document.getElementById('kpi-balance-detalle').textContent =
-            Number(actual.balance) > 0 ? 'Quedó a favor' : Number(actual.balance) < 0 ? 'Quedó en contra' : 'Quedó igual'
+        // "Quedó a favor / en contra", como en Reportes: el número solo no dice
+        // si está bien. Y el del mes anterior, que es lo que contesta "¿cómo
+        // venimos?" (UX E-09).
+        const comoQuedo = Number(actual.balance) > 0 ? 'Quedó a favor' : Number(actual.balance) < 0 ? 'Quedó en contra' : 'Quedó igual'
+        document.getElementById('kpi-balance-detalle').textContent = anterior
+            ? `${comoQuedo} · ${conMayuscula(mesDe(mesAnterior.desde))}: ${formatMoneda(anterior.balance)}`
+            : comoQuedo
     }
 
     // Ultimos 5 movimientos (no anulados, que es el default del endpoint).
@@ -253,9 +278,8 @@
             const fecha = formatearFecha(m.fecha).slice(0, 5)   // "13/11": en el panel no hace falta el año
             return `
                 <tr>
-                    <td>${esc(m.descripcion || m.tipo_nombre)}</td>
+                    <td>${esc(m.descripcion || m.tipo_nombre)}<small class="fecha">${fecha}</small></td>
                     <td class="monto ${esIngreso ? 'positivo' : 'negativo'}">${signo}${formatMoneda(m.monto)}</td>
-                    <td class="fecha">${fecha}</td>
                 </tr>`
         }).join('')
     }
@@ -292,7 +316,7 @@
             { texto: 'Cargá lo primero que entró o salió de la caja', link: '/pages/movimientos.html?nuevo=ingreso' },
             moduloActivo('articulacion') && { texto: 'Cargá tu localidad para aparecer en el buscador entre empresas',
               link: '/pages/perfil-empresa.html', hecho: !!empresa.id_localidad },
-            { texto: 'Dá de alta a las personas que trabajan con vos', link: '/pages/usuarios.html', hecho: activos > 1,
+            { texto: 'Da de alta a las personas que trabajan con vos', link: '/pages/usuarios.html', hecho: activos > 1,
               ayuda: 'Si trabajás solo, salteá este paso.' }
         ].filter(Boolean)
 
@@ -320,7 +344,12 @@
     </script>
 
     <nav id="secondary-nav">
-        <h2>Acciones rápidas</h2>
+        <!-- La franja verde dice dónde se está, como en todas las pantallas
+             (UX E-22): decía "Acciones rápidas" y era la única sin título. -->
+        <div class="saludo">
+            <h1 id="saludo">Panel general</h1>
+            <small id="saludo-empresa"></small>
+        </div>
             <ul>
                 <!-- La venta y la compra van primero: es lo que más se hace.
                      Abren el formulario de una vez, sin pasar por la lista de
@@ -392,7 +421,7 @@
             <section class="dashboard-block" id="dashboard-stock">
                 <div class="dashboard-block-header">
                     <h3>Alertas de stock</h3>
-                    <a href="/pages/stock.html" id="link-ver-stock" class="d-none">Ver todos →</a>
+                    <a href="/pages/stock.html?ver=faltantes" id="link-ver-stock" class="d-none">Ver lo que falta →</a>
                 </div>
                 <div class="table-responsive">
                     <table class="dashboard-table">

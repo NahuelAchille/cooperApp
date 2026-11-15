@@ -22,7 +22,7 @@
   <div class="page-header">
     <div>
       <h4 class="mb-0 fw-bold"><i class="fa-solid fa-chart-column me-2"></i>Reportes</h4>
-      <small id="nombre-empresa"></small>
+      <small>Cómo le fue a la empresa en un período, para mirar, imprimir o mandar</small>
     </div>
   </div>
 
@@ -90,7 +90,9 @@
           <!-- Pasar de una a otra deja los casilleros iguales, y eso es la
                prueba de que cierran. Sin decirlo, parece que la página no se
                actualizó (UX 28/09, H-07). -->
-          <p class="nota-vista">Son la misma plata del período, ordenada de distinta manera.</p>
+          <!-- El texto de producto y servicio lo manda el servidor, el mismo que
+               va a los archivos: son una parte del período (UX E-02). -->
+          <p class="nota-vista" id="nota-vista">Son la misma plata del período, ordenada de distinta manera.</p>
 
           <!-- Las pérdidas NO son esa plata: son mercadería, y a propósito no
                suman con lo de arriba. Por eso van aparte y con otro rótulo. -->
@@ -284,12 +286,8 @@
     async function iniciar() {
       usuarioActual = await cargarHeader()
 
-      if (!usuarioActual || usuarioActual.error) {
-        window.location.href = '/pages/login.html'
-        return
-      }
+      if (!usuarioActual) return   // cargarHeader ya mandó al login o a cambiar la contraseña
 
-      document.getElementById('nombre-empresa').textContent = usuarioActual.empresa?.nombre || ''
       document.getElementById('hoja-empresa').textContent = usuarioActual.empresa?.nombre || ''
 
       const esFinanzas = usuarioActual.rol === 'admin_empresa' || usuarioActual.rol === 'tesorero'
@@ -516,6 +514,7 @@
       if (!res.ok) return false
 
       document.getElementById('th-agrupador').textContent = AGRUPADOR[vistaElegida]
+      if (datos.nota) document.getElementById('nota-vista').textContent = datos.nota
 
       const aviso = document.getElementById('aviso-agrupado')
       aviso.classList.toggle('d-none', !datos.aviso)
@@ -674,6 +673,7 @@
         document.getElementById('caja-movimientos').classList.toggle('d-none', !esListado)
         document.getElementById('caja-agrupado').classList.toggle('d-none', !esAgrupado)
         if (!esAgrupado) document.getElementById('aviso-agrupado').classList.add('d-none')
+        if (esListado) document.getElementById('nota-vista').textContent = 'Son la misma plata del período, ordenada de distinta manera.'
         document.getElementById('caja-perdidas').classList.toggle('d-none', !esPerdidas)
 
         // Los tres casilleros del período no aplican a las pérdidas: esa plata

@@ -55,6 +55,7 @@ const findProductos = async (id_empresa, filtros = {}) => {
            p.es_servicio, p.id_categoria_producto, p.id_subcategoria_producto,
            p.costo_referencia, p.costo_actualizado_en, p.precio_venta,
            p.visible_empresas, p.id_rubro,
+           (SELECT COUNT(*) FROM movimientos_stock ms WHERE ms.id_producto = p.id_producto) AS cantidad_movimientos,
            c.nombre AS categoria_nombre,
            s.nombre AS subcategoria_nombre
     FROM productos p
@@ -79,7 +80,8 @@ const findProductoById = async (id_producto, id_empresa) => {
     SELECT p.id_producto, p.nombre, p.descripcion, p.unidad_medida, p.stock_minimo, p.activo,
            p.es_servicio, p.id_categoria_producto, p.id_subcategoria_producto,
            p.costo_referencia, p.costo_actualizado_en, p.precio_venta,
-           p.visible_empresas, p.id_rubro
+           p.visible_empresas, p.id_rubro,
+           (SELECT COUNT(*) FROM movimientos_stock ms WHERE ms.id_producto = p.id_producto) AS cantidad_movimientos
     FROM productos p
     WHERE p.id_producto = ? AND p.id_empresa = ?
   `, [id_producto, id_empresa])

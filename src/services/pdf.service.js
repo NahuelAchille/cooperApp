@@ -81,11 +81,27 @@ const encabezado = (doc, { empresa, titulo, periodo }) => {
 // Los avisos que la pantalla muestra van tambien al PDF. Si en pantalla dice
 // "hay 3 anulados que no entran" y el archivo no lo dice, el que recibe el
 // archivo saca otra conclusion del mismo numero.
+//
+// Van en un recuadro y en letra normal, no en itálica chica (UX E-08): en el
+// PDF de pérdidas el aviso explica el número grande de abajo, y quedaba más
+// chico que él.
 const avisos = (doc, textos) => {
   if (!textos.length) return
-  doc.fontSize(8.5).fillColor('#6b5a2a').font('Helvetica-Oblique')
-  textos.forEach(t => { doc.text(t, { width: ANCHO_UTIL }); doc.moveDown(0.2) })
-  doc.font('Helvetica').moveDown(0.5)
+  const RELLENO = 8
+  const ancho = ANCHO_UTIL - RELLENO * 2
+  doc.fontSize(9.5).font('Helvetica')
+  const alto = textos.reduce((s, t) => s + doc.heightOfString(t, { width: ancho }) + 4, 0) - 4 + RELLENO * 2
+  const y = doc.y
+  doc.rect(MARGEN, y, ANCHO_UTIL, alto).fillAndStroke('#fdf6e3', '#e0c88a')
+  doc.fillColor('#4a3a10')
+  let yTexto = y + RELLENO
+  textos.forEach(t => {
+    doc.text(t, MARGEN + RELLENO, yTexto, { width: ancho })
+    yTexto = doc.y + 4
+  })
+  doc.x = MARGEN
+  doc.y = y + alto
+  doc.fillColor('#1a2e23').moveDown(0.8)
 }
 
 // Los casilleros de totales, en una fila.

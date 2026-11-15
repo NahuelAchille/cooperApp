@@ -204,6 +204,16 @@ Reportarlo otra vez gasta lugar en el informe sin agregar nada:
     cantidades, stock mínimo, costo, precio) sólo aceptan números comunes
     (`leerDecimal` en `validacion.service.js`): `1e3` o `0x10` rebotan.
   - ***Habilitar de nuevo* no pide confirmación**, como *Aprobar*: se deshace.
+- Lo que se cerró después de la auditoría de la entrega (15/11/2026):
+  - **El rol se revisa en cada pedido**, como la baja: si el admin le cambia el rol a
+    alguien, vale desde el pedido siguiente (A1). Probá que siga así.
+  - **La unidad de un producto con entradas o salidas no se cambia** (M2), igual que el
+    efecto de un motivo usado. Para corregirla: dar de baja y cargar de nuevo.
+  - **Editar un producto sin mandar un campo no lo toca** (B2), como Mi empresa.
+  - **El stock mínimo de lo que se cuenta va entero.**
+  - **La descarga con un formato o una vista que no existen da 400.**
+  - **Al tesorero, la plata de una venta le ofrece sólo *Anular*** (no tiene Stock): es a
+    propósito, y el cartel le dice a quién pedir la corrección (UX E-01).
 
 Si encontrás una forma NUEVA de explotar alguna de estas, eso sí reportalo.
 
@@ -563,6 +573,14 @@ Ser honesto sobre lo que no probaste vale más que inflar la lista.
 - **Las cookies de `localhost` se comparten entre puertos.** Si levantás una
   segunda copia de la app (`DB_NAME` y `PORT`) para no pisar a nadie, entrá
   por `127.0.0.1` en una de las dos, o una sesión pisa a la otra.
+- **`datos_de_prueba.sql` arranca con `USE cooperApp;`.** Para cargarlo en OTRA
+  base, sacale esa línea a una copia del archivo: si no, resetea la de siempre.
+- **Si corrés al mismo tiempo que la auditoría de UX, usá tu propio puerto de
+  depuración de Edge** (no el 9341). El 14/11 los dos usaron el mismo y uno le
+  manejaba el navegador al otro.
+- En los datos de prueba hay ventas o compras **sin su plata a propósito**: la
+  compra de pan de La Esperanza y **cuatro** operaciones de Metalúrgica (tres
+  compras y una venta). No son un error.
 - **Para recorrer todas las pantallas de una vez** hay un script en
   `pp2/scripts-capturas/revisar-pantallas.js`: entra con cada usuario en un Edge
   sin ventana, en el ancho que le digas, y junta los errores de JavaScript, de
@@ -620,5 +638,6 @@ CLAUDE.md), que es lo que menos ojos tuvo encima.
 | 28/09/2026 | **Sprints 09 y 10 juntos** (Servicios completo · Reportes completo) — era **HU-50** | 5 (0 críticos, 1 alto, 2 medios, 2 bajos), todos confirmados ejecutándolos. Informe en `informes-QA/informe-QA-sprints-09-10.md` | **28/09: los 5 corregidos**, ninguno al backlog, + 1 encontrado al corregir (el PDF agrupado tampoco traía los totales). A1 era el escape de fórmulas pegándole a los números del sistema; B1, el mismo patrón consultar-decidir-escribir, cerrado con un `UPDATE ... AND anulado = 0`. Detalle al final del informe. **Lo que se atacó a fondo aguantó**: los 13 intentos de cruzar los dos catálogos rebotan y los totales de los reportes cierran contra `SELECT` en las cinco vistas. El único hallazgo con un número mal es del **archivo, no del sistema**: el escape contra fórmulas de Excel también le pega a los resultados negativos del CSV, que quedan como texto y Excel no los suma |
 | 02/11/2026 | **La venta y la compra en un solo paso** (commit `89e2bcb`, 25-26/10; hecho fuera de sprint, HU-90 y HU-91) | 6 (1 crítico, 5 bajos), todos confirmados ejecutándolos. Informe en `informes-QA/informe-QA-venta-compra.md` | **02/11: los 6 corregidos**, ninguno al backlog, + 1 encontrado al corregir (anular y cargar el cobro a la vez podía dejar un cobro vivo en una venta anulada). **C1 lo decidió el grupo antes del código**: anular una venta o una compra anula también su plata, en la misma transacción; reemplaza a la decisión vieja de que no la anulaba. B1 era otra vez el patrón consultar-decidir-escribir (el costo leído fuera del candado). Detalle al final del informe |
 | 14/11/2026 | **Auditoría final, sistema completo** (HU-67), con foco en lo que nunca pasó por QA: Articulación, el superadmin rehecho, lo que se sacó, HU-87 y HU-88 | 6 (1 crítico, 1 alto, 1 medio, 3 bajos), todos confirmados ejecutándolos. Informe en `informes-QA/informe-QA-final.md` | **14/11: los 6 corregidos**, ninguno al backlog (ver el final del informe). Después vino una revisión grande en cuatro tandas (bitácora de CLAUDE.md, 14/11 (13) a (15)) que todavía no pasó por QA. Lo que encontró el informe: **C1**: *Anular y corregir* (HU-87) vuelve a cargar la plata de una venta sin atarla, la venta queda *"Sin registrar el cobro"* y se puede cobrar dos veces. **A1**: el registro da *"Error del servidor"* con el CUIT escrito con guiones. **M1**: el DNI con puntos se guarda con puntos (saltea el duplicado y la contraseña temporal queda con puntos). **Lo nuevo de Articulación y del superadmin aguantó entero**: nada privado sale hacia otra empresa, cada condición de "quién aparece" esconde, y 0 inyecciones de XSS en las pantallas nuevas. La regresión de los cuatro informes anteriores dio bien |
+| 14/11/2026 | **Auditoría de la entrega, sistema completo**, sobre `453f870` (las cuatro tandas de la revisión del 14/11, que nunca habían pasado por QA) | 9 (0 críticos, 1 alto, 2 medios, 6 bajos), todos confirmados ejecutándolos. Informe en `informes-QA/informe-QA-entrega.md` | **15/11: los 9 corregidos**, ninguno al backlog, más las observaciones (descarga con formato inventado, mínimo entero). Ver el final del informe. Lo que encontró: **A1**: cambiar el rol de alguien no toca su sesión abierta (un tesorero pasado a operador sigue cargando y anulando plata; es el pariente que quedó de la sesión viva del Sprint 06). **M1**: con la contraseña temporal, 12 de 16 pantallas mandan al login en vez de a cambiarla. **M2**: cambiar la unidad de un producto usado reinterpreta el historial y puede dejar un resto que no se puede sacar. **Lo que aguantó**: cero XSS en 25 vistas, nueve carreras sobre plata y stock sin filas desparejas, los reportes cierran contra `SELECT` en las cinco vistas, la misma lista de 25 valores raros se comporta igual en los diez campos numéricos, y 71 recorridos por ancho (1280, 800, 375) sin errores de consola ni scroll horizontal. La regresión de los ocho informes anteriores dio bien |
 
 *(Completar después de cada corrida.)*

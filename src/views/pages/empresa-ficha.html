@@ -21,9 +21,14 @@
   <script src="/components/util.js"></script>
   <script src="/components/header.js"></script>
 
+  <!-- Con título, como las demás (UX E-22): la franja tenía sólo el link. -->
   <div class="page-header">
-    <a href="/pages/articulacion.html" id="link-volver" class="text-white text-decoration-none small">
-      <i class="fa-solid fa-arrow-left me-1"></i>Volver a la búsqueda
+    <div>
+      <h4><i class="fa-solid fa-building me-2"></i>Ficha de empresa</h4>
+      <small>Lo que ofrece y cómo contactarla</small>
+    </div>
+    <a href="/pages/articulacion.html" id="link-volver" class="btn btn-volver">
+      <i class="fa-solid fa-arrow-left me-2"></i><span id="texto-volver">Volver a la búsqueda</span>
     </a>
   </div>
 
@@ -167,10 +172,7 @@
     async function iniciar() {
       const user = await cargarHeader()
 
-      if (!user || user.error) {
-        window.location.href = '/pages/login.html'
-        return
-      }
+      if (!user) return   // cargarHeader ya mandó al login o a cambiar la contraseña
 
       // Volver a la búsqueda que se estaba haciendo, no a una vacía.
       if (document.referrer.includes('/pages/articulacion.html')) {
@@ -185,7 +187,9 @@
         return
       }
       if (!moduloActivo('articulacion')) {
-        avisarError('El módulo Buscar empresas no está activo en tu empresa. El administrador puede activarlo desde Módulos del sistema.')
+        avisarError(user.rol === 'admin_empresa'
+          ? 'El módulo Buscar empresas no está activo en tu empresa. Lo prendés en Módulos del sistema.'
+          : 'El módulo Buscar empresas no está activo en tu empresa. Si lo necesitás, pedíselo al administrador.')
         return
       }
 
@@ -210,6 +214,12 @@
         `<i class="fa-solid fa-location-dot me-1"></i>${esc(donde)}${esc(distancia)}`
 
       document.getElementById('aviso-propia').classList.toggle('d-none', !ficha.esLaPropia)
+      // La propia se abre desde Mi empresa: "Volver a la búsqueda" llevaba a
+      // una búsqueda que nunca se hizo (UX E-25).
+      if (ficha.esLaPropia && !document.referrer.includes('/pages/articulacion.html')) {
+        document.getElementById('link-volver').href = '/pages/perfil-empresa.html'
+        document.getElementById('texto-volver').textContent = 'Volver a Mi empresa'
+      }
 
       pintarContacto(ficha.contacto)
       pintarOfrece(ficha.ofrece)

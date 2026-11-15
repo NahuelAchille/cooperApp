@@ -35,6 +35,11 @@
   overflow: hidden;
   padding: 8px 0;
 }
+/* El título de la franja (UX E-22) */
+#secondary-nav .saludo { padding: 4px 12px 8px; }
+#secondary-nav .saludo h1 { font-size: 1.25rem; font-weight: 700; margin: 0; color: #fff; }
+#secondary-nav .saludo small { display: block; opacity: 0.85; font-size: 0.875rem; }
+
 #secondary-nav h2 {
   padding: 8px 12px;
   margin: 0;
@@ -402,13 +407,14 @@
    se sacó porque no entraba: en una notebook el bloque mide unos 380 px y la
    tabla cortaba los montos y las fechas a la mitad ("+$ 350." / "000,00").
    Un número no se parte nunca: si falta lugar, se achica la descripción. */
-.dashboard-table .monto,
-.dashboard-table .fecha { white-space: nowrap; }
-.dashboard-table .fecha { text-align: right; color: #4a6356; }
-@media (max-width: 767px) {
-  /* Tenía min-width: 360px, que no entra en el bloque de 331 px. */
-  .dashboard-table { min-width: 0; }
-}
+.dashboard-table .monto { white-space: nowrap; }
+/* Dos columnas (UX E-17 y E-23): la fecha y lo que hay van debajo del nombre.
+   Con tres, la tabla medía 360 px en un bloque de 326 (tablet) o de 354
+   (notebook): cortaba la fecha ("14/"), el estado ("Sin stoc") y dejaba una
+   barra de arrastre abajo. */
+.dashboard-table { min-width: 0; }
+.dashboard-table small.fecha { display: block; color: #4a6356; font-size: 0.8125rem; margin-top: 2px; }
+.dashboard-table td:last-child { width: 1%; white-space: nowrap; }
 
 /* Acciones rápidas en el celular (14/11/2026): ocupaban media pantalla, cinco
    renglones verdes antes del primer número. Ahora van de a dos por fila, sin el
@@ -441,3 +447,17 @@
 #kpi-egresos { color: var(--danger); }
 #kpi-balance.positivo { color: var(--verde-oscuro); }
 #kpi-balance.negativo { color: var(--danger); }
+
+/* Tablet (UX E-17): la franja de acciones medía 793 px en una página de 785
+   (ancho completo más el margen) y quedaba pegada al borde. Hasta 1023 px el
+   título va arriba y los botones abajo, como en el celular. */
+@media (min-width: 768px) {
+  #secondary-nav { width: auto; }
+}
+@media (min-width: 768px) and (max-width: 1023px) {
+  #secondary-nav { flex-direction: column; align-items: stretch; gap: 8px; }
+  #secondary-nav ul { justify-content: flex-start; }
+}
+@media (min-width: 1024px) {
+  #secondary-nav .saludo { padding: 0; }
+}

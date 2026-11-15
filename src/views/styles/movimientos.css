@@ -62,25 +62,6 @@
   margin-bottom: 2px;
 }
 
-/* Los atajos de período, iguales a los de Reportes (UX 28/09, H-04) */
-.atajos-periodo { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 12px; }
-.btn-atajo {
-  flex: 1 1 auto;
-  background: white;
-  border: 1px solid #d8e6de;
-  border-radius: 20px;
-  padding: 5px 14px;
-  font-size: 0.82rem;
-  font-weight: 600;
-  color: #45564d;
-}
-.btn-atajo:hover { border-color: var(--verde-secundario); }
-.btn-atajo.elegido {
-  background: #e4f2eb;
-  border-color: var(--verde-primario);
-  color: var(--verde-primario);
-}
-@media (min-width: 768px) { .btn-atajo { flex: 0 0 auto; } }
 
 /* El mismo botón de limpiar que el resto de las pantallas */
 .btn-limpiar {

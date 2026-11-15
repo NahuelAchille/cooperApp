@@ -34,7 +34,9 @@ exports.login = async (req, res) => {
 
     const { email, password } = req.body
 
-    if (!email || !password) {
+    // Algo que no es texto (un número, una lista) le llegaba a bcrypt y daba
+    // "Error del servidor" (QA de la entrega, B3).
+    if (typeof email !== 'string' || typeof password !== 'string' || !email || !password) {
       return res.status(400).json({ error: 'Email y contraseña son obligatorios' })
     }
 
@@ -44,7 +46,7 @@ exports.login = async (req, res) => {
     }
 
     if (!user.activo) {
-      return res.status(403).json({ error: 'Tu cuenta está dada de baja' })
+      return res.status(403).json({ error: 'Tu usuario está dado de baja. Hablá con el administrador de tu empresa.' })
     }
 
     const esSuperadmin = user.rol === 'superadmin'
@@ -179,7 +181,7 @@ exports.crearUsuario = async (req, res) => {
       debe_cambiar_password: 1
     })
 
-    res.status(201).json({ message: `Usuario creado. Contraseña temporal: ${dniLimpio}` })
+    res.status(201).json({ message: `Usuario creado. Su contraseña inicial es su DNI (${dniLimpio}): la va a cambiar la primera vez que entre.` })
 
   } catch (error) {
     console.error(error)
@@ -358,7 +360,7 @@ exports.cambiarPassword = async (req, res) => {
     const { password_nuevo, password_confirm } = req.body
     const id = req.session.user.id
 
-    if (!password_nuevo || !password_confirm) {
+    if (typeof password_nuevo !== 'string' || typeof password_confirm !== 'string' || !password_nuevo || !password_confirm) {
       return res.status(400).json({ error: 'Completar ambos campos' })
     }
 

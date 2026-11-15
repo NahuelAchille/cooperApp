@@ -16,7 +16,7 @@
 
 const CATEGORIAS_INICIALES = [
   { nombre: 'Ventas',         naturaleza: 'ingreso', tipos: ['Venta mayorista', 'Venta minorista'] },
-  { nombre: 'Otros ingresos', naturaleza: 'ingreso', tipos: ['Intereses', 'Otros'] },
+  { nombre: 'Otras entradas', naturaleza: 'ingreso', tipos: ['Intereses', 'Otros'] },
   { nombre: 'Sueldos',        naturaleza: 'egreso',  tipos: ['Sueldos del personal', 'Cargas sociales'] },
   { nombre: 'Gastos fijos',   naturaleza: 'egreso',  tipos: ['Luz', 'Gas', 'Agua', 'Internet', 'Alquiler'] },
   { nombre: 'Insumos',        naturaleza: 'egreso',  tipos: ['Compra de mercadería'] },

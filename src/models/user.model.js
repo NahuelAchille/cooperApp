@@ -118,9 +118,10 @@ const findById = async (id) => {
 const estadoDeSesion = async (id) => {
 
   const [rows] = await db.query(`
-    SELECT u.activo, u.debe_cambiar_password, e.estado AS empresa_estado
+    SELECT u.activo, u.debe_cambiar_password, e.estado AS empresa_estado, r.nombre AS rol
     FROM usuarios u
     LEFT JOIN empresas e ON e.id_empresa = u.id_empresa
+    JOIN roles r ON r.id_rol = u.id_rol
     WHERE u.id = ?
   `, [id])
 

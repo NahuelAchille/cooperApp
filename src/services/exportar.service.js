@@ -122,6 +122,10 @@ const armarCSV = ({ titulo, empresa, periodo, totales = [], avisos = [], encabez
   lineas.push(celda(empresa))
   lineas.push(celda(titulo))
   lineas.push(celda('Período: ' + periodo.etiqueta))
+  // La fecha también adentro: si alguien renombra el archivo, el nombre ya no
+  // la dice (UX E-07).
+  const hoy = new Date()
+  lineas.push(celda(`Generado el ${String(hoy.getDate()).padStart(2, '0')}/${String(hoy.getMonth() + 1).padStart(2, '0')}/${hoy.getFullYear()}`))
 
   // Los mismos casilleros que la pantalla muestra arriba: el numero grande es,
   // justamente, EL numero, y quien recibe el archivo no deberia tener que

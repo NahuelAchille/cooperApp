@@ -168,6 +168,7 @@
   margin-bottom: 16px;
   border-bottom: 2px solid #d8e8e0;
   overflow-x: auto;
+  overflow-y: hidden;   /* el -2px de cada pestaña la hacía 45 px en 43 (UX E-23) */
 }
 .pestana {
   background: none;

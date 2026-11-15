@@ -22,7 +22,7 @@
   <div class="page-header">
     <div>
       <h4 class="mb-0 fw-bold"><i class="fa-solid fa-right-left me-2"></i>Movimientos</h4>
-      <small id="nombre-empresa"></small>
+      <small>La plata que entra y sale de la empresa</small>
     </div>
     <div class="header-acciones">
       <a class="btn btn-config d-none" id="btn-configurar" href="/pages/configuracion-categorias.html">
@@ -39,7 +39,8 @@
     <!-- Se muestra si el usuario no tiene permiso de finanzas -->
     <div class="aviso-permiso d-none" id="aviso-permiso">
       <i class="fa-solid fa-lock fa-2x mb-3"></i>
-      <p class="mb-0">No tenés permiso para ver los movimientos de la empresa.</p>
+      <p class="mb-1">La plata de la empresa la ven el administrador y el tesorero.</p>
+      <p class="mb-0 small">Si necesitás saber algo, pedíselo a ellos.</p>
     </div>
 
     <!-- Se muestra si la empresa tiene el módulo apagado -->
@@ -242,6 +243,10 @@
                      "Salió" quiere decir que la plata se fue, y para un ingreso
                      la pregunta contradecía el botón recién apretado (UX 28/09). -->
                 <label class="form-label">¿Este movimiento es de algún servicio? <span class="text-muted fw-normal">(opcional)</span></label>
+                <!-- Si el tipo elegido se llama como un servicio, se avisa acá
+                     (UX E-06): "Soldadura" arriba y "Soldadura a domicilio" acá
+                     parecían la misma pregunta contestada dos veces. -->
+                <div class="aviso-stock mb-1 d-none" id="mov-servicio-pista"></div>
                 <select class="form-select" name="id_servicio" id="mov-servicio">
                   <option value="">No, ninguno</option>
                 </select>
@@ -339,12 +344,8 @@
     async function iniciar() {
       usuarioActual = await cargarHeader()
 
-      if (!usuarioActual || usuarioActual.error) {
-        window.location.href = '/pages/login.html'
-        return
-      }
+      if (!usuarioActual) return   // cargarHeader ya mandó al login o a cambiar la contraseña
 
-      document.getElementById('nombre-empresa').textContent = usuarioActual.empresa?.nombre || ''
 
       const esFinanzas = usuarioActual.rol === 'admin_empresa' || usuarioActual.rol === 'tesorero'
 
@@ -562,7 +563,11 @@
                    ${m.de_stock ? '' : `<button class="btn-accion btn-recargar" data-recargar="${m.id_movimiento}" title="Cargar de nuevo con estos datos"><i class="fa-solid fa-copy me-1"></i>Cargar de nuevo</button>`}`
                 // "Anular o corregir" con texto (UX F-11): con el ícono rojo solo,
                 // quien buscaba corregir no se animaba a tocar lo que parecía borrar.
-                : `<button class="btn-accion" data-id="${m.id_movimiento}" data-detalle="${signo}${formatMoneda(m.monto)} · ${esc(m.tipo_nombre)}" title="Anular o corregir"><i class="fa-solid fa-ban me-1"></i>Anular o corregir</button>`
+                // La plata de una venta se corrige desde Stock: a quien no
+                // entra a Stock, el botón no le promete corregir (UX E-01).
+                : (m.de_stock && !puedeIrAStock())
+                  ? `<button class="btn-accion" data-id="${m.id_movimiento}" data-detalle="${signo}${formatMoneda(m.monto)} · ${esc(m.tipo_nombre)}" title="Anular"><i class="fa-solid fa-ban me-1"></i>Anular</button>`
+                  : `<button class="btn-accion" data-id="${m.id_movimiento}" data-detalle="${signo}${formatMoneda(m.monto)} · ${esc(m.tipo_nombre)}" title="Anular o corregir"><i class="fa-solid fa-ban me-1"></i>Anular o corregir</button>`
             }</td>
           </tr>`
       }).join('')
@@ -586,14 +591,17 @@
       })
     })
 
+    // El admin entra a Stock si la empresa tiene Productos; el tesorero, nunca.
+    // Un link que termina en "sin permiso" es peor que no avisar.
+    const puedeIrAStock = () => usuarioActual?.rol === 'admin_empresa' && moduloActivo('productos')
+
     document.getElementById('mov-naturaleza').addEventListener('change', (e) => {
       const naturaleza = e.target.value
 
       // Sólo a quien puede ir a Stock: el tesorero no entra, y un link que
       // termina en "sin permiso" es peor que no avisar.
-      const puedeIrAStock = usuarioActual.rol === 'admin_empresa' && moduloActivo('productos')
-      document.getElementById('aviso-venta-stock').classList.toggle('d-none', !(puedeIrAStock && naturaleza === 'ingreso'))
-      document.getElementById('aviso-compra-stock').classList.toggle('d-none', !(puedeIrAStock && naturaleza === 'egreso'))
+      document.getElementById('aviso-venta-stock').classList.toggle('d-none', !(puedeIrAStock() && naturaleza === 'ingreso'))
+      document.getElementById('aviso-compra-stock').classList.toggle('d-none', !(puedeIrAStock() && naturaleza === 'egreso'))
 
       // El ejemplo de la descripción va con lo que se tocó (UX F-21).
       document.getElementById('mov-descripcion').placeholder =
@@ -667,9 +675,32 @@
           'Antes de seguir, fijate en la lista que no esté ya cargada.</div>'
       }
       document.getElementById('mov-tipo-ayuda').innerHTML = ayuda
+      sugerirServicio(tipo)
+    }
+
+    // "Soldadura" (el tipo) y "Soldadura a domicilio" (el servicio): si se
+    // parecen y todavía no se eligió servicio, se ofrece el que corresponde.
+    const sinAcentos = (t) => String(t || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().trim()
+    function sugerirServicio(tipo) {
+      const pista = document.getElementById('mov-servicio-pista')
+      const select = document.getElementById('mov-servicio')
+      const nombreTipo = sinAcentos(tipo?.nombre)
+      const parecido = (tipo && nombreTipo.length >= 4 && !select.value)
+        ? servicios.filter(s => s.activo).find(s => {
+            const n = sinAcentos(s.nombre)
+            return n.includes(nombreTipo) || nombreTipo.includes(n)
+          })
+        : null
+      pista.innerHTML = parecido
+        ? `<i class="fa-solid fa-screwdriver-wrench me-1"></i>¿Fue el servicio <strong>«${esc(parecido.nombre)}»</strong>? ` +
+          `Elegilo acá abajo para que cuente en «cuánto deja cada servicio».`
+        : ''
+      pista.classList.toggle('d-none', !parecido)
     }
 
     document.getElementById('mov-tipo').addEventListener('change', mostrarCategoriaElegida)
+    document.getElementById('mov-servicio').addEventListener('change', () =>
+      sugerirServicio(tiposActivos.find(t => t.id_tipo === Number(document.getElementById('mov-tipo').value))))
 
     // Deja el formulario como recién abierto. Hace falta también al abrirlo
     // con "Nuevo movimiento": si antes se copió uno anulado y se canceló, sus
@@ -801,11 +832,18 @@
       const deStock = !!(m && m.de_stock)
       const queEs = m && m.naturaleza === 'ingreso' ? 'una venta' : 'una compra'
       const aviso = document.getElementById('anular-de-stock')
-      aviso.innerHTML = deStock
-        ? `<i class="fa-solid fa-boxes-stacked me-1"></i>Esta plata es de <strong>${queEs}</strong> registrada en Stock. ` +
-          'Si te equivocaste en el precio o la cantidad, corregila desde <strong>Stock → Entradas y salidas → ' +
-          'Anular y corregir</strong>: así la plata sigue atada a la mercadería.'
-        : ''
+      // Al tesorero no se lo manda a una pantalla que no tiene (UX E-01): se
+      // le dice a quién pedírselo y qué pasa si la anula igual.
+      const sinCobrar = m && m.naturaleza === 'ingreso' ? 'sin registrar el cobro' : 'sin registrar el pago'
+      aviso.innerHTML = !deStock ? ''
+        : puedeIrAStock()
+          ? `<i class="fa-solid fa-boxes-stacked me-1"></i>Esta plata es de <strong>${queEs}</strong> registrada en Stock. ` +
+            'Si te equivocaste en el precio o la cantidad, corregila desde ' +
+            '<a href="/pages/stock.html?ver=historial"><strong>Stock → Entradas y salidas</strong></a> → <strong>Anular o corregir</strong>: ' +
+            `así la plata sigue atada a la mercadería. Si la anulás acá, en Stock queda ${sinCobrar}.`
+          : `<i class="fa-solid fa-boxes-stacked me-1"></i>Esta plata es de <strong>${queEs}</strong> de Stock, y se corrige desde ahí, junto con la mercadería. ` +
+            `Pedíselo a quien la cargó (${esc(m.usuario_nombre)} ${esc(m.usuario_apellido)}) o al administrador. ` +
+            `Si la anulás acá, en Stock queda ${sinCobrar}.`
       aviso.classList.toggle('d-none', !deStock)
       document.getElementById('btn-anular-corregir').classList.toggle('d-none', deStock)
       document.getElementById('anular-ayuda-corregir').classList.toggle('d-none', deStock)

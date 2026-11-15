@@ -52,6 +52,7 @@ a:hover { color: var(--verde-oscuro); }
   gap: 12px;
 }
 .page-header h4 { margin: 0; font-weight: 700; }
+.page-header, .page-header > div { text-align: left; }
 .page-header small { opacity: 0.85; }
 
 .acciones-header { display: flex; gap: 8px; flex-wrap: wrap; }
@@ -108,7 +109,35 @@ a:hover { color: var(--verde-oscuro); }
 .badge-inactivo { background-color: #fde8e8; color: var(--danger); }
 .badge-temp { background-color: #fdf0dc; color: var(--warning); }
 
+/* Los atajos de período (Este mes, El mes pasado, Este año): Movimientos y
+   el historial de Stock (UX 28/09, H-04 y UX E-19) */
+.atajos-periodo { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 12px; }
+.btn-atajo {
+  flex: 1 1 auto;
+  background: white;
+  border: 1px solid #d8e6de;
+  border-radius: 20px;
+  padding: 5px 14px;
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: #45564d;
+}
+.btn-atajo:hover { border-color: var(--verde-secundario); }
+.btn-atajo.elegido {
+  background: #e4f2eb;
+  border-color: var(--verde-primario);
+  color: var(--verde-primario);
+}
+@media (min-width: 768px) { .btn-atajo { flex: 0 0 auto; } }
+
 @media (min-width: 768px) {
+  .content { padding: 24px 32px; }
+}
+
+/* Hasta 1023 px (la tablet se ve como el celular) los botones van DEBAJO del
+   título: al costado le comían el ancho al subtítulo, que quedaba de una
+   palabra por renglón (UX E-17, Servicios a 800 px). */
+@media (min-width: 1024px) {
   .page-header {
     flex-direction: row;
     justify-content: space-between;
@@ -116,5 +145,7 @@ a:hover { color: var(--verde-oscuro); }
     padding: 20px 32px;
     gap: 20px;
   }
-  .content { padding: 24px 32px; }
+}
+@media (min-width: 768px) and (max-width: 1023px) {
+  .page-header { padding: 20px 32px; }
 }

@@ -49,6 +49,24 @@
     </div>
   </div>
 
+  <!-- Antes de apagar Productos, si hay operadores (UX E-11): es lo único que
+       usan, y se quedan sin nada que hacer en el sistema. -->
+  <div class="modal fade" id="modalApagar" tabindex="-1" data-bs-backdrop="static">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title fw-bold"><i class="fa-solid fa-triangle-exclamation me-2"></i>¿Apagás Productos?</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+        </div>
+        <div class="modal-body" id="apagar-texto"></div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">No, dejarlo prendido</button>
+          <button type="button" class="btn btn-outline-danger fw-bold" id="btn-apagar-igual">Apagarlo igual</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 
   <script>
@@ -58,10 +76,7 @@
     async function iniciar() {
       const user = await cargarHeader()
 
-      if (!user) {
-        window.location.href = '/pages/login.html'
-        return
-      }
+      if (!user) return   // cargarHeader ya mandó al login o a cambiar la contraseña
 
       // Configurar los módulos es cosa del administrador de la empresa.
       if (user.rol !== 'admin_empresa') {
@@ -108,6 +123,12 @@
 
       const clave = control.dataset.clave
       const activo = control.checked
+
+      if (clave === 'productos' && !activo && !await confirmarApagarProductos()) {
+        control.checked = true
+        return
+      }
+
       control.disabled = true
 
       const res = await fetch(`/modulos/${clave}`, {
@@ -133,6 +154,37 @@
       mostrarToast(resultado.message)
       cargarHeader()
     })
+
+    // Los operadores trabajan en Productos y Stock: sin Productos, no tienen
+    // nada que hacer en el sistema. Se avisa con sus nombres, porque "los
+    // operadores" no dice a quién se está dejando afuera. Apagar se deshace,
+    // así que no se impide: se pregunta.
+    async function confirmarApagarProductos() {
+      const usuarios = await fetch('/users').then(r => r.ok ? r.json() : []).catch(() => [])
+      const operadores = usuarios.filter(u => u.activo && u.rol === 'operador')
+      if (!operadores.length) return true
+
+      const nombres = operadores.map(u => esc(u.nombre + ' ' + u.apellido))
+      const lista = nombres.length === 1 ? nombres[0] : nombres.slice(0, -1).join(', ') + ' y ' + nombres[nombres.length - 1]
+      document.getElementById('apagar-texto').innerHTML =
+        `<p><strong>${lista}</strong> (${operadores.length === 1 ? 'operador' : 'operadores'}) ` +
+        `${operadores.length === 1 ? 'trabaja' : 'trabajan'} sólo en Productos y Stock. Si lo apagás, no ${operadores.length === 1 ? 'va' : 'van'} a tener nada para hacer en el sistema.</p>` +
+        '<p class="mb-0 small text-muted">Lo que ya está cargado no se borra: si lo volvés a prender, aparece todo de nuevo.</p>'
+
+      const elemento = document.getElementById('modalApagar')
+      const modal = bootstrap.Modal.getOrCreateInstance(elemento)
+      return new Promise(resolver => {
+        let respuesta = false
+        const boton = document.getElementById('btn-apagar-igual')
+        const alAceptar = () => { respuesta = true; modal.hide() }
+        boton.addEventListener('click', alAceptar, { once: true })
+        elemento.addEventListener('hidden.bs.modal', () => {
+          boton.removeEventListener('click', alAceptar)
+          resolver(respuesta)
+        }, { once: true })
+        modal.show()
+      })
+    }
 
     iniciar()
   </script>

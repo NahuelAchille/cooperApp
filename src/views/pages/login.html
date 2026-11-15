@@ -118,9 +118,13 @@
 
     <form class="main-input" id="form-login" autocomplete="new-password">
       <section id="formulario-login">
-        <input type="email" name="email" id="login-email" placeholder="Email" autocomplete="new-password" required>
+        <!-- Rótulos arriba (UX E-16): el texto de adentro desaparece al
+             escribir, y quien mira el teclado no sabía en qué campo estaba. -->
+        <label for="login-email" class="rotulo-login">Tu email</label>
+        <input type="email" name="email" id="login-email" placeholder="nombre@empresa.com" autocomplete="new-password" required>
+        <label for="login-password" class="rotulo-login">Tu contraseña</label>
         <section class="input-con-icono">
-          <input type="password" name="password" id="login-password" placeholder="Contraseña" autocomplete="new-password" required>
+          <input type="password" name="password" id="login-password" autocomplete="new-password" required>
         </section>
         <div id="login-error" class="text-danger small mt-1 d-none"></div>
       </section>
@@ -165,8 +169,10 @@
                 <input type="text" class="form-control form-control-registro" name="empresa_cuit" placeholder="20123456789" autocomplete="new-password" required>
               </div>
               <div class="col-md-6">
-                <label class="form-label">Email de la empresa <span class="obligatorio">*</span></label>
+                <!-- Dos emails y ninguno decía con cuál se entra (UX E-13). -->
+                <label class="form-label">Email de contacto de la empresa <span class="obligatorio">*</span></label>
                 <input type="email" class="form-control form-control-registro" name="empresa_email" placeholder="contacto@miempresa.com" autocomplete="new-password" required>
+                <div class="form-text texto-ayuda-registro">El que ven las otras empresas. Puede ser el mismo que el tuyo.</div>
               </div>
               <div class="col-md-6">
                 <label class="form-label">Domicilio</label>
@@ -199,8 +205,9 @@
                 <input type="text" class="form-control form-control-registro" name="apellido" placeholder="Pérez" autocomplete="new-password" required>
               </div>
               <div class="col-md-6">
-                <label class="form-label">Email <span class="obligatorio">*</span></label>
+                <label class="form-label">Tu email <span class="obligatorio">*</span></label>
                 <input type="email" class="form-control form-control-registro" name="email" placeholder="juan@miempresa.com" autocomplete="new-password" required>
+                <div class="form-text texto-ayuda-registro">Con este vas a entrar al sistema.</div>
               </div>
               <div class="col-md-6">
                 <label class="form-label">DNI <span class="obligatorio">*</span></label>

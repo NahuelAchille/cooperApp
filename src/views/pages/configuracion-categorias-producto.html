@@ -169,10 +169,7 @@
     async function iniciar() {
       usuarioActual = await cargarHeader()
 
-      if (!usuarioActual || usuarioActual.error) {
-        window.location.href = '/pages/login.html'
-        return
-      }
+      if (!usuarioActual) return   // cargarHeader ya mandó al login o a cambiar la contraseña
 
       if (usuarioActual.rol !== 'admin_empresa') {
         document.getElementById('aviso-permiso').classList.remove('d-none')

@@ -23,7 +23,7 @@
   <div class="page-header">
     <div>
       <h4 class="mb-0 fw-bold"><i class="fa-solid fa-right-left me-2"></i>Motivos de stock</h4>
-      <small>Por qué entra o sale mercadería, y qué pasa con el dinero en cada caso</small>
+      <small>Por qué entra o sale mercadería, y qué pasa con la plata en cada caso</small>
     </div>
     <div class="acciones-header d-none" id="acciones-header">
       <!-- A Stock y no a Productos: el atajo a esta pantalla está en Stock,
@@ -45,7 +45,8 @@
     <!-- Se muestra si el usuario no es admin -->
     <div class="aviso-permiso d-none" id="aviso-permiso">
       <i class="fa-solid fa-lock fa-2x mb-3"></i>
-      <p class="mb-0">Solo el administrador de la empresa puede configurar los motivos de stock.</p>
+      <p class="mb-1">Sólo el administrador de la empresa configura los motivos de stock.</p>
+      <p class="mb-0 small">Si hay que cambiar algo, pedíselo.</p>
     </div>
 
     <!-- Se muestra si la empresa tiene el módulo apagado -->
@@ -62,7 +63,7 @@
         Es el <em>por qué</em> se movió la mercadería. Cada motivo define dos cosas, que son distintas:
         <ul>
           <li><strong>Qué le hace al stock</strong>: si suma (entrada) o resta (salida). Siempre pasa algo.</li>
-          <li><strong>Qué le hace al dinero</strong>: entra plata, sale plata, o <strong>no mueve plata</strong>.</li>
+          <li><strong>Qué le hace a la plata</strong>: entra plata, sale plata, o <strong>no mueve plata</strong>.</li>
         </ul>
         Una <em>pérdida</em> o un <em>robo</em> sacan mercadería pero no mueven plata: van con "No mueve plata".
         Igual vas a poder ver cuánto costaron en los reportes.
@@ -76,7 +77,7 @@
                 <th>Motivo</th>
                 <!-- Lo mismo que pregunta el formulario: "efecto" es jerga -->
                 <th>Qué le hace al stock</th>
-                <th>Qué le hace al dinero</th>
+                <th>Qué le hace a la plata</th>
                 <th>Estado</th>
                 <th class="text-end">Acciones</th>
               </tr>
@@ -120,7 +121,7 @@
             </div>
 
             <div class="mb-3">
-              <label class="form-label">¿Qué le hace al dinero? *</label>
+              <label class="form-label">¿Qué le hace a la plata? *</label>
               <select class="form-select" name="efecto_dinero" id="select-dinero" required>
                 <option value="ninguno">No mueve plata</option>
                 <option value="ingreso">Entra plata</option>
@@ -191,10 +192,7 @@
         document.getElementById('link-volver-stock').classList.remove('d-none')
       }
 
-      if (!usuarioActual || usuarioActual.error) {
-        window.location.href = '/pages/login.html'
-        return
-      }
+      if (!usuarioActual) return   // cargarHeader ya mandó al login o a cambiar la contraseña
 
       if (usuarioActual.rol !== 'admin_empresa') {
         document.getElementById('aviso-permiso').classList.remove('d-none')
@@ -301,7 +299,7 @@
         ? (dinero === 'ingreso'
             ? 'Así, al registrar una venta, la plata va directo ahí y no hay que elegirla cada vez.'
             : 'Así, la plata de este motivo va directo ahí y no hay que elegirla cada vez.')
-        : `No hay categorías de ${dinero}s activas. Creala en Categorías de movimientos.`
+        : `No hay ninguna categoría activa para la plata que ${dinero === 'ingreso' ? 'entra' : 'sale'}. Creala en Categorías de movimientos.`
     }
 
     // Traduce los dos desplegables a una frase, que es como la persona lo

@@ -122,12 +122,14 @@ const findSubcategoriaById = async (id_subcategoria_producto, id_empresa, es_ser
 }
 
 // Nace con el mismo estado que su categoria: dentro de una categoria dada de
-// baja, no tiene sentido que la subcategoria nueva quede activa.
+// baja, no tiene sentido que la subcategoria nueva quede activa. Y si nace de
+// baja por eso, lleva la marca de la cascada, para volver cuando se reactive
+// la categoria, como dice el mensaje (QA de la entrega, B6).
 const createSubcategoria = async ({ nombre, id_categoria_producto, activo = 1 }) => {
 
   const [result] = await db.query(
-    'INSERT INTO subcategorias_producto (nombre, id_categoria_producto, activo) VALUES (?, ?, ?)',
-    [nombre, id_categoria_producto, activo]
+    'INSERT INTO subcategorias_producto (nombre, id_categoria_producto, activo, baja_en_cascada) VALUES (?, ?, ?, ?)',
+    [nombre, id_categoria_producto, activo, activo ? 0 : 1]
   )
 
   return result.insertId

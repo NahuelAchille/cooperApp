@@ -17,7 +17,10 @@ const conUnidad = (cantidad, clave) =>
   clave ? `${formatearCantidad(cantidad)} ${nombreUnidad(cantidad, clave)}` : formatearCantidad(cantidad)
 
 // "$ 8.200,00", con el punto de miles y la coma decimal de acá.
-const formatearPlata = (valor) =>
-  '$ ' + Number(valor || 0).toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+// El signo va antes del $ ("-$ 164.000,00"), como en la pantalla (UX E-24).
+const formatearPlata = (valor) => {
+  const n = Number(valor || 0)
+  return (n < 0 ? '-' : '') + '$ ' + Math.abs(n).toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+}
 
 module.exports = { formatearCantidad, conUnidad, formatearPlata }

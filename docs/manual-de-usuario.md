@@ -159,8 +159,11 @@ en esa fila y elegí:
   corrección**. Recién ahí se anula el de antes: **si cancelás, queda todo como estaba**.
 - **Sólo anular**: lo anula ya, para algo que no tendría que haberse cargado.
 
-> **La plata de una venta o una compra** no se corrige desde acá: el cartel te manda a
-> Stock, donde se corrige junto con la mercadería.
+> **La plata de una venta o una compra** no se corrige desde acá: se corrige en Stock,
+> junto con la mercadería. El administrador tiene el link en el cartel. El tesorero no
+> entra a Stock: en esas filas el botón dice sólo **Anular**, y el cartel le dice a quién
+> pedirle la corrección (si la anula igual, en Stock la venta queda *sin registrar el
+> cobro*).
 
 Un movimiento anulado **no suma en ningún total**, pero queda en la lista (con
 **Ver anulados**) para que se sepa qué pasó. **Anular no se puede deshacer**, pero
@@ -179,7 +182,8 @@ Son las partes de **Productos** (qué vendés) y **Stock** (cuánto hay).
 
 1. Andá a **Productos** y tocá **Nuevo producto**.
 2. Escribí el **nombre**, elegí la **categoría** (y la subcategoría, si usás) y la
-   **unidad de medida** (unidad, kg, litro…).
+   **unidad de medida** (unidad, kg, litro…). Elegila bien: cuando el producto ya
+   tiene entradas o salidas, la unidad no se puede cambiar.
 3. Opcionales, pero conviene completarlos:
    - **Precio de venta**: aparece ya escrito cuando registrás una venta.
    - **Stock mínimo**: cuando quedan menos que eso, el sistema te avisa que hay que
@@ -261,7 +265,7 @@ cargó. En cada venta dice cuánto se **cobró**, y en cada compra cuánto se **
 
 ### Me equivoqué en una venta o una compra
 
-En **Stock → Entradas y salidas**, tocá **Anular** en esa fila y elegí:
+En **Stock → Entradas y salidas**, tocá **Anular o corregir** en esa fila y elegí:
 
 - **Anular y corregir**: se abre la venta (o la compra) con lo que habías cargado.
   Cambiás la cantidad, el precio, la fecha o el detalle y tocás **Guardar la
@@ -405,7 +409,7 @@ En **Configuración → Motivos de stock** están las razones por las que se mue
 mercadería. Cada motivo dice:
 
 - **¿Qué le hace al stock?**: suma (entrada) o resta (salida).
-- **¿Qué le hace al dinero?**: *Entra plata*, *Sale plata* o *No mueve plata*.
+- **¿Qué le hace a la plata?**: *Entra plata*, *Sale plata* o *No mueve plata*.
 - Si mueve plata, **¿en qué categoría de movimientos va esa plata?** Se elige una
   sola vez, y por eso al vender no hay que clasificar nada.
 

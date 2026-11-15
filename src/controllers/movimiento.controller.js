@@ -46,11 +46,13 @@ const validarServicio = async (valor, id_empresa) => {
 
 // Valida un monto: un número mayor que cero, con hasta 2 decimales, que
 // entre en DECIMAL(14,2). Devuelve el número o null.
+// Devuelve el monto o lo que está mal. Un monto enorme no es "un número mayor
+// a cero" (QA de la entrega, B5): la venta y la compra ya lo decían así.
 const parsearMonto = (valor) => {
   const leido = leerDecimal(valor)
-  if (leido.vacio || leido.noEsNumero) return null
-  if (leido.valor <= 0 || leido.valor > TOPE_14_2) return null
-  return leido.valor
+  if (leido.vacio || leido.noEsNumero || leido.valor <= 0) return { error: 'El monto debe ser un número mayor a cero' }
+  if (leido.valor > TOPE_14_2) return { error: 'El monto es demasiado grande' }
+  return { valor: leido.valor }
 }
 
 // Toma los filtros que vienen en la URL (?naturaleza=ingreso&desde=...) y arma
@@ -132,10 +134,10 @@ const validarMovimiento = async (body, id_empresa) => {
   // El tipo debe existir, ser de esta empresa y estar activo.
   const tipo = await categoriaModel.findTipoById(body.id_tipo, id_empresa)
   if (!tipo) {
-    return { error: 'El tipo de movimiento no es válido' }
+    return { error: 'Elegí en qué se fue (o de qué fue) la plata' }
   }
   if (!tipo.activo) {
-    return { error: 'No se puede usar un tipo de movimiento dado de baja' }
+    return { error: 'Eso que elegiste está dado de baja: elegí otro' }
   }
 
   // Tambien hay que mirar la categoria: un tipo activo colgado de una
@@ -144,10 +146,11 @@ const validarMovimiento = async (body, id_empresa) => {
     return { error: 'No se puede usar un tipo cuya categoría está dada de baja' }
   }
 
-  const monto = parsearMonto(body.monto)
-  if (monto === null) {
-    return { error: 'El monto debe ser un número mayor a cero' }
+  const leido = parsearMonto(body.monto)
+  if (leido.error) {
+    return { error: leido.error }
   }
+  const monto = leido.valor
 
   // Un movimiento no se puede fechar en el futuro (todavia no paso) ni en un
   // año absurdo: casi siempre es un error de tipeo en el año.

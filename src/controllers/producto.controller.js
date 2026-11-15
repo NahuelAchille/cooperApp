@@ -1,7 +1,7 @@
 const productoModel = require('../models/producto.model')
 const rubroModel = require('../models/rubro.model')
 const categoriaProductoModel = require('../models/categoria-producto.model')
-const { UNIDADES_MEDIDA, CLAVES_UNIDADES } = require('../config/unidades-medida')
+const { UNIDADES_MEDIDA, CLAVES_UNIDADES, esEntera, nombreUnidad } = require('../config/unidades-medida')
 const { flagServicio, rotulo } = require('../middlewares/catalogo.middleware')
 const { leerDecimal, TOPE_12_2 } = require('../services/validacion.service')
 
@@ -154,6 +154,12 @@ const validarMedida = (body, es_servicio) => {
   const stock = limpiarStockMinimo(body.stock_minimo)
   if (stock.error) {
     return { error: stock.error }
+  }
+
+  // Lo que se cuenta va entero también en el mínimo: avisar cuando quedan
+  // "1,5 cajas" no tiene sentido si nunca puede haber media caja.
+  if (esEntera(body.unidad_medida) && !Number.isInteger(stock.valor)) {
+    return { error: `El stock mínimo se cuenta en ${nombreUnidad(2, body.unidad_medida)}: escribí un número entero` }
   }
 
   return { unidad_medida: body.unidad_medida, stock_minimo: stock.valor }
@@ -331,14 +337,36 @@ exports.actualizarProducto = async (req, res) => {
       return res.status(404).json({ error: `No se encontró el ${r.uno}` })
     }
 
-    const nombre = limpiarTexto(req.body.nombre, 120)
+    // "Un campo que no viene no se toca" (QA de la entrega, B2): editar sin
+    // mandar el mínimo, el costo, el precio o la clasificación los borraba, y
+    // con el costo se iba también su fecha. Lo que no viene se completa con lo
+    // que ya tiene el producto, y de ahí en más se valida igual que siempre.
+    const body = { ...req.body }
+    const CONSERVAR = ['unidad_medida', 'stock_minimo', 'costo_referencia', 'precio_venta',
+      'id_categoria_producto', 'id_subcategoria_producto']
+    for (const campo of CONSERVAR) {
+      if (body[campo] === undefined) body[campo] = producto[campo]
+    }
+
+    const nombre = limpiarTexto(body.nombre, 120)
     if (!nombre) {
       return res.status(400).json({ error: `El nombre del ${r.uno} es obligatorio (máximo 120 caracteres)` })
     }
 
-    const medida = validarMedida(req.body, es_servicio)
+    const medida = validarMedida(body, es_servicio)
     if (medida.error) {
       return res.status(400).json({ error: medida.error })
+    }
+
+    // La unidad de un producto que ya tuvo entradas o salidas no se cambia
+    // (QA de la entrega, M2). Las cantidades guardadas no cambian con ella, así
+    // que el historial se releería con la unidad nueva ("2,5 kg" pasaría a ser
+    // "2,5 cajas"), y si la nueva se cuenta entera, el resto no se puede sacar
+    // nunca. Es la misma regla que el efecto de un motivo ya usado.
+    if (!es_servicio && medida.unidad_medida !== producto.unidad_medida && Number(producto.cantidad_movimientos) > 0) {
+      return res.status(400).json({
+        error: 'Este producto ya tiene entradas o salidas cargadas, así que su unidad no se puede cambiar: el historial quedaría diciendo otra cosa. Si te equivocaste de unidad, dalo de baja y cargalo de nuevo con la correcta.'
+      })
     }
 
     // "Un campo que no viene no se toca" (QA final, B3): la descripción es lo
@@ -355,17 +383,17 @@ exports.actualizarProducto = async (req, res) => {
       }
     }
 
-    const costo = limpiarCosto(req.body.costo_referencia, es_servicio)
+    const costo = limpiarCosto(body.costo_referencia, es_servicio)
     if (costo.error) {
       return res.status(400).json({ error: costo.error })
     }
 
-    const precio = limpiarPrecio(req.body.precio_venta, es_servicio)
+    const precio = limpiarPrecio(body.precio_venta, es_servicio)
     if (precio.error) {
       return res.status(400).json({ error: precio.error })
     }
 
-    const clasificacion = await validarClasificacion(req.body, id_empresa, es_servicio)
+    const clasificacion = await validarClasificacion(body, id_empresa, es_servicio)
     if (clasificacion.error) {
       return res.status(400).json({ error: clasificacion.error })
     }

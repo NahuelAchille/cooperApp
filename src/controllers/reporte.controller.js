@@ -134,6 +134,7 @@ exports.getReporteAgrupado = async (req, res) => {
       criterio,
       periodo: { desde: periodo.desde, hasta: periodo.hasta, etiqueta: periodo.etiqueta },
       modulo_apagado: null,
+      nota: NOTA_DE_VISTA[criterio],
       aviso: criterio === 'producto' ? avisoDeProductosSinPlata(filas) : null,
       filas
     })
@@ -242,6 +243,20 @@ const armarFilas = async (criterio, id_empresa, periodo) => {
 // saltear (las de ahora nacen con su plata). En pantalla el detalle de cada
 // fila lo insinua; el archivo que se manda al contador tiene que decirlo con
 // todas las letras (UX 28/09, H-01).
+// Qué plata entra en cada vista agrupada (UX E-02). Por producto y por
+// servicio son UNA PARTE del período, y abajo de los botones decía "es la
+// misma plata, ordenada de distinta manera": la diferencia con los casilleros
+// se leía como un error. Y un producto en negativo parecía una pérdida cuando
+// casi siempre es mercadería comprada que sigue en el depósito.
+// Va igual en la pantalla, en el CSV y en el PDF.
+const NOTA_DE_VISTA = {
+  categoria: 'Son la misma plata del período, ordenada por categoría: suma lo mismo que los totales del período.',
+  producto: 'Acá sólo está la plata de lo que vendiste y compraste de cada producto. Sueldos, luz y lo demás no aparecen, por eso no suma lo mismo que los totales del período. ' +
+            'Si en el período compraste más de lo que vendiste, el resultado da negativo aunque la mercadería siga en el depósito: no es plata perdida. ' +
+            'Lo que se perdió de verdad está en «Lo que se perdió».',
+  servicio: 'Acá sólo está la plata que se cargó diciendo de qué servicio salió. Lo demás no aparece, por eso no suma lo mismo que los totales del período.'
+}
+
 // Devuelve el aviso, o null si no hace falta.
 const avisoDeProductosSinPlata = (filas) => {
   const conPlata = filas.some(f => f.ingresos || f.egresos)
@@ -366,8 +381,17 @@ exports.descargarReporte = async (req, res) => {
     const id_empresa = req.session.user.empresa.id
     const empresa = req.session.user.empresa.nombre || 'Empresa'
 
-    const formato = FORMATOS.includes(req.query.formato) ? req.query.formato : 'csv'
-    const vista = TITULO_DE[req.query.vista] ? req.query.vista : 'movimientos'
+    // Un formato o una vista inventados se rechazan: antes se entregaba el CSV
+    // de movimientos en silencio (QA de la entrega). Sin el dato, sí: es el de
+    // siempre.
+    if (req.query.formato !== undefined && !FORMATOS.includes(req.query.formato)) {
+      return res.status(400).json({ error: 'El formato tiene que ser csv o pdf' })
+    }
+    if (req.query.vista !== undefined && !Object.hasOwn(TITULO_DE, req.query.vista)) {
+      return res.status(400).json({ error: 'Esa vista de reporte no existe' })
+    }
+    const formato = req.query.formato || 'csv'
+    const vista = req.query.vista || 'movimientos'
 
     const periodo = resolver(req.query)
     if (periodo.error) {
@@ -497,7 +521,7 @@ const armarDescargaAgrupada = async (vista, id_empresa, periodo) => {
   ])
   const agrupador = { categoria: 'Categoría', producto: 'Producto', servicio: 'Servicio' }[vista]
 
-  const avisos = avisosDelPeriodo(periodoCompleto.totales)
+  const avisos = [NOTA_DE_VISTA[vista], ...avisosDelPeriodo(periodoCompleto.totales)]
   const sinPlata = vista === 'producto' ? avisoDeProductosSinPlata(filas) : null
   if (sinPlata) avisos.push(sinPlata)
 
@@ -545,7 +569,7 @@ const armarDescargaDePerdidas = async (id_empresa, periodo) => {
   // MAS importa: sin el, alguien que recibe el PDF suelto puede restar este
   // numero del balance y contar dos veces la misma mercaderia.
   const avisos = [
-    'Esta plata NO está en los egresos del balance: es mercadería que se fue sin venderse, valuada a lo que costó. Esa mercadería ya se pagó cuando se compró, así que sumarlas sería contar dos veces lo mismo.'
+    'Esta plata NO está en lo que salió del balance. Lo que salió es plata que se fue de la caja; esto es mercadería que se fue sin venderse, valuada a lo que te costó. Sumarlas sería contar dos veces lo mismo, porque esa mercadería ya se pagó cuando se compró.'
   ]
   if (t.sin_costo > 0) {
     avisos.push(`${t.sin_costo} ${t.sin_costo === 1 ? 'salida no se pudo valorizar' : 'salidas no se pudieron valorizar'} porque esos productos no tienen cargado cuánto cuestan. NO están en el total: lo perdido es ese número y algo más.`)
@@ -554,7 +578,9 @@ const armarDescargaDePerdidas = async (id_empresa, periodo) => {
   return {
     avisos,
     casilleros: [
-      { etiqueta: 'Se fue en mercadería', valor: plata(t.valorizado), color: ROJO }
+      // En gris oscuro y no en el rojo de "Salió": no es plata que salió de
+      // la caja, y en el PDF suelto el rojo invitaba a restarla (UX E-08).
+      { etiqueta: 'Se fue en mercadería', valor: plata(t.valorizado), color: '#1a2e23' }
     ],
     totalesCSV: [['Se fue en mercadería', numero(t.valorizado)]],
     // Los dos cortes son LA MISMA plata mirada de dos maneras. Uno abajo del
@@ -594,7 +620,7 @@ const armarDescargaDePerdidas = async (id_empresa, periodo) => {
         filas: datos.motivos.map(m => [
           m.nombre + (m.activo ? '' : ' (de baja)'),
           String(m.movimientos) + (m.sin_costo > 0 ? ` (${m.sin_costo} sin valorizar)` : ''),
-          { texto: plata(m.valorizado), color: ROJO }
+          { texto: plata(m.valorizado), color: '#1a2e23' }
         ]),
         vacio: 'No se perdió nada en este período.'
       },
@@ -610,7 +636,7 @@ const armarDescargaDePerdidas = async (id_empresa, periodo) => {
           conUnidad(p.cantidad, p.unidad_medida),
           p.costo_referencia === null
             ? { texto: 'No se sabe', color: GRIS }
-            : { texto: plata(p.valorizado), color: ROJO }
+            : { texto: plata(p.valorizado), color: '#1a2e23' }
         ]),
         vacio: '—'
       }

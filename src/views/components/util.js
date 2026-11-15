@@ -29,7 +29,8 @@ function mostrarToast (mensaje, esError = false) {
     'color:white;padding:14px 24px;border-radius:10px;z-index:9999;font-weight:500;box-shadow:0 4px 16px rgba(0,0,0,0.2);max-width:92vw'
   toast.innerHTML = `<i class="fa-solid ${esError ? 'fa-circle-exclamation' : 'fa-circle-check'} me-2"></i>${esc(mensaje)}`
   document.body.appendChild(toast)
-  setTimeout(() => toast.remove(), 6000)
+  // Un mensaje largo se queda más: a 6 segundos no se llegaba a leer entero.
+  setTimeout(() => toast.remove(), Math.max(6000, String(mensaje).length * 60))
 }
 
 // Muestra un error adentro de un formulario (el div arranca con d-none).

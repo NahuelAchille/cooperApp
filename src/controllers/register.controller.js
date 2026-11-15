@@ -35,6 +35,22 @@ const faltaObligatorio = (body) => {
   return null
 }
 
+const TEXTOS_REGISTRO = [...CAMPOS_OBLIGATORIOS,
+  ['empresa_federacion', 'Cámara o federación'],
+  ['empresa_domicilio', 'Domicilio'],
+  ['password_confirm', 'Repetir contraseña']]
+const PUEDEN_SER_NUMERO = ['empresa_cuit', 'dni']
+
+const noEsTextoEnRegistro = (body) => {
+  for (const [campo, etiqueta] of TEXTOS_REGISTRO) {
+    const valor = body[campo]
+    if (valor === undefined || valor === null || typeof valor === 'string') continue
+    if (PUEDEN_SER_NUMERO.includes(campo) && typeof valor === 'number') continue
+    return { campo, etiqueta }
+  }
+  return null
+}
+
 exports.registerEmpresa = async (req, res) => {
 
   try {
@@ -44,6 +60,14 @@ exports.registerEmpresa = async (req, res) => {
     const falta = faltaObligatorio(req.body)
     if (falta) {
       return res.status(400).json({ error: `Falta completar: ${falta.etiqueta}`, campo: falta.campo })
+    }
+
+    // Es el único formulario sin sesión: un nombre mandado como objeto se
+    // guardaba como "[object Object]" y una contraseña numérica rompía bcrypt
+    // (QA de la entrega, B3 y B4). El CUIT y el DNI pueden venir como número.
+    const noEsTexto = noEsTextoEnRegistro(req.body)
+    if (noEsTexto) {
+      return res.status(400).json({ error: `"${noEsTexto.etiqueta}" tiene que ser un texto`, campo: noEsTexto.campo })
     }
 
     if (password !== password_confirm) {

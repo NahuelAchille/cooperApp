@@ -178,7 +178,7 @@ exports.registrarMovimiento = async (req, res) => {
         if (motivo.efecto_stock === 'salida' && cantidad.valor > disponible) {
           return {
             error: `No alcanza: hay ${conUnidad(disponible, producto.unidad_medida)} y estás sacando ${conUnidad(cantidad.valor, producto.unidad_medida)}. ` +
-                   'Si el sistema todavía no tiene la existencia real, cargala con un movimiento de "Ajuste positivo".'
+                   'Si en el depósito hay más, primero cargá lo que entró (Registrar una compra, u Otra entrada o salida).'
           }
         }
 
@@ -448,9 +448,15 @@ const registrarOperacion = async (clase, req, res) => {
       return res.status(400).json({ error: revision.error })
     }
 
+    // Un detalle largo se avisa, no se corta en silencio (QA de la entrega,
+    // B1): es la regla de todos los otros textos. 200 es lo que deja el
+    // formulario.
     const detalle = typeof req.body.descripcion === 'string'
-      ? req.body.descripcion.trim().slice(0, 200) || null
+      ? req.body.descripcion.trim() || null
       : null
+    if (detalle && detalle.length > 200) {
+      return res.status(400).json({ error: 'El detalle es muy largo: puede tener hasta 200 caracteres' })
+    }
 
     // El movimiento de dinero cuenta qué se vendió o compró, para que en
     // Movimientos se entienda sin ir a buscar al stock. El detalle (el cliente,
@@ -494,7 +500,7 @@ const registrarOperacion = async (clase, req, res) => {
         if (op.efecto_stock === 'salida' && cantidad.valor > disponible) {
           return {
             error: `No alcanza: hay ${conUnidad(disponible, producto.unidad_medida)} y estás vendiendo ${conUnidad(cantidad.valor, producto.unidad_medida)}. ` +
-                   'Si el sistema todavía no tiene la existencia real, cargala con un movimiento de "Ajuste positivo".'
+                   'Si en el depósito hay más, primero cargá lo que entró (Registrar una compra, u Otra entrada o salida).'
           }
         }
 
@@ -546,7 +552,7 @@ const registrarOperacion = async (clase, req, res) => {
     const { id_movimiento_stock, id_movimiento, existencia, actualizarCosto, dineroAnulado } = resultado
 
     const comoQueda = op.efecto_stock === 'salida'
-      ? `Quedan ${conUnidad(existencia, producto.unidad_medida)}.`
+      ? `${Number(existencia) === 1 ? 'Queda' : 'Quedan'} ${conUnidad(existencia, producto.unidad_medida)}.`
       : `Ahora hay ${conUnidad(existencia, producto.unidad_medida)}.`
     const avisoCosto = actualizarCosto
       ? ` El costo del producto pasó a ${formatearPlata(precio.valor)}.`
@@ -559,6 +565,12 @@ const registrarOperacion = async (clase, req, res) => {
       total,
       costoActualizado: actualizarCosto,
       message: `${op.Laoperacion} ${original ? 'corregida' : 'registrada'}: ${conUnidad(cantidad.valor, producto.unidad_medida)} de ${producto.nombre} por ${formatearPlata(total)}. ` +
+               // Que la plata ya está anotada (UX E-05): quien venía de cargar
+               // todo dos veces iba a Movimientos a cargarla de nuevo. Al
+               // operador, sin nombrar una pantalla que no tiene.
+               (req.session.user.rol === 'operador'
+                 ? 'La plata ya quedó anotada: no hace falta cargarla en otro lado. '
+                 : 'La plata ya quedó anotada en Movimientos: no hace falta cargarla de nuevo. ') +
                comoQueda + avisoCosto +
                (original
                  ? ` La anterior quedó anulada${dineroAnulado !== null ? `, con su ${op.queEra} de ${formatearPlata(dineroAnulado)}` : ''}.`
@@ -604,10 +616,10 @@ exports.registrarMovimientoDinero = async (req, res) => {
     // no se puede cargar como egreso.
     const tipo = await categoriaModel.findTipoById(req.body.id_tipo, id_empresa)
     if (!tipo) {
-      return res.status(404).json({ error: 'No se encontró el tipo de movimiento' })
+      return res.status(404).json({ error: 'No se encontró esa categoría de la plata' })
     }
     if (!tipo.activo || !tipo.categoria_activa) {
-      return res.status(400).json({ error: 'Ese tipo de movimiento está dado de baja: elegí uno activo' })
+      return res.status(400).json({ error: 'Esa categoría de la plata está dada de baja: elegí una activa' })
     }
     if (tipo.naturaleza !== movimiento.efecto_dinero) {
       return res.status(400).json({
