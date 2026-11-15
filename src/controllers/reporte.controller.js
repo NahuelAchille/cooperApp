@@ -189,8 +189,10 @@ const armarFilas = async (criterio, id_empresa, periodo) => {
       // Con la unidad: en la misma columna conviven kilos, bolsas y unidades,
       // y "salieron 14,50" a secas no dice de que (UX 28/09, vocabulario).
       const partes = []
-      if (Number(p.entradas) > 0) partes.push(`entraron ${conUnidad(p.entradas, p.unidad_medida)}`)
-      if (Number(p.salidas) > 0) partes.push(`salieron ${conUnidad(p.salidas, p.unidad_medida)}`)
+      if (Number(p.vendidas) > 0) partes.push(`vendiste ${conUnidad(p.vendidas, p.unidad_medida)}`)
+      if (Number(p.compradas) > 0) partes.push(`compraste ${conUnidad(p.compradas, p.unidad_medida)}`)
+      if (Number(p.sin_vender) > 0) partes.push(`salieron sin venderse ${conUnidad(p.sin_vender, p.unidad_medida)}`)
+      if (Number(p.sin_comprar) > 0) partes.push(`entraron sin comprar ${conUnidad(p.sin_comprar, p.unidad_medida)}`)
       if (!partes.length) partes.push('Sin movimientos en el período')
       if (sinValorizar > 0) {
         partes.push(sinValorizar === 1
@@ -251,9 +253,8 @@ const armarFilas = async (criterio, id_empresa, periodo) => {
 // Va igual en la pantalla, en el CSV y en el PDF.
 const NOTA_DE_VISTA = {
   categoria: 'Son la misma plata del período, ordenada por categoría: suma lo mismo que los totales del período.',
-  producto: 'Acá sólo está la plata de lo que vendiste y compraste de cada producto. Sueldos, luz y lo demás no aparecen, por eso no suma lo mismo que los totales del período. ' +
-            'Si en el período compraste más de lo que vendiste, el resultado da negativo aunque la mercadería siga en el depósito: no es plata perdida. ' +
-            'Lo que se perdió de verdad está en «Lo que se perdió».',
+  producto: 'Lo que vendiste y lo que compraste de cada producto, por separado. Es sólo la plata de la mercadería: sueldos, luz y lo demás no aparecen acá. ' +
+            'No se restan a propósito: lo comprado que todavía está en el depósito no es plata perdida. Lo que se perdió de verdad está en «Lo que se perdió».',
   servicio: 'Acá sólo está la plata que se cargó diciendo de qué servicio salió. Lo demás no aparece, por eso no suma lo mismo que los totales del período.'
 }
 
@@ -521,9 +522,39 @@ const armarDescargaAgrupada = async (vista, id_empresa, periodo) => {
   ])
   const agrupador = { categoria: 'Categoría', producto: 'Producto', servicio: 'Servicio' }[vista]
 
-  const avisos = [NOTA_DE_VISTA[vista], ...avisosDelPeriodo(periodoCompleto.totales)]
-  const sinPlata = vista === 'producto' ? avisoDeProductosSinPlata(filas) : null
+  const esProducto = vista === 'producto'
+  const avisos = [NOTA_DE_VISTA[vista], ...(esProducto ? [] : avisosDelPeriodo(periodoCompleto.totales))]
+  const sinPlata = esProducto ? avisoDeProductosSinPlata(filas) : null
   if (sinPlata) avisos.push(sinPlata)
+
+  // Por producto no lleva los totales del período (no los suma) ni la resta.
+  if (esProducto) {
+    const vendido = filas.reduce((s, f) => s + Math.round(f.ingresos * 100), 0) / 100
+    const comprado = filas.reduce((s, f) => s + Math.round(f.egresos * 100), 0) / 100
+    return {
+      avisos,
+      casilleros: [
+        { etiqueta: 'Vendido', valor: plata(vendido), color: VERDE },
+        { etiqueta: 'Comprado', valor: plata(comprado), color: '#1a2e23' }
+      ],
+      totalesCSV: [['Vendido en el período', numero(vendido)], ['Comprado en el período', numero(comprado)]],
+      encabezadoCSV: ['Producto', 'Detalle', 'Vendido', 'Comprado'],
+      filasCSV: filas.map(f => [f.nombre + (f.activo ? '' : ' (de baja)'), f.detalle, numero(f.ingresos), numero(f.egresos)]),
+      bloques: [{
+        columnas: [
+          { titulo: 'Producto', ancho: 0.6 },
+          { titulo: 'Vendido', ancho: 0.2, align: 'right' },
+          { titulo: 'Comprado', ancho: 0.2, align: 'right' }
+        ],
+        filas: filas.map(f => [
+          f.nombre + (f.activo ? '' : ' (de baja)') + (f.detalle ? `\n${f.detalle}` : ''),
+          f.ingresos ? plata(f.ingresos) : '—',
+          f.egresos ? plata(f.egresos) : '—'
+        ]),
+        vacio: 'No hay nada para agrupar en este período.'
+      }]
+    }
+  }
 
   // Por servicio, la categoria va adelante del detalle y NO como una fila de
   // subtotal: un subtotal metido en la misma columna la hace sumar de mas al

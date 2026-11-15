@@ -62,7 +62,8 @@ const findProductos = async (id_empresa, filtros = {}) => {
     JOIN categorias_producto c        ON c.id_categoria_producto = p.id_categoria_producto
     LEFT JOIN subcategorias_producto s ON s.id_subcategoria_producto = p.id_subcategoria_producto
     WHERE ${where}
-    ORDER BY c.nombre, p.nombre
+    -- Alfabético, como Stock y sus desplegables (UX entrega 2, G-21).
+    ORDER BY p.nombre
   `, params)
 
   return rows
@@ -117,9 +118,10 @@ const updateProducto = async (id_producto, id_empresa,
                               { nombre, descripcion, unidad_medida, stock_minimo,
                                 id_categoria_producto, id_subcategoria_producto,
                                 costo_referencia = null, costoCambio = false,
-                                precio_venta = null, visible_empresas = 0, id_rubro = null }) => {
+                                precio_venta = null, visible_empresas = 0, id_rubro = null },
+                              ejecutor = db) => {
 
-  await db.query(`
+  await ejecutor.query(`
     UPDATE productos
     SET nombre = ?, descripcion = ?, unidad_medida = ?, stock_minimo = ?,
         id_categoria_producto = ?, id_subcategoria_producto = ?,

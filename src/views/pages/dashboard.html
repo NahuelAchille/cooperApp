@@ -38,9 +38,6 @@
                    'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre']
     const mesDe = (fechaISO) => MESES[Number(fechaISO.slice(5, 7)) - 1]
     const conMayuscula = (t) => t.charAt(0).toUpperCase() + t.slice(1)
-    function elMesPasado(anterior, nombreMes) {
-        return `${conMayuscula(nombreMes)} entero: ${formatMoneda(anterior)}`
-    }
 
     async function cargarDashboard() {
         const user = await cargarHeader()
@@ -119,10 +116,21 @@
         if (user.rol === 'admin_empresa') {
             const apagados = [['productos', 'Productos'], ['servicios', 'Servicios'], ['reportes', 'Reportes'], ['articulacion', 'Buscar empresas']]
                 .filter(([clave]) => !moduloActivo(clave)).map(([, nombre]) => nombre)
-            if (apagados.length) {
+            // Se puede cerrar (UX entrega 2, G-18): a una empresa que no da
+            // servicios la invitaba todos los días a prender algo que no usa.
+            // Vuelve sólo si cambia lo que está apagado.
+            const clave = 'cooperapp-apagados-visto'
+            let visto = null
+            try { visto = localStorage.getItem(clave) } catch {}
+            if (apagados.length && visto !== apagados.join(',')) {
                 const aviso = document.getElementById('modulos-apagados')
                 aviso.innerHTML = `<i class="fa-solid fa-toggle-off me-1"></i>Hay partes del sistema apagadas: ${apagados.join(', ')}. ` +
-                    'Las prendés en <a href="/pages/configuracion-modulos.html">Módulos del sistema</a>.'
+                    'Las prendés en <a href="/pages/configuracion-modulos.html">Módulos del sistema</a>. ' +
+                    '<button type="button" class="btn-cerrar-aviso" aria-label="No mostrar más">No mostrar más</button>'
+                aviso.querySelector('.btn-cerrar-aviso').addEventListener('click', () => {
+                    try { localStorage.setItem(clave, apagados.join(',')) } catch {}
+                    aviso.classList.add('d-none')
+                })
                 aviso.classList.remove('d-none')
             }
         }
@@ -222,10 +230,15 @@
         const [mesActual, mesAnterior] = await Promise.all([rangoDe('mes-actual'), rangoDe('mes-anterior')])
         if (!mesActual || !mesAnterior) return
 
-        const [actual, anterior] = await Promise.all([
-            fetch(`/movimientos/resumen?desde=${mesActual.desde}&hasta=${mesActual.hasta}`).then(r => r.ok ? r.json() : null),
-            fetch(`/movimientos/resumen?desde=${mesAnterior.desde}&hasta=${mesAnterior.hasta}`).then(r => r.ok ? r.json() : null)
-        ])
+        // El mes anterior hasta el mismo día (UX entrega 2, G-07): el 15 de
+        // noviembre se compara contra el 1 al 15 de octubre, no contra octubre
+        // entero, que deja la cuenta para la persona. Si el mes anterior es más
+        // corto, hasta su último día.
+        const diaHoy = Number(mesActual.hasta.slice(8, 10))
+        const finAntes = Math.min(diaHoy, Number(mesAnterior.hasta.slice(8, 10)))
+        const mismosDias = { desde: mesAnterior.desde, hasta: mesAnterior.hasta.slice(0, 8) + String(finAntes).padStart(2, '0') }
+        const pedir = (r) => fetch(`/movimientos/resumen?desde=${r.desde}&hasta=${r.hasta}`).then(x => x.ok ? x.json() : null)
+        const [actual, anterior, anteriorMismosDias] = await Promise.all([pedir(mesActual), pedir(mesAnterior), pedir(mismosDias)])
 
         // Si no hay permiso (ej: operador) o falla, se dejan los guiones.
         if (!actual) return
@@ -234,25 +247,37 @@
         const hastaHoy = mesActual.desde === mesActual.hasta ? '' : ' (hasta hoy)'
         document.querySelector('#dashboard-kpis-1 h3').textContent = `Entró en ${mesHoy}${hastaHoy}`
         document.querySelector('#dashboard-kpis-2 h3').textContent = `Salió en ${mesHoy}${hastaHoy}`
-        document.querySelector('#dashboard-kpis-3 h3').textContent = `Resultado de ${mesHoy}`
+        document.querySelector('#dashboard-kpis-3 h3').textContent = `Resultado de ${mesHoy}${hastaHoy}`
 
         document.getElementById('kpi-ingresos').textContent = formatMoneda(actual.total_ingresos)
         document.getElementById('kpi-egresos').textContent  = formatMoneda(actual.total_egresos)
         document.getElementById('kpi-balance').textContent  = formatMoneda(actual.balance)
         document.getElementById('kpi-balance').className = Number(actual.balance) > 0 ? 'positivo' : Number(actual.balance) < 0 ? 'negativo' : ''
 
-        if (anterior) {
-            const mesAntes = mesDe(mesAnterior.desde)
-            document.getElementById('kpi-ingresos-var').textContent = elMesPasado(anterior.total_ingresos, mesAntes)
-            document.getElementById('kpi-egresos-var').textContent  = elMesPasado(anterior.total_egresos, mesAntes)
+        // Sin nada en el mes anterior (una empresa nueva), no se compara: decía
+        // "Octubre entero: $ 0,00" como si no hubiera vendido nada (G-07).
+        const huboAntes = anterior && (Number(anterior.total_ingresos) > 0 || Number(anterior.total_egresos) > 0)
+        const mesAntes = mesDe(mesAnterior.desde)
+        const tramo = finAntes === 1 ? `El 1 de ${mesAntes}` : `Del 1 al ${finAntes} de ${mesAntes}`
+        const enteroDistinto = mismosDias.hasta !== mesAnterior.hasta
+        const comparar = (id, campo) => {
+            const el = document.getElementById(id)
+            if (!huboAntes || !anteriorMismosDias) { el.textContent = ''; return }
+            el.innerHTML = `${tramo}: ${formatMoneda(anteriorMismosDias[campo])}` +
+                (enteroDistinto ? `<small>${conMayuscula(mesAntes)} entero: ${formatMoneda(anterior[campo])}</small>` : '')
         }
-        // "Quedó a favor / en contra", como en Reportes: el número solo no dice
-        // si está bien. Y el del mes anterior, que es lo que contesta "¿cómo
-        // venimos?" (UX E-09).
-        const comoQuedo = Number(actual.balance) > 0 ? 'Quedó a favor' : Number(actual.balance) < 0 ? 'Quedó en contra' : 'Quedó igual'
-        document.getElementById('kpi-balance-detalle').textContent = anterior
-            ? `${comoQuedo} · ${conMayuscula(mesDe(mesAnterior.desde))}: ${formatMoneda(anterior.balance)}`
-            : comoQuedo
+        comparar('kpi-ingresos-var', 'total_ingresos')
+        comparar('kpi-egresos-var', 'total_egresos')
+
+        // "Quedó a favor / en contra" y, abajo, el mismo tramo del mes anterior
+        // con su propio "a favor / en contra": en una sola línea parecían
+        // hablar del mismo mes (G-07).
+        const comoQuedo = (n) => Number(n) > 0 ? 'a favor' : Number(n) < 0 ? 'en contra' : 'igual'
+        const detalle = document.getElementById('kpi-balance-detalle')
+        detalle.innerHTML = `Quedó ${comoQuedo(actual.balance)}` +
+            (huboAntes && anteriorMismosDias
+                ? `<small>${tramo}: ${formatMoneda(anteriorMismosDias.balance)} (${comoQuedo(anteriorMismosDias.balance)})</small>`
+                : '')
     }
 
     // Ultimos 5 movimientos (no anulados, que es el default del endpoint).
@@ -360,8 +385,8 @@
                      "Registrar ingreso / egreso"). "Otra entrada o salida" se
                      sacó de acá: es para pérdidas y ajustes, que no son lo de
                      todos los días, y sigue en Stock. -->
-                <li id="btn-ingreso" class="d-none"><a href="/pages/movimientos.html?nuevo=ingreso">+ Entró plata</a></li>
-                <li id="btn-egreso" class="d-none"><a href="/pages/movimientos.html?nuevo=egreso">− Salió plata</a></li>
+                <li id="btn-ingreso" class="d-none"><a href="/pages/movimientos.html?periodo=mes-actual&nuevo=ingreso">+ Entró plata</a></li>
+                <li id="btn-egreso" class="d-none"><a href="/pages/movimientos.html?periodo=mes-actual&nuevo=egreso">− Salió plata</a></li>
                 <li id="btn-reporte" class="d-none"><a href="/pages/movimientos.html">Ver movimientos</a></li>
             </ul>
     </nav>
@@ -408,7 +433,7 @@
             <section class="dashboard-block" id="dashboard-movimientos">
                 <div class="dashboard-block-header">
                     <h3>Movimientos recientes</h3>
-                    <a href="/pages/movimientos.html" id="link-ver-movimientos" class="d-none">Ver todos →</a>
+                    <a href="/pages/movimientos.html?periodo=mes-actual" id="link-ver-movimientos" class="d-none">Ver todos →</a>
                 </div>
                 <div class="table-responsive">
                     <table class="dashboard-table">

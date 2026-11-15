@@ -161,6 +161,24 @@ exports.registrarMovimiento = async (req, res) => {
       return res.status(400).json({ error: 'El detalle es muy largo: puede tener hasta 255 caracteres.', campo: 'descripcion' })
     }
 
+    // --- Corregir una entrada o salida ya cargada (UX entrega 2, G-05) ---
+    // Igual que la venta y la compra: la vieja se anula recién acá, en el mismo
+    // paso que se carga la nueva. Tiene que ser del mismo producto y no ser una
+    // venta ni una compra (esas se corrigen con su propio formulario).
+    let original = null
+    if (req.body.reemplaza !== undefined && req.body.reemplaza !== null && req.body.reemplaza !== '') {
+      original = await stockModel.findMovimientoById(req.body.reemplaza, id_empresa)
+      if (!original || original.anulado) {
+        return res.status(400).json({ error: 'Lo que querés corregir no existe o ya estaba anulado' })
+      }
+      if (esMotivoDe('venta')(original) || esMotivoDe('compra')(original)) {
+        return res.status(400).json({ error: 'Una venta o una compra se corrige con su propio formulario' })
+      }
+      if (original.id_producto !== producto.id_producto) {
+        return res.status(400).json({ error: 'Para cambiar el producto, anulala desde el historial y cargala de nuevo' })
+      }
+    }
+
     // --- Una salida no puede dejar el stock en negativo ---
     //
     // El stock negativo no existe en un deposito: si el sistema lo permite,
@@ -173,12 +191,33 @@ exports.registrarMovimiento = async (req, res) => {
     // existencia, pasan las dos y el stock termina en negativo.
     const resultado = await stockModel.conProductoTrabado(
       producto.id_producto, id_empresa,
-      async (disponible, conexion) => {
+      async (disponibleAntes, conexion, fila) => {
+
+        // La unidad, otra vez adentro del candado: si alguien la cambió
+        // mientras tanto, "2,5" puede haber dejado de ser válido (QA entrega 2, M1).
+        const noSeCuentaAdentro = cantidadQueNoSeCuenta(cantidad.valor, fila)
+        if (noSeCuentaAdentro) return { error: noSeCuentaAdentro }
+
+        // Corrigiendo: primero se anula la vieja, y lo que hay se cuenta como
+        // si nunca se hubiera cargado.
+        let disponible = disponibleAntes
+        if (original) {
+          const anulado = await anularConSuPlata(original.id_movimiento_stock, id_empresa, conexion)
+          if (anulado.error) return { error: 'Lo que querés corregir ya estaba anulado' }
+          const cantidadVieja = Number(original.cantidad)
+          disponible = original.efecto_stock === 'salida' ? disponible + cantidadVieja : disponible - cantidadVieja
+          if (motivo.efecto_stock === 'entrada' && disponible + cantidad.valor < 0) {
+            return {
+              error: `No se puede corregir así: de esa entrada ya salieron ${conUnidad(-disponible, producto.unidad_medida)}, ` +
+                     `y con ${conUnidad(cantidad.valor, producto.unidad_medida)} el stock quedaría en negativo.`
+            }
+          }
+        }
 
         if (motivo.efecto_stock === 'salida' && cantidad.valor > disponible) {
           return {
             error: `No alcanza: hay ${conUnidad(disponible, producto.unidad_medida)} y estás sacando ${conUnidad(cantidad.valor, producto.unidad_medida)}. ` +
-                   'Si en el depósito hay más, primero cargá lo que entró (Registrar una compra, u Otra entrada o salida).'
+                   'Si en el depósito hay más: si fue una compra que no se cargó, registrala primero; si no, corregí la cuenta con un «Ajuste positivo» por lo que falta (en Otra entrada o salida).'
           }
         }
 
@@ -211,7 +250,7 @@ exports.registrarMovimiento = async (req, res) => {
     res.status(201).json({
       id_movimiento_stock,
       existencia,
-      message: `${motivo.efecto_stock === 'entrada' ? 'Entrada' : 'Salida'} registrada. De ${producto.nombre} hay ahora ${conUnidad(existencia, producto.unidad_medida)}.`
+      message: `${motivo.efecto_stock === 'entrada' ? 'Entrada' : 'Salida'} ${original ? 'corregida: la de antes quedó anulada' : 'registrada'}. De ${producto.nombre} hay ahora ${conUnidad(existencia, producto.unidad_medida)}.`
     })
 
   } catch (error) {
@@ -338,7 +377,10 @@ const registrarOperacion = async (clase, req, res) => {
       return res.status(404).json({ error: 'No se encontró el producto' })
     }
     if (producto.es_servicio) {
-      return res.status(400).json({ error: `Los servicios no pasan por el stock: ${op.laPlata} se registra desde Movimientos` })
+      // Al operador no se le nombra una pantalla que no tiene (QA entrega 2, B3).
+      return res.status(400).json({ error: req.session.user.rol === 'operador'
+        ? 'Los servicios no pasan por el stock.'
+        : `Los servicios no pasan por el stock: ${op.laPlata} se registra desde Movimientos` })
     }
     if (!producto.activo) {
       return res.status(400).json({ error: `Ese producto está dado de baja: ${op.noSePuede}` })
@@ -473,7 +515,12 @@ const registrarOperacion = async (clase, req, res) => {
     // queda una venta con el stock descontado y la plata sin cargar.
     const resultado = await stockModel.conProductoTrabado(
       producto.id_producto, id_empresa,
-      async (disponibleAntes, conexion) => {
+      async (disponibleAntes, conexion, fila) => {
+
+        // La unidad, otra vez adentro del candado: si alguien la cambió
+        // mientras tanto, "2,5" puede haber dejado de ser válido (QA entrega 2, M1).
+        const noSeCuentaAdentro = cantidadQueNoSeCuenta(cantidad.valor, fila)
+        if (noSeCuentaAdentro) return { error: noSeCuentaAdentro }
 
         // Si corrige otra, primero se anula la vieja (con su plata), y lo que
         // hay disponible es como si nunca se hubiera cargado.
@@ -500,7 +547,7 @@ const registrarOperacion = async (clase, req, res) => {
         if (op.efecto_stock === 'salida' && cantidad.valor > disponible) {
           return {
             error: `No alcanza: hay ${conUnidad(disponible, producto.unidad_medida)} y estás vendiendo ${conUnidad(cantidad.valor, producto.unidad_medida)}. ` +
-                   'Si en el depósito hay más, primero cargá lo que entró (Registrar una compra, u Otra entrada o salida).'
+                   'Si en el depósito hay más: si fue una compra que no se cargó, registrala primero; si no, corregí la cuenta con un «Ajuste positivo» por lo que falta (en Otra entrada o salida).'
           }
         }
 
@@ -662,7 +709,7 @@ exports.registrarMovimientoDinero = async (req, res) => {
 
     res.status(201).json({
       id_movimiento: resultado.id_movimiento,
-      message: `Movimiento de dinero registrado y vinculado al movimiento de stock`
+      message: 'Listo: la plata quedó anotada en Movimientos.'
     })
 
   } catch (error) {

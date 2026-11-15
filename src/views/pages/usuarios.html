@@ -201,7 +201,7 @@
           <div class="alert alert-warning mb-0 py-2 small">
             <i class="fa-solid fa-circle-info me-1"></i>
             La contraseña va a volver a ser el <strong>DNI</strong> del usuario, y el sistema le va a
-            pedir que elija una nueva la próxima vez que ingrese.
+            pedir que elija una nueva la próxima vez que ingrese. <span id="reset-avisale"></span>
           </div>
           <div id="reset-error" class="text-danger small mt-2 d-none"></div>
         </div>
@@ -257,8 +257,8 @@
       return `<div class="d-flex flex-wrap gap-1 justify-content-end">
                 <button class="btn-accion" data-accion="editar" ${datos} title="Editar">
                   <i class="fa-solid fa-pen me-1"></i>Editar</button>
-                <button class="btn-reset" ${datos} title="Volver a la contraseña inicial (su DNI)">
-                  <i class="fa-solid fa-key me-1"></i>Contraseña inicial</button>
+                <button class="btn-reset" ${datos} data-dni="${esc(u.dni)}" title="Volver a la contraseña inicial (su DNI)">
+                  <i class="fa-solid fa-key me-1"></i>Se olvidó la contraseña</button>
                 ${baja}
               </div>`
     }
@@ -317,6 +317,9 @@
       // Resetear contraseña
       if (boton.classList.contains('btn-reset')) {
         document.getElementById('reset-nombre').textContent = nombre
+        // El sistema no le avisa: se le dice al admin qué decirle (UX entrega 2, G-10).
+        document.getElementById('reset-avisale').innerHTML =
+          `<strong>Avisale a ${esc(nombre)}</strong> que entre con su DNI (${esc(boton.dataset.dni || '')}).`
         document.getElementById('reset-error').classList.add('d-none')
         document.getElementById('btn-confirmar-reset').dataset.id = id
         new bootstrap.Modal(document.getElementById('modalReset')).show()

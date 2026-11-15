@@ -33,7 +33,7 @@
            El atajo estaba en Productos, donde no se usan, y no estaba en esta
            pantalla, que es la unica donde hacen falta. -->
       <a class="btn btn-secundario d-none" id="link-motivos" href="/pages/configuracion-motivos-stock.html?desde=stock">
-        <i class="fa-solid fa-right-left me-2"></i>Motivos
+        <i class="fa-solid fa-list-check me-2"></i>Motivos
       </a>
       <!-- "Otra": con la venta y la compra afuera, este formulario queda para
            el resto (pérdidas, consumo, ajustes), y el nombre lo dice. -->
@@ -178,6 +178,10 @@
           </div>
         </div>
 
+        <!-- Con un solo producto elegido: cuánto entró, cuánto salió y cuánto
+             hay hoy, sin sumar a mano (UX entrega 2, G-13). -->
+        <div class="resumen-historial d-none" id="resumen-historial"></div>
+
         <div class="card-tabla tabla-tarjetas">
           <div class="table-responsive">
             <table class="table table-hover mb-0">
@@ -211,11 +215,12 @@
     <div class="modal-dialog modal-dialog-centered">
       <div class="modal-content">
         <div class="modal-header">
-          <h5 class="modal-title fw-bold"><i class="fa-solid fa-right-left me-2"></i>Otra entrada o salida</h5>
+          <h5 class="modal-title fw-bold" id="mov-titulo"><i class="fa-solid fa-right-left me-2"></i>Otra entrada o salida</h5>
           <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
         </div>
         <div class="modal-body">
           <form id="form-movimiento" novalidate>
+            <div class="aviso-corrigiendo mb-3 d-none" id="mov-corrigiendo"></div>
 
             <div class="mb-3">
               <label class="form-label">Producto *</label>
@@ -233,7 +238,7 @@
 
             <div class="row g-2 mb-3">
               <div class="col-12 col-sm-6">
-                <label class="form-label">Cantidad *</label>
+                <label class="form-label">Cantidad <span id="mov-unidad"></span> *</label>
                 <input type="number" class="form-control" name="cantidad" min="0.01" step="0.01" placeholder="0" required>
               </div>
               <div class="col-12 col-sm-6">
@@ -255,7 +260,7 @@
         <div class="modal-footer">
           <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
           <button type="button" id="btn-guardar-mov" class="btn fw-bold px-4" style="background-color:#2d7a4f;color:white;">
-            <i class="fa-solid fa-floppy-disk me-2"></i>Registrar
+            <i class="fa-solid fa-floppy-disk me-2"></i><span id="mov-texto-boton">Registrar</span>
           </button>
         </div>
       </div>
@@ -281,7 +286,7 @@
 
           <!-- Si falta configurar algo, se dice acá arriba y no se deja guardar -->
           <div class="alert alert-warning py-2 small d-none" id="op-falta-config"></div>
-          <div class="alert alert-info py-2 small d-none" id="op-corrigiendo"></div>
+          <div class="aviso-corrigiendo mb-3 d-none" id="op-corrigiendo"></div>
 
           <form id="form-operacion" novalidate>
 
@@ -375,16 +380,20 @@
             <input type="hidden" name="id_movimiento_stock">
 
             <div class="mb-3">
-              <label class="form-label">Categoría y tipo *</label>
+              <label class="form-label" id="dinero-pregunta-tipo">¿De qué fue la plata? *</label>
               <select class="form-select" name="id_tipo" id="select-tipo" required></select>
               <div class="form-text" id="ayuda-tipo"></div>
             </div>
 
-            <div class="mb-3">
-              <label class="form-label">Monto *</label>
-              <input type="number" class="form-control" name="monto" min="0.01" step="0.01" placeholder="0,00" required>
-              <div class="form-text">El total de la operación, no el precio por unidad.</div>
+            <!-- El precio por unidad y el total calculado, como en la venta y la
+                 compra: antes había que multiplicar de cabeza (UX entrega 2, G-12). -->
+            <div class="mb-2">
+              <label class="form-label" id="dinero-pregunta-precio">Precio por unidad *</label>
+              <input type="number" class="form-control" id="dinero-precio" min="0.01" step="0.01" placeholder="0,00" required>
+              <div class="form-text" id="dinero-ayuda-precio"></div>
             </div>
+            <input type="hidden" name="monto">
+            <div class="resumen-movimiento mb-3" id="dinero-total"></div>
 
             <div class="mb-1">
               <label class="form-label">Detalle</label>
@@ -409,7 +418,7 @@
     <div class="modal-dialog modal-dialog-centered">
       <div class="modal-content">
         <div class="modal-header">
-          <h5 class="modal-title fw-bold"><i class="fa-solid fa-ban me-2"></i><span id="anular-titulo">Anular</span></h5>
+          <h5 class="modal-title fw-bold"><i class="fa-solid fa-pen me-2"></i><span id="anular-titulo">Anular</span></h5>
           <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
         </div>
         <div class="modal-body">
@@ -419,13 +428,14 @@
         </div>
         <div class="modal-footer">
           <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
-          <!-- Sólo en una venta o una compra (UX F-08): anula la vieja y carga la
-               corregida en un solo paso, al guardar. -->
-          <button type="button" id="btn-anular-corregir" class="btn fw-bold px-4 d-none" style="background-color:#a01c1c;color:white;">
-            <i class="fa-solid fa-pen me-2"></i>Anular y corregir
-          </button>
-          <button type="button" id="btn-confirmar-anular" class="btn fw-bold px-4" style="background-color:#a01c1c;color:white;">
+          <!-- Corregir va en verde y primero: es lo que se viene a hacer casi
+               siempre, y no anula nada hasta guardar. Anular, en rojo (UX
+               entrega 2, G-04). -->
+          <button type="button" id="btn-confirmar-anular" class="btn btn-outline-danger fw-bold">
             <i class="fa-solid fa-ban me-2"></i><span id="anular-texto-boton">Anular</span>
+          </button>
+          <button type="button" id="btn-anular-corregir" class="btn fw-bold px-4 d-none" style="background-color:#2d7a4f;color:white;">
+            <i class="fa-solid fa-pen me-2"></i>Corregir
           </button>
         </div>
       </div>
@@ -579,7 +589,7 @@
           : esc(item.categoria_nombre)
 
         const aviso = estado === 'revisar'
-          ? '<span class="aviso-minimo sin" title="La existencia no puede ser negativa: revisá las entradas y salidas de este producto"><i class="fa-solid fa-circle-exclamation me-1"></i>Revisar</span>'
+          ? '<span class="aviso-minimo sin" title="Lo que hay no puede ser menos de cero: revisá las entradas y salidas de este producto"><i class="fa-solid fa-circle-exclamation me-1"></i>Revisar</span>'
           : estado === 'sin'
           ? '<span class="aviso-minimo sin"><i class="fa-solid fa-circle-exclamation me-1"></i>Sin stock</span>'
           : estado === 'bajo'
@@ -612,8 +622,9 @@
               <button class="btn-mini" data-accion="vender" data-id="${item.id_producto}" title="Registrar una venta de este producto">
                 <i class="fa-solid fa-cart-shopping"></i><span class="texto-boton">Vender</span>
               </button>
-              <button class="btn-mini" data-accion="mover" data-id="${item.id_producto}" title="Registrar otra entrada o salida">
-                <i class="fa-solid fa-right-left"></i>
+              <!-- Con texto (UX entrega 2, G-15): es donde se carga una rotura. -->
+              <button class="btn-mini" data-accion="mover" data-id="${item.id_producto}" title="Registrar otra entrada o salida (una rotura, un consumo, un ajuste)">
+                <i class="fa-solid fa-right-left"></i><span class="texto-boton">Otra</span>
               </button>
             </td>
           </tr>`
@@ -696,6 +707,18 @@
       document.getElementById('contador-movimientos').textContent =
         movimientos.length === 1 ? '1 entrada o salida' : `${movimientos.length} entradas y salidas`
 
+      const resumen = document.getElementById('resumen-historial')
+      resumen.classList.toggle('d-none', !producto)
+      if (producto) {
+        const vivos = movimientos.filter(m => !m.anulado)
+        const suma = (efecto) => vivos.filter(m => m.efecto_stock === efecto).reduce((s, m) => s + Math.round(Number(m.cantidad) * 100), 0) / 100
+        const item = (await fetch('/productos/stock').then(r => r.ok ? r.json() : [])).find(s => String(s.id_producto) === producto)
+        const unidad = item?.unidad_medida || vivos[0]?.unidad_medida
+        resumen.innerHTML = `<i class="fa-solid fa-box me-1"></i>${desde || hasta ? 'En el período' : 'En total'}: ` +
+          `entraron <strong>${cuanto(suma('entrada'), unidad)}</strong> · salieron <strong>${cuanto(suma('salida'), unidad)}</strong>` +
+          (item ? `. Hoy hay <strong>${cuanto(item.existencia, unidad)}</strong>.` : '.')
+      }
+
       if (!movimientos.length) {
         tbody.innerHTML = `<tr class="fila-aviso"><td colspan="7"><div class="tabla-vacia">${
           consulta
@@ -776,8 +799,9 @@
                   </button>` : ''}
                 <!-- Una venta o una compra se corrige desde acá: el botón lo dice,
                      como en Movimientos (UX E-03). Una rotura o un ajuste se anula. -->
-                <button class="btn-mini peligro" data-accion="anular" data-id="${m.id_movimiento_stock}" title="${mueveDinero ? 'Anular o corregir' : 'Anular'}">
-                  <i class="fa-solid fa-ban me-1"></i>${mueveDinero ? 'Anular o corregir' : 'Anular'}
+                <!-- Todo se puede corregir, como en Movimientos (UX entrega 2, G-05). -->
+                <button class="btn-mini peligro" data-accion="anular" data-id="${m.id_movimiento_stock}" title="Anular o corregir">
+                  <i class="fa-solid fa-pen me-1"></i>Anular o corregir
                 </button>`}
             </td>
           </tr>`
@@ -868,10 +892,24 @@
       }
     })
 
-    async function abrirModal(idProducto) {
+    let movReemplaza = null   // si se está corrigiendo una entrada o salida, cuál (UX entrega 2, G-05)
+
+    async function abrirModal(idProducto, original = null) {
       const form = document.getElementById('form-movimiento')
       form.reset()
       document.getElementById('mov-error').classList.add('d-none')
+      movReemplaza = original ? original.id_movimiento_stock : null
+      form.id_producto.disabled = false
+      const nombre = original ? (original.efecto_stock === 'entrada' ? 'entrada' : 'salida') : ''
+      document.getElementById('mov-titulo').innerHTML = original
+        ? `<i class="fa-solid fa-pen me-2"></i>Corregir la ${nombre}`
+        : '<i class="fa-solid fa-right-left me-2"></i>Otra entrada o salida'
+      document.getElementById('mov-texto-boton').textContent = original ? 'Guardar la corrección' : 'Registrar'
+      const avisoCorrige = document.getElementById('mov-corrigiendo')
+      avisoCorrige.innerHTML = original
+        ? `<i class="fa-solid fa-pen me-1"></i>Cambiá lo que estaba mal y tocá <strong>Guardar la corrección</strong>. La ${nombre} de antes se anula recién ahí: si cancelás, queda todo como estaba.`
+        : ''
+      avisoCorrige.classList.toggle('d-none', !original)
 
       // Sólo productos y motivos activos: no se le cargan movimientos a algo
       // que la empresa dio de baja.
@@ -886,7 +924,10 @@
       // En orden alfabético, como la tabla (UX E-27): el catálogo viene por
       // categoría, que el desplegable no muestra.
       productos = [...catalogo].sort(porNombre)
-      existenciasDelFormulario = stock
+      // Corrigiendo, lo que hay se cuenta sin la de antes.
+      existenciasDelFormulario = stock.map(s => (original && s.id_producto === original.id_producto)
+        ? { ...s, existencia: Number(s.existencia) + (original.efecto_stock === 'salida' ? 1 : -1) * Number(original.cantidad) }
+        : s)
 
       // Las ventas y las compras no van por acá: tienen su formulario, que
       // carga la plata en el mismo paso. Dejarlas en las dos listas era tener
@@ -896,7 +937,11 @@
 
       document.getElementById('select-producto').innerHTML =
         '<option value="">Elegí un producto</option>' +
-        productos.map(p => `<option value="${p.id_producto}">${esc(p.nombre)}</option>`).join('')
+        productos.map(p => {
+          const item = existenciasDelFormulario.find(s => s.id_producto === p.id_producto)
+          const hay = !item || Number(item.cantidad_movimientos) === 0 ? 'sin cargar' : (original && p.id_producto === original.id_producto ? 'sin esta: ' : 'hay ') + cuanto(item.existencia, p.unidad_medida)
+          return `<option value="${p.id_producto}">${esc(p.nombre)} (${hay})</option>`
+        }).join('')
 
       document.getElementById('select-motivo').innerHTML =
         '<option value="">Elegí un motivo</option>' +
@@ -907,6 +952,14 @@
       form.fecha.max = fechaDeHoy()
 
       if (idProducto) form.id_producto.value = idProducto
+      if (original) {
+        form.id_producto.value = original.id_producto
+        form.id_producto.disabled = true
+        if (motivos.some(m => m.id_motivo_stock === original.id_motivo_stock)) form.id_motivo_stock.value = original.id_motivo_stock
+        form.cantidad.value = Number(original.cantidad)
+        form.fecha.value = String(original.fecha).slice(0, 10)
+        form.descripcion.value = original.descripcion || ''
+      }
 
       actualizarResumen()
       new bootstrap.Modal(document.getElementById('modalMovimiento')).show()
@@ -923,6 +976,9 @@
 
       const producto = existenciasDelFormulario.find(p => String(p.id_producto) === form.id_producto.value)
       const motivo = motivos.find(m => String(m.id_motivo_stock) === form.id_motivo_stock.value)
+      // La cantidad dice en qué se mide, como en la venta y la compra (G-22).
+      document.getElementById('mov-unidad').textContent = producto?.unidad_medida ? `(en ${nombreUnidad(2, producto.unidad_medida)})` : ''
+      const sinEsta = movReemplaza ? `Sin esta ${motivo?.efecto_stock === 'entrada' ? 'entrada' : 'salida'}, hay` : 'Hay'
 
       document.getElementById('ayuda-motivo').textContent = motivo
         ? (motivo.efecto_dinero === 'ninguno'
@@ -940,7 +996,7 @@
       const cantidad = Number(form.cantidad.value)
 
       if (!motivo || !Number.isFinite(cantidad) || cantidad <= 0) {
-        div.innerHTML = `<i class="fa-solid fa-box me-1"></i>Ahora hay <strong>${cuanto(hay, producto.unidad_medida)}</strong> de ${esc(producto.nombre)}.`
+        div.innerHTML = `<i class="fa-solid fa-box me-1"></i>${movReemplaza ? 'Sin la de antes, hay' : 'Ahora hay'} <strong>${cuanto(hay, producto.unidad_medida)}</strong> de ${esc(producto.nombre)}.`
         return
       }
 
@@ -950,13 +1006,13 @@
       // rechazarlo igual, con otro consejo, y quedaban los dos a la vista.
       if (queda < 0) {
         div.classList.add('alerta')
-        div.innerHTML = `<i class="fa-solid fa-triangle-exclamation me-1"></i>Hay <strong>${cuanto(hay, producto.unidad_medida)}</strong> y estás sacando ${formatearCantidad(cantidad)}. No alcanza. Si en el depósito hay más, primero cargá lo que entró (Registrar una compra, u Otra entrada o salida).`
+        div.innerHTML = `<i class="fa-solid fa-triangle-exclamation me-1"></i>${sinEsta} <strong>${cuanto(hay, producto.unidad_medida)}</strong> y estás sacando ${formatearCantidad(cantidad)}. No alcanza. Si en el depósito hay más: si fue una compra que no se cargó, registrala primero; si no, corregí la cuenta con un «Ajuste positivo» por lo que falta (en Otra entrada o salida).`
         botonMov.disabled = true
         return
       }
 
       const esta = motivo.efecto_stock === 'entrada' ? 'esta entrada' : 'esta salida'
-      div.innerHTML = `<i class="fa-solid fa-box me-1"></i>Hay ${cuanto(hay, producto.unidad_medida)} · después de ${esta} ${quedaN(queda)} <span class="queda">${cuanto(queda, producto.unidad_medida)}</span>.`
+      div.innerHTML = `<i class="fa-solid fa-box me-1"></i>${sinEsta} ${cuanto(hay, producto.unidad_medida)} · ${movReemplaza ? 'con la corrección' : 'después de ' + esta} ${quedaN(queda)} <span class="queda">${cuanto(queda, producto.unidad_medida)}</span>.`
     }
 
     document.getElementById('select-producto').addEventListener('change', actualizarResumen)
@@ -970,6 +1026,9 @@
       errorDiv.classList.add('d-none')
 
       const datos = Object.fromEntries(new FormData(form))
+      // El producto apagado (corrigiendo) no viaja en el FormData.
+      datos.id_producto = form.id_producto.value
+      if (movReemplaza) datos.reemplaza = movReemplaza
 
       if (!datos.id_producto) return mostrarError(errorDiv, 'Elegí un producto.')
       if (!datos.id_motivo_stock) return mostrarError(errorDiv, 'Elegí un motivo.')
@@ -1127,7 +1186,8 @@
 
       opProductos = [...catalogo].sort(porNombre).map(p => ({
         ...p,
-        existencia: Number(stock.find(s => s.id_producto === p.id_producto)?.existencia || 0)
+        existencia: Number(stock.find(s => s.id_producto === p.id_producto)?.existencia || 0),
+        sinCargar: Number(stock.find(s => s.id_producto === p.id_producto)?.cantidad_movimientos || 0) === 0
       }))
       opMotivos = todosLosMotivos.filter(esMotivoDe(clase))
 
@@ -1136,7 +1196,7 @@
       document.getElementById('op-producto').innerHTML =
         '<option value="">Elegí un producto</option>' +
         opProductos.map(p =>
-          `<option value="${p.id_producto}">${esc(p.nombre)} (hay ${cuanto(p.existencia, p.unidad_medida)})</option>`
+          `<option value="${p.id_producto}">${esc(p.nombre)} (${p.sinCargar ? 'sin cargar' : 'hay ' + cuanto(p.existencia, p.unidad_medida)})</option>`
         ).join('')
 
       // Si hay un solo motivo de esta clase, ni se pregunta.
@@ -1280,6 +1340,21 @@
         : 0
       document.getElementById('op-total').textContent = formatMoneda(centavos / 100)
 
+      // De dónde salió el número del precio (UX entrega 2, G-03): corrigiendo es
+      // lo cobrado en la de antes, no el del producto; y si se cambió, también.
+      const sugeridoOp = producto ? OPERACIONES[claseOp].sugerido(producto) : null
+      const queHizo = claseOp === 'venta' ? 'cobraste' : 'pagaste'
+      const cualPrecio = claseOp === 'venta' ? 'el precio' : 'el costo'
+      const ayudaPrecio = document.getElementById('op-ayuda-precio')
+      if (producto && opReemplaza) {
+        ayudaPrecio.textContent = `Es lo que ${queHizo} en la ${claseOp} de antes` +
+          (sugeridoOp !== null ? ` (${cualPrecio} del producto es ${formatMoneda(sugeridoOp)}).` : '.')
+      } else if (producto && sugeridoOp !== null && precio > 0 && Math.round(precio * 100) !== Math.round(Number(sugeridoOp) * 100)) {
+        ayudaPrecio.textContent = `${cualPrecio.charAt(0).toUpperCase() + cualPrecio.slice(1)} del producto es ${formatMoneda(sugeridoOp)}; acá va lo que ${queHizo}.`
+      } else if (producto) {
+        ayudaPrecio.textContent = sugeridoOp !== null ? OPERACIONES[claseOp].ayudaConSugerido : OPERACIONES[claseOp].ayudaSinSugerido
+      }
+
       // El precio como se lee, con separador de miles (UX F-18): en el campo
       // numérico, 12500 y 125000 se confunden de un vistazo.
       document.getElementById('op-precio-legible').textContent = precio > 0
@@ -1330,7 +1405,7 @@
 
       if (cantidad > hay) {
         div.classList.add('alerta')
-        div.innerHTML = `<i class="fa-solid fa-triangle-exclamation me-1"></i>${hayTexto} y estás vendiendo ${formatearCantidad(cantidad)}. No alcanza. Si en el depósito hay más, primero cargá lo que entró (Registrar una compra, u Otra entrada o salida).`
+        div.innerHTML = `<i class="fa-solid fa-triangle-exclamation me-1"></i>${hayTexto} y estás vendiendo ${formatearCantidad(cantidad)}. No alcanza. Si en el depósito hay más: si fue una compra que no se cargó, registrala primero; si no, corregí la cuenta con un «Ajuste positivo» por lo que falta (en Otra entrada o salida).`
         opNoAlcanza = true
         refrescarBotonOp()
         return
@@ -1412,10 +1487,40 @@
     // Completa la plata de una venta o compra vieja (de antes del 25/10, cuando
     // la plata iba en un segundo paso que se podía saltear). Hoy sólo se entra
     // desde el botón "$" del historial; `propuesta` se arma ahí.
+    let dineroCantidad = 0   // la cantidad de la venta o compra que se completa
+
+    // Cantidad × precio, en centavos como en el servidor: el total que se ve es
+    // el que se guarda.
+    function actualizarTotalDinero() {
+      const form = document.getElementById('form-dinero')
+      const precio = Number(document.getElementById('dinero-precio').value)
+      const centavos = precio > 0 ? Math.round(Math.round(dineroCantidad * 100) * Math.round(precio * 100) / 100) : 0
+      form.monto.value = centavos ? (centavos / 100).toFixed(2) : ''
+      document.getElementById('dinero-total').innerHTML =
+        `<i class="fa-solid fa-calculator me-1"></i>Total: <strong>${formatMoneda(centavos / 100)}</strong>`
+    }
+    document.getElementById('dinero-precio').addEventListener('input', actualizarTotalDinero)
+
     async function abrirModalDinero(movimiento, propuesta) {
       const form = document.getElementById('form-dinero')
       form.reset()
       document.getElementById('dinero-error').classList.add('d-none')
+
+      // El precio: el del producto si lo tiene (precio de venta o costo), y
+      // se puede cambiar. Lo que se guarda es cantidad × precio.
+      dineroCantidad = Number(movimiento.cantidad)
+      const esVenta = propuesta.naturaleza === 'ingreso'
+      const catalogo = await fetch('/productos').then(r => r.ok ? r.json() : []).catch(() => [])
+      const prod = catalogo.find(p => p.id_producto === movimiento.id_producto)
+      const sugerido = prod ? (esVenta ? prod.precio_venta : prod.costo_referencia) : null
+      document.getElementById('dinero-pregunta-precio').textContent =
+        `${esVenta ? 'Lo que cobraste' : 'Lo que pagaste'} ${porUnidad(movimiento.unidad_medida)} *`
+      document.getElementById('dinero-precio').value = sugerido !== null && sugerido !== undefined ? Number(sugerido) : ''
+      document.getElementById('dinero-ayuda-precio').textContent =
+        `Se multiplica por ${cuanto(movimiento.cantidad, movimiento.unidad_medida)}.` +
+        (sugerido !== null && sugerido !== undefined ? ` Es ${esVenta ? 'el precio' : 'el costo'} cargado en el producto: si fue otro, cambialo.` : '')
+      document.getElementById('dinero-pregunta-tipo').textContent = esVenta ? '¿De qué fue la plata que entró? *' : '¿En qué se fue la plata? *'
+      actualizarTotalDinero()
 
       form.id_movimiento_stock.value = movimiento.id_movimiento_stock
       form.descripcion.value = propuesta.descripcion || ''
@@ -1457,8 +1562,8 @@
 
       const datos = Object.fromEntries(new FormData(form))
 
-      if (!datos.id_tipo) return mostrarError(errorDiv, 'Elegí una categoría y tipo.')
-      if (!datos.monto || Number(datos.monto) <= 0) return mostrarError(errorDiv, 'El monto tiene que ser mayor que cero.')
+      if (!datos.id_tipo) return mostrarError(errorDiv, 'Elegí de qué fue la plata.')
+      if (!datos.monto || Number(datos.monto) <= 0) return mostrarError(errorDiv, 'Escribí el precio por unidad.')
 
       boton.disabled = true
 
@@ -1488,18 +1593,19 @@
       // (UX F-08): es lo que la persona registró.
       const clase = esMotivoDe('venta')(movimiento) ? 'venta' : esMotivoDe('compra')(movimiento) ? 'compra' : null
       const nombre = clase || (entra ? 'entrada' : 'salida')
-      document.getElementById('anular-titulo').textContent = clase ? `Anular o corregir la ${clase}` : `Anular la ${nombre}`
+      document.getElementById('anular-titulo').textContent = `Anular o corregir la ${nombre}`
 
       document.getElementById('anular-pregunta').innerHTML =
-        `¿Anular la ${nombre} de <strong>${cuanto(movimiento.cantidad, movimiento.unidad_medida)}</strong> ` +
-        `de <strong>${esc(movimiento.producto_nombre)}</strong> del ${formatearFecha(movimiento.fecha)}?`
+        `¿Qué querés hacer con la ${nombre} de <strong>${cuanto(movimiento.cantidad, movimiento.unidad_medida)}</strong> ` +
+        `de <strong>${esc(movimiento.producto_nombre)}</strong> del ${formatearFecha(movimiento.fecha)}?` +
+        `<div class="small mt-2"><strong>Corregir</strong>: se abre con lo que cargaste, cambiás lo que estaba mal, y la de antes se anula recién cuando guardás. Si cancelás, no pasa nada.</div>`
 
       // Se dice qué va a pasar con el número, que es lo que la persona quiere
       // saber antes de confirmar, con palabras de todos los días.
       const queLePasa = entra
         ? `se descuenta de lo que hay de ${esc(movimiento.producto_nombre)}`
         : `${esc(movimiento.producto_nombre)} vuelve al stock`
-      let aviso = `<i class="fa-solid fa-circle-info me-1"></i>No se borra: queda en el historial como anulada, y ${queLePasa}.`
+      let aviso = `<i class="fa-solid fa-circle-info me-1"></i><strong>Anular</strong>: no se borra, queda en el historial como anulada, y ${queLePasa}.`
 
       // La plata atada se anula junto con la mercadería (decisión del grupo,
       // 02/11): se dice cuánta, porque es lo que va a dejar de estar en el
@@ -1515,19 +1621,19 @@
       const btn = document.getElementById('btn-confirmar-anular')
       btn.dataset.id = movimiento.id_movimiento_stock
 
-      // Corregir sólo una venta o una compra: es donde se tipea un precio o una
-      // cantidad mal. El resto (una rotura, un ajuste) se anula y listo.
+      // Todo se puede corregir: la venta y la compra con su formulario, el resto
+      // con el de "Otra entrada o salida" (UX entrega 2, G-05).
       const corregir = document.getElementById('btn-anular-corregir')
       // Con el producto dado de baja no se puede elegir en el formulario, así
       // que la corrección quedaba trabada (revisión funcional, 14/11/2026).
-      const productoDeBaja = clase && !movimiento.producto_activo
+      const productoDeBaja = !movimiento.producto_activo
       if (productoDeBaja) {
         document.getElementById('anular-aviso').innerHTML += `<br><i class="fa-solid fa-box-archive me-1"></i>` +
-          `${esc(movimiento.producto_nombre)} está dado de baja: para corregir la ${clase}, primero reactivalo en Productos.`
+          `${esc(movimiento.producto_nombre)} está dado de baja: para corregir la ${nombre}, primero reactivalo en Productos.`
       }
-      corregir.classList.toggle('d-none', !clase || productoDeBaja)
+      corregir.classList.toggle('d-none', productoDeBaja)
       corregir.dataset.id = movimiento.id_movimiento_stock
-      document.getElementById('anular-texto-boton').textContent = clase ? 'Sólo anular' : 'Anular'
+      document.getElementById('anular-texto-boton').textContent = 'Anular'
 
       new bootstrap.Modal(document.getElementById('modalAnular')).show()
     }
@@ -1537,10 +1643,12 @@
     document.getElementById('btn-anular-corregir').addEventListener('click', (evento) => {
       const movimiento = window.movimientosCargados.find(m => String(m.id_movimiento_stock) === evento.currentTarget.dataset.id)
       if (!movimiento) return
-      const clase = esMotivoDe('venta')(movimiento) ? 'venta' : 'compra'
+      const clase = esMotivoDe('venta')(movimiento) ? 'venta' : esMotivoDe('compra')(movimiento) ? 'compra' : null
       const modal = document.getElementById('modalAnular')
       // Con dos modales a la vez Bootstrap deja el fondo gris trabado.
-      modal.addEventListener('hidden.bs.modal', () => abrirModalOperacion(clase, movimiento.id_producto, movimiento), { once: true })
+      modal.addEventListener('hidden.bs.modal', () => clase
+        ? abrirModalOperacion(clase, movimiento.id_producto, movimiento)
+        : abrirModal(null, movimiento), { once: true })
       bootstrap.Modal.getInstance(modal).hide()
     })
 

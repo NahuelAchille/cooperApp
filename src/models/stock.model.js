@@ -175,8 +175,10 @@ const conProductoTrabado = async (id_producto, id_empresa, decidir) => {
 
     // FOR UPDATE: mientras dure la transaccion, nadie mas pasa por aca para
     // este producto. La fila del producto hace de candado del stock.
+    // Trae también la unidad: leída ACÁ adentro es la que vale. La de afuera
+    // puede haber cambiado mientras se esperaba el candado (QA entrega 2, M1).
     const [productos] = await conexion.query(
-      'SELECT id_producto FROM productos WHERE id_producto = ? AND id_empresa = ? FOR UPDATE',
+      'SELECT id_producto, nombre, unidad_medida FROM productos WHERE id_producto = ? AND id_empresa = ? FOR UPDATE',
       [id_producto, id_empresa]
     )
 
@@ -187,7 +189,7 @@ const conProductoTrabado = async (id_producto, id_empresa, decidir) => {
 
     const existencia = await existenciaCon(conexion, id_producto, id_empresa)
 
-    const decision = await decidir(existencia, conexion)
+    const decision = await decidir(existencia, conexion, productos[0])
 
     if (decision && decision.error) {
       await conexion.rollback()

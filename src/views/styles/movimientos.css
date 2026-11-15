@@ -199,3 +199,6 @@
 
 /* Aviso de mercadería al elegir el tipo de una venta o una compra (UX F-02) */
 .aviso-stock { color: #8a4b00; font-weight: 600; }
+
+/* La pista del servicio es una sugerencia, no un problema: verde (UX entrega 2, G-14) */
+.pista-servicio { background: #eef6f1; border: 1px solid #c8e6d5; border-radius: 8px; padding: 8px 10px; font-size: 0.875rem; color: #1a2e23; }

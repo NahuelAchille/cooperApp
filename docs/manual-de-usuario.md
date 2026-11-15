@@ -101,7 +101,7 @@ Si el administrador de tu empresa te dio de alta, tu **contraseña es tu DNI**.
 ### Me olvidé la contraseña
 
 El sistema no manda correos. **Pedíselo al administrador de tu empresa**: en
-*Usuarios* aprieta **Contraseña inicial** en tu fila y tu contraseña vuelve a ser tu DNI.
+*Usuarios* aprieta **Se olvidó la contraseña** en tu fila y tu contraseña vuelve a ser tu DNI.
 Al entrar, el sistema te pide una nueva.
 
 Si sos el administrador de la empresa y te olvidaste la tuya, se lo pedís al
@@ -154,10 +154,10 @@ Los números de arriba se recalculan con lo que filtraste.
 Los movimientos **no se borran ni se editan: se anulan**. Tocá **Anular o corregir**
 en esa fila y elegí:
 
-- **Anular y corregir**: te abre el formulario **con los mismos datos**, para que
+- **Corregir**: te abre el formulario **con los mismos datos**, para que
   cambies sólo lo que estaba mal (el monto, la fecha, de qué fue) y toques **Guardar la
   corrección**. Recién ahí se anula el de antes: **si cancelás, queda todo como estaba**.
-- **Sólo anular**: lo anula ya, para algo que no tendría que haberse cargado.
+- **Anular**: lo anula ya, para algo que no tendría que haberse cargado.
 
 > **La plata de una venta o una compra** no se corrige desde acá: se corrige en Stock,
 > junto con la mercadería. El administrador tiene el link en el cartel. El tesorero no
@@ -263,17 +263,18 @@ cargó. En cada venta dice cuánto se **cobró**, y en cada compra cuánto se **
 > la empresa: el panel de inicio no le muestra plata, y Movimientos y Reportes no le
 > aparecen.
 
-### Me equivoqué en una venta o una compra
+### Me equivoqué en una venta, una compra o una rotura
 
 En **Stock → Entradas y salidas**, tocá **Anular o corregir** en esa fila y elegí:
 
-- **Anular y corregir**: se abre la venta (o la compra) con lo que habías cargado.
-  Cambiás la cantidad, el precio, la fecha o el detalle y tocás **Guardar la
-  corrección**: la de antes se anula **junto con su plata** y queda la nueva. Si
-  cancelás, no pasa nada. El producto no se cambia: si te equivocaste de producto,
-  usá *Sólo anular* y cargala de nuevo.
-- **Sólo anular**: se anula ya, **también su plata**. El cartel te dice cuánta plata se
-  va antes de confirmar.
+- **Corregir**: se abre con lo que habías cargado (una venta o una compra, en su
+  formulario; una rotura, un consumo o un ajuste, en *Otra entrada o salida*).
+  Cambiás lo que estaba mal y tocás **Guardar la corrección**: la de antes se anula
+  (una venta o una compra, **junto con su plata**) y queda la nueva. Si cancelás, no
+  pasa nada. El producto no se cambia: si te equivocaste de producto, anulala y
+  cargala de nuevo.
+- **Anular**: se anula ya, **también su plata**. El cartel te dice cuánta plata se va
+  antes de confirmar.
 
 Además:
 - Lo que hay se corrige solo.
@@ -316,7 +317,9 @@ ahí también lo podés descargar.
 2. Elegí **¿De qué período?**: *Este mes*, *El mes pasado*, *Este año* u *Otras
    fechas*.
 3. Elegí **¿Cómo querés verlo?**: *Uno por uno*, *Por categoría*, *Por producto* o
-   *Por servicio*.
+   *Por servicio*. *Por producto* muestra lo **vendido** y lo **comprado** de cada uno,
+   por separado: es sólo la plata de la mercadería, así que no suma lo mismo que el
+   período.
 4. Para guardarlo o mandarlo, tocá **Descargar para Excel** o **Descargar en PDF**.
    El archivo lleva el nombre de la empresa y el período.
 
@@ -377,7 +380,7 @@ Es la parte de **Buscar empresas**.
 3. Guardá y **avisale que su contraseña es su DNI**. Al entrar, el sistema le pide
    una nueva.
 
-Desde la misma lista podés **editar** sus datos, **volver a su contraseña inicial** (el botón *Contraseña inicial*) o **darlo
+Desde la misma lista podés **editar** sus datos, **volver a su contraseña inicial** (el botón *Se olvidó la contraseña*) o **darlo
 de baja** (deja de poder entrar en el momento). Una baja se puede **reactivar**.
 
 ### Prender o apagar partes del sistema

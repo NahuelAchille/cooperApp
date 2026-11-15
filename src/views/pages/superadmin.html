@@ -383,7 +383,12 @@
     }
 
     function aprobar(e, boton) {
-      const quien = nombreAdmin(e) ? ` ${nombreAdmin(e)} ya puede entrar con su email y su contraseña.` : ''
+      // El sistema no manda correos: el superadmin tiene que avisar, y se le
+      // dice cómo (UX entrega 2, G-09), igual que al volver a la contraseña inicial.
+      const contacto = [e.admin_email, e.telefono].filter(Boolean).join(' o al ')
+      const quien = nombreAdmin(e)
+        ? ` ${nombreAdmin(e)} ya puede entrar con su email y su contraseña. Avisale por fuera del sistema${contacto ? ` (${contacto})` : ''}.`
+        : ''
       cambiarEstado(e, 'aprobar', boton, `${e.nombre} quedó aprobada.${quien}`)
     }
 

@@ -152,7 +152,7 @@ exports.registerEmpresa = async (req, res) => {
       }
     )
 
-    res.status(201).json({ message: 'Registro enviado. Tu empresa está pendiente de aprobación' })
+    res.status(201).json({ message: 'Registro enviado. Tu empresa todavía no fue aprobada. Cuando la aprueben vas a poder entrar con este mismo email y contraseña.' })
 
   } catch (error) {
     console.error(error)

@@ -1,4 +1,5 @@
 const productoModel = require('../models/producto.model')
+const stockModel = require('../models/stock.model')
 const rubroModel = require('../models/rubro.model')
 const categoriaProductoModel = require('../models/categoria-producto.model')
 const { UNIDADES_MEDIDA, CLAVES_UNIDADES, esEntera, nombreUnidad } = require('../config/unidades-medida')
@@ -221,6 +222,8 @@ const validarClasificacion = async (body, id_empresa, es_servicio = 0) => {
 
 // Lista cerrada de unidades, para que la pantalla arme el desplegable sin
 // tener que repetirla en el HTML.
+const UNIDAD_FIJA = 'Este producto ya tiene entradas o salidas cargadas, así que su unidad no se puede cambiar: el historial quedaría diciendo otra cosa. Si te equivocaste de unidad, dalo de baja y cargalo de nuevo con la correcta.'
+
 exports.getUnidades = (req, res) => {
   res.json(UNIDADES_MEDIDA)
 }
@@ -313,7 +316,12 @@ exports.crearProducto = async (req, res) => {
       id_rubro: articulacion.id_rubro
     })
 
-    res.status(201).json({ id_producto, message: `${r.Uno} creado correctamente` })
+    res.status(201).json({
+      id_producto,
+      message: es_servicio
+        ? `${r.Uno} creado correctamente`
+        : 'Producto creado. Cuando llegue la mercadería, cargala desde Stock con «Registrar una compra».'
+    })
 
   } catch (error) {
     if (error.code === 'ER_DUP_ENTRY') {
@@ -364,9 +372,7 @@ exports.actualizarProducto = async (req, res) => {
     // "2,5 cajas"), y si la nueva se cuenta entera, el resto no se puede sacar
     // nunca. Es la misma regla que el efecto de un motivo ya usado.
     if (!es_servicio && medida.unidad_medida !== producto.unidad_medida && Number(producto.cantidad_movimientos) > 0) {
-      return res.status(400).json({
-        error: 'Este producto ya tiene entradas o salidas cargadas, así que su unidad no se puede cambiar: el historial quedaría diciendo otra cosa. Si te equivocaste de unidad, dalo de baja y cargalo de nuevo con la correcta.'
-      })
+      return res.status(400).json({ error: UNIDAD_FIJA })
     }
 
     // "Un campo que no viene no se toca" (QA final, B3): la descripción es lo
@@ -409,7 +415,7 @@ exports.actualizarProducto = async (req, res) => {
     const costoAnterior = producto.costo_referencia === null ? null : Number(producto.costo_referencia)
     const costoCambio = costoAnterior !== costo.valor
 
-    await productoModel.updateProducto(id, id_empresa, {
+    const cambios = {
       nombre,
       descripcion,
       ...medida,
@@ -419,7 +425,22 @@ exports.actualizarProducto = async (req, res) => {
       precio_venta: precio.valor,
       visible_empresas: articulacion.visible_empresas,
       id_rubro: articulacion.id_rubro
-    })
+    }
+
+    if (!es_servicio && medida.unidad_medida !== producto.unidad_medida) {
+      // Cambiar la unidad pasa por el candado del producto, igual que una
+      // entrada o una venta: se cuenta y se escribe adentro, así una compra que
+      // llega en el mismo segundo no se mete en el medio (QA entrega 2, M1).
+      const resultado = await stockModel.conProductoTrabado(id, id_empresa, async (_existencia, conexion) => {
+        const [filas] = await conexion.query('SELECT COUNT(*) AS cantidad FROM movimientos_stock WHERE id_producto = ?', [id])
+        if (Number(filas[0].cantidad) > 0) return { error: UNIDAD_FIJA }
+        await productoModel.updateProducto(id, id_empresa, cambios, conexion)
+        return {}
+      })
+      if (resultado.error) return res.status(400).json({ error: resultado.error })
+    } else {
+      await productoModel.updateProducto(id, id_empresa, cambios)
+    }
 
     res.json({ message: `${r.Uno} actualizado correctamente` })
 

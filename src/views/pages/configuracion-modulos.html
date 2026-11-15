@@ -168,7 +168,8 @@
       const lista = nombres.length === 1 ? nombres[0] : nombres.slice(0, -1).join(', ') + ' y ' + nombres[nombres.length - 1]
       document.getElementById('apagar-texto').innerHTML =
         `<p><strong>${lista}</strong> (${operadores.length === 1 ? 'operador' : 'operadores'}) ` +
-        `${operadores.length === 1 ? 'trabaja' : 'trabajan'} sólo en Productos y Stock. Si lo apagás, no ${operadores.length === 1 ? 'va' : 'van'} a tener nada para hacer en el sistema.</p>` +
+        `${operadores.length === 1 ? 'trabaja' : 'trabajan'} en Productos y Stock. Si lo apagás, sólo ${operadores.length === 1 ? 'le va' : 'les va'} a quedar Buscar empresas.</p>` +
+        '<p>Vos también dejás de ver Stock, las ventas y compras del panel y los reportes de productos.</p>' +
         '<p class="mb-0 small text-muted">Lo que ya está cargado no se borra: si lo volvés a prender, aparece todo de nuevo.</p>'
 
       const elemento = document.getElementById('modalApagar')

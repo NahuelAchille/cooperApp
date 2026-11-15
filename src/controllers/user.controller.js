@@ -53,7 +53,7 @@ exports.login = async (req, res) => {
     if (!esSuperadmin) {
 
       if (user.empresa_estado === 'pendiente') {
-        return res.status(403).json({ error: 'Tu empresa está pendiente de aprobación' })
+        return res.status(403).json({ error: 'Tu empresa todavía no fue aprobada. Cuando la aprueben vas a poder entrar con este mismo email y contraseña.' })
       }
 
       if (user.empresa_estado === 'suspendida') {
@@ -139,7 +139,7 @@ exports.crearUsuario = async (req, res) => {
     // Sin esto, un administrador de empresa podria crear un superadmin
     // mandando el pedido a mano, aunque la pantalla no le ofrezca esa opcion.
     if (!ROLES_ASIGNABLES.includes(Number(id_rol))) {
-      return res.status(400).json({ error: 'El rol seleccionado no es válido' })
+      return res.status(400).json({ error: 'Elegí un rol de la lista' })
     }
 
     // El mismo control que hace la edicion: sin esto entraba cualquier texto
@@ -224,7 +224,7 @@ exports.actualizarUsuario = async (req, res) => {
     }
 
     if (!ROLES_ASIGNABLES.includes(Number(id_rol))) {
-      return res.status(400).json({ error: 'El rol seleccionado no es válido' })
+      return res.status(400).json({ error: 'Elegí un rol de la lista' })
     }
 
     const largo = validarLargos(req.body, LARGOS.usuario)
@@ -370,6 +370,18 @@ exports.cambiarPassword = async (req, res) => {
 
     if (password_nuevo.length < PASSWORD_MINIMO) {
       return res.status(400).json({ error: `La contraseña debe tener al menos ${PASSWORD_MINIMO} caracteres` })
+    }
+
+    // Con la contraseña inicial alcanza la nueva: es el primer ingreso. Si la
+    // contraseña ya es propia, hay que poner la actual: si no, cualquiera
+    // sentado frente a una sesión abierta se la cambiaba y la dejaba afuera
+    // (QA entrega 2, B2).
+    if (!req.estadoSesion?.debe_cambiar_password) {
+      const actual = req.body.password_actual
+      const usuario = await userModel.findById(id)
+      if (typeof actual !== 'string' || !actual || !usuario || !await bcrypt.compare(actual, usuario.password_hash)) {
+        return res.status(400).json({ error: 'Para cambiar tu contraseña, escribí primero la que usás ahora' })
+      }
     }
 
     const hashed = await bcrypt.hash(password_nuevo, 10)

@@ -206,7 +206,7 @@
             <div class="mb-1">
               <label class="form-label">Subcategoría</label>
               <select class="form-select" name="id_subcategoria_producto" id="select-subcategoria"></select>
-              <div class="form-text" id="ayuda-subcategoria">Es opcional: si no subdividís esta categoría, dejala en blanco.</div>
+              <div class="form-text" id="ayuda-subcategoria">Es opcional: si no subdividís esta categoría, dejá «Sin subcategoría».</div>
             </div>
 
             <div id="aviso-clasificacion" class="alert alert-warning py-2 small mt-3 d-none"></div>
@@ -591,7 +591,7 @@
         activas.map(s => `<option value="${s.id_subcategoria_producto}" ${String(s.id_subcategoria_producto) === String(idSeleccionada) ? 'selected' : ''}>${esc(s.nombre)}</option>`).join('')
 
       ayuda.textContent = activas.length
-        ? 'Es opcional: si no subdividís esta categoría, dejala en blanco.'
+        ? 'Es opcional: si no subdividís esta categoría, dejá «Sin subcategoría».'
         : `Esta categoría no tiene subcategorías. El ${CATALOGO.cosa} queda clasificado sólo por categoría.`
     }
 

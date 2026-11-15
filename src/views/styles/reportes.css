@@ -344,3 +344,20 @@
   .totales { grid-template-columns: repeat(3, 1fr); gap: 14px; }
   .total-card .valor { font-size: 1.7rem; }
 }
+
+/* Por producto: el recuadro con lo que es esta plata y sus totales (UX entrega 2, G-02) */
+.nota-producto {
+  background: #eef6f1;
+  border: 1px solid #c8e6d5;
+  border-radius: 10px;
+  padding: 12px 16px;
+  margin-bottom: 12px;
+  color: #1a2e23;
+  font-size: 0.9rem;
+}
+.nota-producto-totales { display: flex; flex-wrap: wrap; gap: 6px 24px; margin-bottom: 6px; font-size: 1.05rem; }
+.nota-producto-totales strong { color: var(--verde-oscuro); }
+
+/* Lo perdido en gris oscuro, no en el rojo de "Salió", igual que en el PDF (UX entrega 2, G-22) */
+.texto-perdido, .total-perdido .valor { color: #1a2e23 !important; }
+.total-perdido { background: #f4f6f5 !important; }

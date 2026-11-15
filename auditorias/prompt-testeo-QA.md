@@ -8,6 +8,8 @@
 > hereda otro equipo; se sumó lo que se unificó ese día (validaciones, ayudas de pantalla,
 > hoja de estilos común, Productos y Servicios en una página), la tablet y las
 > herramientas para recorrer todas las pantallas de una vez.
+> Actualizado el 15/11/2026: se sumó lo que cambió al corregir las auditorías de la entrega
+> (el rol revisado en cada pedido, la unidad fija, los mensajes y archivos nuevos).
 
 ---
 
@@ -494,6 +496,43 @@ LO QUE SE JUNTÓ EL 14/11/2026 — un error acá se ve en todas las pantallas
   tienen su plata. Verificá que la plata de Movimientos y lo que dice Stock
   ("Cobrado: $ X") sean la misma, fila por fila.
 
+LO QUE CAMBIÓ EL 15/11/2026 (correcciones de la entrega) — es lo que menos ojos tuvo
+- **El rol se revisa en cada pedido** (`requireLogin` pone al día
+  `req.session.user.rol`). Atacalo: cambiá el rol con varios pedidos de esa persona
+  en vuelo, pasá un tesorero a operador y probá TODO lo de finanzas (alta, anular,
+  corregir, resumen, reportes, descargas), y al revés. Mirá también qué pasa si se lo
+  da de baja y se lo reactiva con la sesión abierta.
+- **La unidad de un producto con entradas o salidas no se cambia.** Probá con un
+  producto que sólo tiene movimientos ANULADOS, con un servicio (no tiene unidad), y
+  armando el pedido a mano con la unidad en mayúsculas o con espacios.
+- **Editar un producto sin mandar un campo no lo toca.** Ojo con la diferencia entre
+  no mandarlo (`undefined`) y mandarlo vacío o `null` (eso SÍ borra el costo o el
+  precio, a propósito). Probá que la fecha del costo se comporte bien en los dos casos.
+- **El registro acepta sólo texto** (el CUIT y el DNI también como número) y las
+  contraseñas que no son texto dan 400 en el login, el cambio y el registro.
+- **Los mensajes nuevos**: la venta y la compra dicen *"la plata ya quedó anotada"*;
+  *No alcanza* tiene un solo consejo; *"El monto es demasiado grande"*. Revisá que el
+  operador nunca reciba un mensaje que nombre Movimientos.
+- **Los archivos**: el período dice las fechas (*"del 1 al 15 de noviembre de 2026"*;
+  probá el día 1 del mes, enero y un personalizado), el CSV suma *"Generado el …"* y la
+  nota de la vista. **Verificá que esas filas nuevas no rompan las columnas en Excel** y
+  que los totales sigan cerrando contra `SELECT`. Los negativos van *"-$"* en todos lados
+  (`formatearPlata` se usa también en mensajes del servidor). Formato o vista
+  inventados dan 400.
+- **Atajos nuevos**: `stock.html?ver=faltantes` y `?ver=historial`. Con un rol que
+  no tiene Stock, con el módulo apagado, combinados con `?vender=1`.
+- **La pantalla de Movimientos para el tesorero**: en la plata de una venta el botón
+  dice sólo *Anular*. Confirmá por API que corregirla sigue rebotando y que el cartel
+  no deja ningún camino a una corrección suelta.
+- **El aviso antes de apagar Productos** lee `/users` desde la pantalla. Probá con una
+  empresa sin operadores, con operadores dados de baja y con nombres con HTML.
+- **Lo compartido que cambió** (`header.js` marca la pantalla actual y reescribe el
+  aviso de módulo apagado; `comun.css` tiene las franjas y los atajos; `tabla-mobile.css`
+  pone las tarjetas de a dos entre 768 y 1023 px): un error acá se ve en todas las
+  pantallas. Recorré todas en 1280, 800 y 375 px **midiendo también lo que se pasa
+  dentro de cada bloque**, no sólo el scroll de la página (es lo que se escapó en la
+  revisión del 14/11).
+
 FLUJOS COMPLETOS
 - Registro de empresa → aprobación → alta de usuarios → carga de movimientos.
 - Rechazo de una empresa: ¿se puede revertir? ¿qué pasa con sus usuarios?
@@ -639,5 +678,6 @@ CLAUDE.md), que es lo que menos ojos tuvo encima.
 | 02/11/2026 | **La venta y la compra en un solo paso** (commit `89e2bcb`, 25-26/10; hecho fuera de sprint, HU-90 y HU-91) | 6 (1 crítico, 5 bajos), todos confirmados ejecutándolos. Informe en `informes-QA/informe-QA-venta-compra.md` | **02/11: los 6 corregidos**, ninguno al backlog, + 1 encontrado al corregir (anular y cargar el cobro a la vez podía dejar un cobro vivo en una venta anulada). **C1 lo decidió el grupo antes del código**: anular una venta o una compra anula también su plata, en la misma transacción; reemplaza a la decisión vieja de que no la anulaba. B1 era otra vez el patrón consultar-decidir-escribir (el costo leído fuera del candado). Detalle al final del informe |
 | 14/11/2026 | **Auditoría final, sistema completo** (HU-67), con foco en lo que nunca pasó por QA: Articulación, el superadmin rehecho, lo que se sacó, HU-87 y HU-88 | 6 (1 crítico, 1 alto, 1 medio, 3 bajos), todos confirmados ejecutándolos. Informe en `informes-QA/informe-QA-final.md` | **14/11: los 6 corregidos**, ninguno al backlog (ver el final del informe). Después vino una revisión grande en cuatro tandas (bitácora de CLAUDE.md, 14/11 (13) a (15)) que todavía no pasó por QA. Lo que encontró el informe: **C1**: *Anular y corregir* (HU-87) vuelve a cargar la plata de una venta sin atarla, la venta queda *"Sin registrar el cobro"* y se puede cobrar dos veces. **A1**: el registro da *"Error del servidor"* con el CUIT escrito con guiones. **M1**: el DNI con puntos se guarda con puntos (saltea el duplicado y la contraseña temporal queda con puntos). **Lo nuevo de Articulación y del superadmin aguantó entero**: nada privado sale hacia otra empresa, cada condición de "quién aparece" esconde, y 0 inyecciones de XSS en las pantallas nuevas. La regresión de los cuatro informes anteriores dio bien |
 | 14/11/2026 | **Auditoría de la entrega, sistema completo**, sobre `453f870` (las cuatro tandas de la revisión del 14/11, que nunca habían pasado por QA) | 9 (0 críticos, 1 alto, 2 medios, 6 bajos), todos confirmados ejecutándolos. Informe en `informes-QA/informe-QA-entrega.md` | **15/11: los 9 corregidos**, ninguno al backlog, más las observaciones (descarga con formato inventado, mínimo entero). Ver el final del informe. Lo que encontró: **A1**: cambiar el rol de alguien no toca su sesión abierta (un tesorero pasado a operador sigue cargando y anulando plata; es el pariente que quedó de la sesión viva del Sprint 06). **M1**: con la contraseña temporal, 12 de 16 pantallas mandan al login en vez de a cambiarla. **M2**: cambiar la unidad de un producto usado reinterpreta el historial y puede dejar un resto que no se puede sacar. **Lo que aguantó**: cero XSS en 25 vistas, nueve carreras sobre plata y stock sin filas desparejas, los reportes cierran contra `SELECT` en las cinco vistas, la misma lista de 25 valores raros se comporta igual en los diez campos numéricos, y 71 recorridos por ancho (1280, 800, 375) sin errores de consola ni scroll horizontal. La regresión de los ocho informes anteriores dio bien |
+| 15/11/2026 | **Segunda auditoría de la entrega**, sobre `56e4bc6` (las correcciones de QA y UX de la entrega), con foco en la regresión y en *"LO QUE CAMBIÓ EL 15/11/2026"* | 4 (0 críticos, 0 altos, 1 medio, 3 bajos), todos confirmados ejecutándolos. Informe en `informes-QA/informe-QA-entrega-2.md` | **15/11: los 4 corregidos** (ver el final del informe). Lo que encontró: **M1**: la unidad fija (M2 de la entrega) se saltea con dos pedidos a la vez. Si la primera compra entra mientras se cambia la unidad, pasan las dos (15 de 15 vueltas) y queda "2,5 cajas" trabado para siempre. Otra vez consultar-decidir-escribir. **B1**: en 375 px el texto de los botones de Stock se sale del botón. **B2**: cambiar la contraseña no pide la actual con cualquier sesión. **B3**: un mensaje al operador todavía nombra Movimientos (sólo armando el pedido). **Lo que aguantó**: los 9 hallazgos de la entrega siguen corregidos (el rol vale desde el pedido siguiente en las 15 rutas de finanzas), los archivos nuevos no rompen las columnas y cierran contra `SELECT`, cero XSS en 24 vistas más las piezas nuevas, las carreras sobre plata y stock sin filas desparejas, y 97 recorridos por ancho (1280, 800, 375) midiendo también lo que se sale de cada bloque |
 
 *(Completar después de cada corrida.)*

@@ -146,6 +146,12 @@ const porProducto = async (id_empresa, { desde, hasta } = {}) => {
            -- Las cantidades salen del motivo, igual que la existencia.
            COALESCE(SUM(CASE WHEN mo.efecto_stock = 'entrada' THEN ms.cantidad ELSE 0 END), 0) AS entradas,
            COALESCE(SUM(CASE WHEN mo.efecto_stock = 'salida'  THEN ms.cantidad ELSE 0 END), 0) AS salidas,
+           -- Separadas por lo que fueron (UX entrega 2, G-02): "entraron 40 kg"
+           -- al lado de "Entró $" usaba el mismo verbo para dos cosas opuestas.
+           COALESCE(SUM(CASE WHEN mo.efecto_stock = 'entrada' AND mo.efecto_dinero = 'egreso'  THEN ms.cantidad ELSE 0 END), 0) AS compradas,
+           COALESCE(SUM(CASE WHEN mo.efecto_stock = 'salida'  AND mo.efecto_dinero = 'ingreso' THEN ms.cantidad ELSE 0 END), 0) AS vendidas,
+           COALESCE(SUM(CASE WHEN mo.efecto_stock = 'salida'  AND mo.efecto_dinero = 'ninguno' THEN ms.cantidad ELSE 0 END), 0) AS sin_vender,
+           COALESCE(SUM(CASE WHEN mo.efecto_stock = 'entrada' AND mo.efecto_dinero = 'ninguno' THEN ms.cantidad ELSE 0 END), 0) AS sin_comprar,
            -- La plata, solo la que de verdad quedo registrada y sigue vigente:
            -- un movimiento de dinero anulado no cuenta, aunque el de stock siga.
            COALESCE(SUM(CASE WHEN m.anulado = 0 AND c.naturaleza = 'ingreso' THEN m.monto ELSE 0 END), 0) AS cobrado,
@@ -167,8 +173,9 @@ const porProducto = async (id_empresa, { desde, hasta } = {}) => {
     WHERE p.id_empresa = ? AND p.es_servicio = 0
     GROUP BY p.id_producto
     HAVING p.activo = 1 OR movimientos > 0
-    ORDER BY (COALESCE(SUM(CASE WHEN m.anulado = 0 AND c.naturaleza = 'ingreso' THEN m.monto ELSE 0 END), 0)
-            - COALESCE(SUM(CASE WHEN m.anulado = 0 AND c.naturaleza = 'egreso'  THEN m.monto ELSE 0 END), 0)) DESC,
+    -- Primero lo que más se vendió: la pregunta es "¿qué me conviene?", y por
+    -- resultado el más vendido quedaba último y en rojo (UX entrega 2, G-02).
+    ORDER BY COALESCE(SUM(CASE WHEN m.anulado = 0 AND c.naturaleza = 'ingreso' THEN m.monto ELSE 0 END), 0) DESC,
              p.nombre
   `, params)
 

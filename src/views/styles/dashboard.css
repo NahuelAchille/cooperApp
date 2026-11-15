@@ -461,3 +461,15 @@
 @media (min-width: 1024px) {
   #secondary-nav .saludo { padding: 0; }
 }
+
+/* G-18: cerrar el aviso de módulos apagados */
+.btn-cerrar-aviso { background: none !important; border: none !important; color: var(--verde-primario) !important; text-decoration: underline; padding: 0 !important; width: auto !important; font-size: inherit; }
+
+/* G-17: las acciones rápidas parecen botones en todos los anchos, y en la
+   tablet la franja va de borde a borde, como en las demás pantallas. */
+#secondary-nav ul li a { border: 1px solid rgba(255, 255, 255, 0.45) !important; }
+@media (min-width: 768px) and (max-width: 1023px) {
+  #secondary-nav { margin: 0 0 12px 0 !important; border-radius: 0 !important; box-shadow: none !important; }
+}
+/* El panel de comparación: el mes anterior a los mismos días, y el entero más chico (G-07) */
+.dashboard-kpi h5 small { display: block; font-weight: 400; opacity: 0.85; }
