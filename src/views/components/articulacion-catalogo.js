@@ -58,7 +58,7 @@
         </div>
         <div class="form-text mb-2">
           Aparece en el buscador de empresas con su nombre, su descripción y su rubro.
-          Nunca se muestran el stock, el costo ni el precio.
+          ${location.pathname.includes('servicios') ? 'Nunca se muestra cuánto cobrás.' : 'Nunca se muestran el stock, el costo ni el precio.'}
         </div>
         <div id="art-bloque-rubro" class="d-none">
           <label class="form-label">¿En qué rubro va? *</label>

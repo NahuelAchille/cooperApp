@@ -249,7 +249,7 @@
 
             <div class="mb-3">
               <label class="form-label">Detalle</label>
-              <input type="text" class="form-control" name="descripcion" maxlength="255" placeholder="Opcional: remito, cliente, quién lo retiró...">
+              <input type="text" class="form-control" name="descripcion" maxlength="255" id="mov-detalle" placeholder="Opcional: qué pasó">
             </div>
 
             <div class="resumen-movimiento" id="resumen-movimiento"></div>
@@ -389,7 +389,10 @@
                  compra: antes había que multiplicar de cabeza (UX entrega 2, G-12). -->
             <div class="mb-2">
               <label class="form-label" id="dinero-pregunta-precio">Precio por unidad *</label>
-              <input type="number" class="form-control" id="dinero-precio" min="0.01" step="0.01" placeholder="0,00" required>
+              <div class="input-group">
+                <span class="input-group-text">$</span>
+                <input type="number" class="form-control" id="dinero-precio" min="0.01" step="0.01" placeholder="0,00" required>
+              </div>
               <div class="form-text" id="dinero-ayuda-precio"></div>
             </div>
             <input type="hidden" name="monto">
@@ -404,7 +407,7 @@
           </form>
         </div>
         <div class="modal-footer">
-          <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Ahora no</button>
+          <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
           <button type="button" id="btn-guardar-dinero" class="btn fw-bold px-4" style="background-color:#2d7a4f;color:white;">
             <i class="fa-solid fa-floppy-disk me-2"></i>Registrar
           </button>
@@ -508,7 +511,19 @@
       else if (atajo.get('comprar')) abrirModalOperacion('compra', null)
       // ?ver=faltantes (desde las alertas del panel, UX E-18) y ?ver=historial
       // (desde el cartel de anular de Movimientos).
-      if (atajo.get('ver') === 'historial') mostrarVista('movimientos')
+      // ?ver=historial&producto=&corregir= llega desde Movimientos: abre el
+      // historial de ese producto y el cartel de esa venta (UX entrega 3, H3-04).
+      if (atajo.get('ver') === 'historial') {
+        mostrarVista('movimientos')
+        if (atajo.get('producto')) {
+          await prepararFiltrosDelHistorial()
+          document.getElementById('mov-producto').value = atajo.get('producto')
+          window.actualizarFiltrosPlegables?.()
+          await cargarMovimientos()
+          const aCorregir = (window.movimientosCargados || []).find(m => String(m.id_movimiento_stock) === atajo.get('corregir'))
+          if (aCorregir && !aCorregir.anulado) abrirModalAnular(aCorregir)
+        }
+      }
     }
 
     function armarConsulta() {
@@ -624,7 +639,7 @@
               </button>
               <!-- Con texto (UX entrega 2, G-15): es donde se carga una rotura. -->
               <button class="btn-mini" data-accion="mover" data-id="${item.id_producto}" title="Registrar otra entrada o salida (una rotura, un consumo, un ajuste)">
-                <i class="fa-solid fa-right-left"></i><span class="texto-boton">Otra</span>
+                <i class="fa-solid fa-right-left"></i><span class="texto-boton">Rotura u otra</span>
               </button>
             </td>
           </tr>`
@@ -714,9 +729,14 @@
         const suma = (efecto) => vivos.filter(m => m.efecto_stock === efecto).reduce((s, m) => s + Math.round(Number(m.cantidad) * 100), 0) / 100
         const item = (await fetch('/productos/stock').then(r => r.ok ? r.json() : [])).find(s => String(s.id_producto) === producto)
         const unidad = item?.unidad_medida || vivos[0]?.unidad_medida
-        resumen.innerHTML = `<i class="fa-solid fa-box me-1"></i>${desde || hasta ? 'En el período' : 'En total'}: ` +
-          `entraron <strong>${cuanto(suma('entrada'), unidad)}</strong> · salieron <strong>${cuanto(suma('salida'), unidad)}</strong>` +
-          (item ? `. Hoy hay <strong>${cuanto(item.existencia, unidad)}</strong>.` : '.')
+        // Dice de qué habla (QA entrega 3, M2): con un motivo elegido, decía
+        // "En total: entraron 0 kg" de un producto al que entraron 20.
+        const nombreMotivo = motivo ? document.querySelector(`#mov-motivo option[value="${motivo}"]`)?.textContent : ''
+        const alcance = motivo ? `Con el motivo «${esc(nombreMotivo || '')}»${desde || hasta ? ', en el período' : ''}`
+                      : desde || hasta ? 'En el período' : 'En total'
+        resumen.innerHTML = `<i class="fa-solid fa-box me-1"></i>${alcance}: ` +
+          `entraron <strong>${cuanto(suma('entrada'), unidad)}</strong> · salieron <strong>${cuanto(suma('salida'), unidad)}</strong>.` +
+          (item ? ` Hoy hay <strong>${cuanto(item.existencia, unidad)}</strong> en total.` : '')
       }
 
       if (!movimientos.length) {
@@ -800,7 +820,7 @@
                 <!-- Una venta o una compra se corrige desde acá: el botón lo dice,
                      como en Movimientos (UX E-03). Una rotura o un ajuste se anula. -->
                 <!-- Todo se puede corregir, como en Movimientos (UX entrega 2, G-05). -->
-                <button class="btn-mini peligro" data-accion="anular" data-id="${m.id_movimiento_stock}" title="Anular o corregir">
+                <button class="btn-mini" data-accion="anular" data-id="${m.id_movimiento_stock}" title="Anular o corregir">
                   <i class="fa-solid fa-pen me-1"></i>Anular o corregir
                 </button>`}
             </td>
@@ -893,12 +913,14 @@
     })
 
     let movReemplaza = null   // si se está corrigiendo una entrada o salida, cuál (UX entrega 2, G-05)
+    let movOriginalEfecto = null
 
     async function abrirModal(idProducto, original = null) {
       const form = document.getElementById('form-movimiento')
       form.reset()
       document.getElementById('mov-error').classList.add('d-none')
       movReemplaza = original ? original.id_movimiento_stock : null
+      movOriginalEfecto = original ? original.efecto_stock : null
       form.id_producto.disabled = false
       const nombre = original ? (original.efecto_stock === 'entrada' ? 'entrada' : 'salida') : ''
       document.getElementById('mov-titulo').innerHTML = original
@@ -976,9 +998,12 @@
 
       const producto = existenciasDelFormulario.find(p => String(p.id_producto) === form.id_producto.value)
       const motivo = motivos.find(m => String(m.id_motivo_stock) === form.id_motivo_stock.value)
+      // El ejemplo del detalle según lo que se carga (UX entrega 3, H3-20).
+      document.getElementById('mov-detalle').placeholder = !motivo ? 'Opcional: qué pasó'
+        : motivo.efecto_stock === 'entrada' ? 'Opcional: de dónde vino' : 'Opcional: qué pasó (se rompió, venció, se usó)'
       // La cantidad dice en qué se mide, como en la venta y la compra (G-22).
       document.getElementById('mov-unidad').textContent = producto?.unidad_medida ? `(en ${nombreUnidad(2, producto.unidad_medida)})` : ''
-      const sinEsta = movReemplaza ? `Sin esta ${motivo?.efecto_stock === 'entrada' ? 'entrada' : 'salida'}, hay` : 'Hay'
+      const sinEsta = movReemplaza ? `Sin la ${movOriginalEfecto === 'entrada' ? 'entrada' : 'salida'} de antes, hay` : 'Hay'
 
       document.getElementById('ayuda-motivo').textContent = motivo
         ? (motivo.efecto_dinero === 'ninguno'
@@ -1002,11 +1027,31 @@
 
       const queda = motivo.efecto_stock === 'entrada' ? hay + cantidad : hay - cantidad
 
+      // Corrigiendo una entrada de la que ya salió parte (QA entrega 3, B2):
+      // sin ella el número da negativo, y "hay -8 kg" no se entiende.
+      if (movReemplaza && hay < 0 && queda < 0) {
+        div.classList.add('alerta')
+        div.innerHTML = `<i class="fa-solid fa-triangle-exclamation me-1"></i>De esa entrada ya salieron ${cuanto(-hay, producto.unidad_medida)}: ` +
+          'no se puede corregir así, porque lo que hay quedaría por debajo de cero.'
+        botonMov.disabled = true
+        return
+      }
+
       // Mientras no alcanza, el botón queda apagado (UX E-14): el servidor iba a
       // rechazarlo igual, con otro consejo, y quedaban los dos a la vista.
       if (queda < 0) {
         div.classList.add('alerta')
-        div.innerHTML = `<i class="fa-solid fa-triangle-exclamation me-1"></i>${sinEsta} <strong>${cuanto(hay, producto.unidad_medida)}</strong> y estás sacando ${formatearCantidad(cantidad)}. No alcanza. Si en el depósito hay más: si fue una compra que no se cargó, registrala primero; si no, corregí la cuenta con un «Ajuste positivo» por lo que falta (en Otra entrada o salida).`
+        // En dos renglones, y con un botón que carga primero el ajuste y deja
+        // esto listo para registrar: antes eran dos viajes por la misma
+        // ventana (UX entrega 3, H3-07).
+        const falta = Math.round((cantidad - hay) * 100) / 100
+        const ajuste = motivoDeAjuste()
+        div.innerHTML = `<i class="fa-solid fa-triangle-exclamation me-1"></i>${sinEsta} <strong>${cuanto(hay, producto.unidad_medida)}</strong> y estás sacando ${formatearCantidad(cantidad)}: no alcanza.` +
+          `<div class="mt-1">Si estaban y el sistema no las tenía, primero cargá un «${esc(ajuste ? ajuste.nombre : 'Ajuste positivo')}» de ${cuanto(falta, producto.unidad_medida)} y después esto. ` +
+          `Si fue una compra que no se cargó, registrala primero.</div>` +
+          (ajuste && !movReemplaza && falta > 0
+            ? `<button type="button" class="btn btn-sm btn-outline-success mt-2" id="btn-ajuste-primero">Cargar primero el ajuste de ${cuanto(falta, producto.unidad_medida)}</button>`
+            : '')
         botonMov.disabled = true
         return
       }
@@ -1014,6 +1059,40 @@
       const esta = motivo.efecto_stock === 'entrada' ? 'esta entrada' : 'esta salida'
       div.innerHTML = `<i class="fa-solid fa-box me-1"></i>${sinEsta} ${cuanto(hay, producto.unidad_medida)} · ${movReemplaza ? 'con la corrección' : 'después de ' + esta} ${quedaN(queda)} <span class="queda">${cuanto(queda, producto.unidad_medida)}</span>.`
     }
+
+    // El motivo de entrada que no mueve plata, para corregir la cuenta: el que
+    // se llame "Ajuste…", o el primero de ese tipo.
+    function motivoDeAjuste() {
+      const candidatos = motivos.filter(m => m.efecto_stock === 'entrada' && m.efecto_dinero === 'ninguno')
+      return candidatos.find(m => /ajuste/i.test(m.nombre)) || candidatos[0] || null
+    }
+
+    // "Cargar primero el ajuste": registra el ajuste por lo que falta y deja la
+    // salida lista, con lo que la persona ya escribió (UX entrega 3, H3-07).
+    document.getElementById('resumen-movimiento').addEventListener('click', async (evento) => {
+      if (evento.target.id !== 'btn-ajuste-primero') return
+      const boton = evento.target
+      const form = document.getElementById('form-movimiento')
+      const errorDiv = document.getElementById('mov-error')
+      const producto = existenciasDelFormulario.find(p => String(p.id_producto) === form.id_producto.value)
+      const ajuste = motivoDeAjuste()
+      if (!producto || !ajuste) return
+      const falta = Math.round((Number(form.cantidad.value) - Number(producto.existencia)) * 100) / 100
+      boton.disabled = true
+      const res = await fetch('/productos/stock/movimientos', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id_producto: producto.id_producto, id_motivo_stock: ajuste.id_motivo_stock, cantidad: falta,
+                               fecha: form.fecha.value, descripcion: 'Para corregir la cuenta antes de cargar la salida' })
+      })
+      const resultado = await res.json().catch(() => ({}))
+      if (!res.ok) { boton.disabled = false; return mostrarError(errorDiv, resultado.error || 'No se pudo cargar el ajuste.') }
+      producto.existencia = Number(resultado.existencia)
+      producto.cantidad_movimientos = Number(producto.cantidad_movimientos || 0) + 1
+      mostrarToast(resultado.message + ' Ahora tocá Registrar para cargar la salida.')
+      actualizarResumen()
+      cargarExistencias()
+    })
 
     document.getElementById('select-producto').addEventListener('change', actualizarResumen)
     document.getElementById('select-motivo').addEventListener('change', actualizarResumen)
@@ -1079,7 +1158,7 @@
         titulo: '<i class="fa-solid fa-cart-shopping me-2"></i>Registrar una venta',
         preguntaProducto: '¿Qué vendiste? *',
         preguntaMotivo: '¿Qué tipo de venta? *',
-        preguntaPrecio: 'Precio por unidad *',
+        preguntaPrecio: 'Lo que cobraste por unidad *',
         textoTotal: 'Total de la venta',
         placeholderDetalle: 'Opcional: cliente, remito...',
         boton: 'Registrar la venta',
@@ -1357,7 +1436,8 @@
 
       // El precio como se lee, con separador de miles (UX F-18): en el campo
       // numérico, 12500 y 125000 se confunden de un vistazo.
-      document.getElementById('op-precio-legible').textContent = precio > 0
+      // Sólo de mil para arriba: abajo de eso repetía lo escrito (UX entrega 3, H3-20).
+      document.getElementById('op-precio-legible').textContent = precio >= 1000
         ? `= ${formatMoneda(precio)} ${porUnidad(producto?.unidad_medida)}`
         : ''
 
@@ -1538,8 +1618,10 @@
       const opciones = tiposDeMovimiento.filter(t => t.naturaleza === propuesta.naturaleza)
 
       document.getElementById('select-tipo').innerHTML = opciones.length
+        // Agrupado por categoría, como en el alta de Movimientos (UX entrega 3, H3-20).
         ? '<option value="">Elegí una opción</option>' +
-          opciones.map(t => `<option value="${t.id_tipo}">${esc(t.categoria_nombre)} › ${esc(t.nombre)}</option>`).join('')
+          [...new Set(opciones.map(t => t.categoria_nombre))].map(cat =>
+            `<optgroup label="${esc(cat)}">` + opciones.filter(t => t.categoria_nombre === cat).map(t => `<option value="${t.id_tipo}">${esc(t.nombre)}</option>`).join('') + '</optgroup>').join('')
         : '<option value="">No hay categorías de plata que ' + (esIngreso ? 'entra' : 'sale') + '</option>'
 
       // Si el motivo ya sabe dónde cae su plata, va elegido de entrada.
@@ -1604,7 +1686,7 @@
       // saber antes de confirmar, con palabras de todos los días.
       const queLePasa = entra
         ? `se descuenta de lo que hay de ${esc(movimiento.producto_nombre)}`
-        : `${esc(movimiento.producto_nombre)} vuelve al stock`
+        : `${cuanto(movimiento.cantidad, movimiento.unidad_medida)} vuelven a contarse en lo que hay`
       let aviso = `<i class="fa-solid fa-circle-info me-1"></i><strong>Anular</strong>: no se borra, queda en el historial como anulada, y ${queLePasa}.`
 
       // La plata atada se anula junto con la mercadería (decisión del grupo,

@@ -234,10 +234,13 @@ cuánto hay.
 compra**: una rotura, un robo, consumo propio, mercadería vencida, o corregir el stock
 cuando contaste y no coincide.
 
-1. En **Stock**, tocá **Otra entrada o salida**.
+1. En **Stock**, tocá **Otra entrada o salida** (o **Rotura u otra** en la fila del producto).
 2. Elegí el **producto**, el **motivo** (por ejemplo *Pérdida* o *Ajuste positivo*) y
    la **cantidad**.
 3. Tocá **Registrar**.
+
+> Si el sistema dice que **no alcanza** pero las cosas estaban en el depósito, tocá
+> **Cargar primero el ajuste**: carga lo que faltaba y deja la salida lista para registrar.
 
 > **La primera vez** que cargás un producto, su stock está en *Sin cargar*. Para
 > poner lo que ya tenías en el depósito, usá un **Ajuste positivo** con esa cantidad.
@@ -318,8 +321,10 @@ ahí también lo podés descargar.
    fechas*.
 3. Elegí **¿Cómo querés verlo?**: *Uno por uno*, *Por categoría*, *Por producto* o
    *Por servicio*. *Por producto* muestra lo **vendido** y lo **comprado** de cada uno,
-   por separado: es sólo la plata de la mercadería, así que no suma lo mismo que el
-   período.
+   por separado, y **"Te dejó (aprox.)"**: lo cobrado menos lo que te costó lo que
+   vendiste. *Por servicio* muestra lo que dejaron los que ofrecés y lo que se llevaron
+   los que contratás. Las dos son sólo una parte de la plata, así que no suman lo mismo
+   que el período.
 4. Para guardarlo o mandarlo, tocá **Descargar para Excel** o **Descargar en PDF**.
    El archivo lleva el nombre de la empresa y el período.
 

@@ -361,3 +361,8 @@
 /* Lo perdido en gris oscuro, no en el rojo de "Salió", igual que en el PDF (UX entrega 2, G-22) */
 .texto-perdido, .total-perdido .valor { color: #1a2e23 !important; }
 .total-perdido { background: #f4f6f5 !important; }
+
+.que-es-perdido { font-size: 0.9rem; color: #1a2e23; margin: 0 0 10px; font-weight: 600; }
+
+.link-descargar { font-size: 0.875rem; font-weight: 600; color: var(--verde-primario); }
+@media (min-width: 768px) { .link-descargar { display: none; } }

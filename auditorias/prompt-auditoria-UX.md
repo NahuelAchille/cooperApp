@@ -136,6 +136,12 @@ Movimientos, ni Reportes. No lo reportes como falta de información.
   Stock; *Historial* con texto y atajos de período; cada rol dice qué hace; un solo aviso de
   *No alcanza*; *Por producto* explica que no es toda la plata; en la tablet las tarjetas van de
   a dos y los botones de la franja debajo del título.
+- Desde la segunda vuelta (15/11, `57627ad`): *Por producto* con **Vendido / Comprado**;
+  corregir es el mismo cartel en Stock y en Movimientos (**Corregir** en verde, **Anular** en
+  rojo) y vale también para roturas y ajustes; el panel compara contra los mismos días; *Se
+  olvidó la contraseña*; *Entendido, se lo pido* para el tesorero; el aviso de módulos
+  apagados se puede cerrar. **Un servicio creado hoy sigue apareciendo en reportes de meses
+  anteriores**: no hay fecha de alta, ya está anotado.
 
 **Lo que sigue abierto a propósito** (anotado en el informe final): renombrar *Ajuste positivo /
 negativo* (*a validar con usuarios*) y la regla de 14 px para todo dato (backlog). Si los ves,
@@ -309,6 +315,19 @@ Varias cosas se hicieron con la propuesta del informe anterior y quedaron marcad
     operadores se entiende? ¿Asusta de más?
 42. Abrí el PDF de *Lo que se perdió* suelto, sin la app: ¿el recuadro alcanza para no
     restarlo del balance?
+
+LO QUE SE CAMBIÓ EN LA SEGUNDA VUELTA (15/11, `57627ad`)
+De nuevo: no lo des por bueno, fijate si resolvió lo que reportó la vuelta anterior
+(`informes-UX/informe-UX-entrega-2.md`).
+43. Como Silvia: "Cargué la rotura de recién con 3 y eran 4, arreglalo." (antes no se podía
+    corregir, sólo anular.)
+44. Como Marta, en *Por producto*: "¿Qué producto me conviene?" ¿*Vendido / Comprado* sin
+    restar contesta la pregunta, o ahora falta algo?
+45. En el panel, a mitad de mes: "¿Cómo venimos?" ¿Se entiende *"Del 1 al 15 de octubre"*
+    contra el mes que va?
+46. Como Marta: "Jorge se olvidó la contraseña." ¿Encontrás el botón y sabés qué decirle?
+47. Como Marta, en Stock: una compra vieja dice *"Sin registrar el pago"*. Completala. ¿Tuviste
+    que hacer alguna cuenta de cabeza?
 
 ## Qué mirar, más allá de las tareas
 
@@ -527,6 +546,7 @@ sistema que se usa para decidir, no para registrar.
 | 14/11/2026 | **Sprint 13, auditoría final** (HU-64). Foco en lo nunca auditado: venta y compra en un paso, buscador y ficha de empresas, superadmin rehecho, Primeros pasos y vacíos (HU-88), alta con un desplegable y *Anular y corregir* (HU-87) | 21 hallazgos, numerados **F-01 a F-21** (0 bloquean, 11 generan duda, 6 hacen perder tiempo, 4 molestan) + 12 términos + tabla de contraste medida texto por texto + 4 bugs + **recomendación sobre H-16: una sola puerta, en Reportes**. Informe en `informes-UX/informe-UX-final.md`. Lo más grave: *Anular y corregir* + *Cancelar* deja la plata anulada sin aviso (F-01); el login entre 1,9 y 2,8 : 1 y seis grises distintos por debajo de 4,5 : 1; la tabla de Motivos de stock no entra a 375 px (606 en 343). Corrida en una copia aparte (`cooperApp_ux`, puerto 3002) porque QA usaba la base y el puerto de siempre: **las cookies de `localhost` se comparten entre puertos**, hay que usar `127.0.0.1` | **14/11: los 21 corregidos**, más el contraste, el vocabulario y H-16 (una sola puerta, en Reportes). Afuera a propósito: *Ajuste positivo/negativo* (a validar con usuarios) y la regla de 14 px. Ese mismo día, una revisión visual con capturas de todas las pantallas unificó los estilos (`comun.css`) y la tablet. Detalle al final del informe |
 | 14/11/2026 (noche) | **Entrega, de punta a punta**, después de la revisión del 14/11 (`453f870`: `comun.css`, tablet, botones con texto, Productos y Servicios en una página). Las 36 tareas con siete usuarios, 54 pantallas medidas a 1280, 800 y 375 px con un script, el CSV abierto en Excel por COM y el PDF | 29 hallazgos, numerados **E-01 a E-29** (1 bloquea, 15 generan duda, 5 hacen perder tiempo, 8 molestan) + 11 términos + 0 bugs. Informe en `informes-UX/informe-UX-entrega.md`. Lo más grave: el tesorero no puede corregir la plata de una venta y el cartel lo manda a Stock, que no tiene (E-01); *Por producto* dice ser "la misma plata" y no cierra con los casilleros, y un producto comprado y no vendido aparece con resultado negativo (E-02); en Stock corregir está detrás de "Anular" (E-03); el Panel a 800 px corta sus dos tablas y la franja de Servicios mide 263 px (E-17). Ninguna pantalla con scroll de costado. Corrida en `cooperApp_ux` / puerto 3002; **ojo: el puerto de depuración de Edge (9341) chocó con el de QA**, usar uno propio | **15/11: los 29 y el vocabulario, corregidos**. Los *a validar* (E-02 la columna *Resultado*, E-06, E-08 el gris, E-09 la comparación, E-11, E-28 las tarjetas de a dos) se hicieron con la propuesta del informe: son lo primero para llevar a la prueba con una persona real. Detalle al final del informe |
 | 15/11/2026 | **Entrega, segunda pasada**, sobre `56e4bc6` (las correcciones de la auditoría de la entrega). Las 42 tareas (con las nuevas 37 a 42, que miran si lo corregido resolvió lo reportado) con siete usuarios, 93 mediciones (31 pantallas × 1280, 800 y 375 px), el CSV abierto en Excel por COM y el PDF mirado como imagen | 22 hallazgos, numerados **G-01 a G-22** (0 bloquean, 11 generan duda, 4 hacen perder tiempo, 7 molestan) + 11 términos + 1 bug. Informe en `informes-UX/informe-UX-entrega-2.md`. **Alcanzaron**: E-01, E-05, E-07, E-08 en el PDF, E-10 a E-13, E-15 a E-21, E-25, E-28 (las tarjetas de a dos se leen bien). **No alcanzaron**: E-02 (*Por producto* sigue poniendo al más vendido último y en rojo; *Vendido / Comprado* contestaría mejor) y, en pantalla, E-08: en *Lo que se perdió* la nota de arriba queda la de la vista anterior y dice *"Son la misma plata del período"* (G-01). Además: corregir sigue distinto entre Stock y Movimientos, y lo de *Otra entrada o salida* no se corrige (G-04, G-05); al corregir una venta la ayuda dice que el precio es el del producto (G-03). Ninguna pantalla con scroll de costado. Corrida en `cooperApp_ux` / puerto 3002 / Edge en el 9377, sin choques con QA | **15/11: los 22 y el vocabulario, corregidos**, menos el servicio creado hoy en el reporte de octubre (no hay fecha de alta: cambio de esquema). Detalle al final del informe |
+| 15/11/2026 (2) | **Entrega, tercera pasada**, sobre `57627ad` (las correcciones de la segunda). Las 47 tareas (con las nuevas 43 a 47) con siete usuarios, 99 mediciones (33 pantallas × 1280, 800 y 375 px), el CSV abierto en Excel por COM y los PDF mirados como imagen | 20 hallazgos, numerados **H3-01 a H3-20** (0 bloquean, 6 generan duda, 3 hacen perder tiempo, 11 molestan) + 12 términos + 0 bugs. Informe en `informes-UX/informe-UX-entrega-3.md`. **Alcanzaron**: G-01, G-03 a G-05 (tarea 43: corregir una rotura anda), G-07 (tarea 45), G-08 a G-14 (tareas 46 y 47 sin cuentas de cabeza), G-16 a G-19, G-21. **No alcanzaron del todo**: G-02 (lo de *Por producto* no llegó a *Por servicio*, que sigue con los casilleros del período sobre una tabla que no los suma; y *Vendido / Comprado* lado a lado se restan igual de cabeza), G-06 (el texto nombra el *Ajuste positivo*, pero una rotura con el sistema en 0 sigue costando dos viajes), G-20 (en los archivos el movimiento sin descripción sigue sin título). Nuevos: el login no dice qué hacer si uno se olvidó la contraseña; la admin ve *Anular o corregir* en la plata de una venta y el cartel no la lleva a corregir; *Agregala acá* pierde lo escrito en el formulario. Ninguna pantalla con scroll de costado. Corrida en `cooperApp_ux` / puerto 3002 / Edge en el 9377, sin choques con QA | **15/11: los 20 y el vocabulario, corregidos** (ver el final del informe) |
 
 *(Completar después de cada corrida.)*
 

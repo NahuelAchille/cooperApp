@@ -142,7 +142,7 @@ const porProducto = async (id_empresa, { desde, hasta } = {}) => {
   params.push(id_empresa)
 
   const [rows] = await db.query(`
-    SELECT p.id_producto, p.nombre, p.unidad_medida, p.activo,
+    SELECT p.id_producto, p.nombre, p.unidad_medida, p.activo, p.costo_referencia,
            -- Las cantidades salen del motivo, igual que la existencia.
            COALESCE(SUM(CASE WHEN mo.efecto_stock = 'entrada' THEN ms.cantidad ELSE 0 END), 0) AS entradas,
            COALESCE(SUM(CASE WHEN mo.efecto_stock = 'salida'  THEN ms.cantidad ELSE 0 END), 0) AS salidas,
@@ -152,6 +152,9 @@ const porProducto = async (id_empresa, { desde, hasta } = {}) => {
            COALESCE(SUM(CASE WHEN mo.efecto_stock = 'salida'  AND mo.efecto_dinero = 'ingreso' THEN ms.cantidad ELSE 0 END), 0) AS vendidas,
            COALESCE(SUM(CASE WHEN mo.efecto_stock = 'salida'  AND mo.efecto_dinero = 'ninguno' THEN ms.cantidad ELSE 0 END), 0) AS sin_vender,
            COALESCE(SUM(CASE WHEN mo.efecto_stock = 'entrada' AND mo.efecto_dinero = 'ninguno' THEN ms.cantidad ELSE 0 END), 0) AS sin_comprar,
+           -- Lo vendido que tiene su cobro vivo: es lo que entra en "Te dejó"
+           -- (UX entrega 3, H3-02). Una venta sin cobro no dejó nada todavía.
+           COALESCE(SUM(CASE WHEN mo.efecto_stock = 'salida' AND mo.efecto_dinero = 'ingreso' AND m.anulado = 0 THEN ms.cantidad ELSE 0 END), 0) AS vendidas_cobradas,
            -- La plata, solo la que de verdad quedo registrada y sigue vigente:
            -- un movimiento de dinero anulado no cuenta, aunque el de stock siga.
            COALESCE(SUM(CASE WHEN m.anulado = 0 AND c.naturaleza = 'ingreso' THEN m.monto ELSE 0 END), 0) AS cobrado,

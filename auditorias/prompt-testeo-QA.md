@@ -10,6 +10,9 @@
 > herramientas para recorrer todas las pantallas de una vez.
 > Actualizado el 15/11/2026: se sumó lo que cambió al corregir las auditorías de la entrega
 > (el rol revisado en cada pedido, la unidad fija, los mensajes y archivos nuevos).
+> Actualizado de nuevo el 15/11/2026, después de la segunda vuelta (commit `57627ad`): el
+> cambio de unidad bajo el candado, la contraseña actual, corregir cualquier entrada o salida,
+> *Por producto* con Vendido / Comprado y el panel contra los mismos días.
 
 ---
 
@@ -216,6 +219,19 @@ Reportarlo otra vez gasta lugar en el informe sin agregar nada:
   - **La descarga con un formato o una vista que no existen da 400.**
   - **Al tesorero, la plata de una venta le ofrece sólo *Anular*** (no tiene Stock): es a
     propósito, y el cartel le dice a quién pedir la corrección (UX E-01).
+- Lo que se cerró después de la segunda vuelta (15/11/2026, `57627ad`):
+  - **Cambiar la unidad pasa por `conProductoTrabado()`**, y la entrada, la venta y la
+    compra revisan la unidad adentro del candado (QA entrega 2, M1).
+  - **Cambiar la contraseña propia pide la actual** (`password_actual`); con la contraseña
+    inicial alcanza la nueva. No hay pantalla para cambiarla fuera del primer ingreso: es a
+    propósito.
+  - **Por producto no resta**: Vendido y Comprado por separado, sin *Resultado*, ordenado por
+    lo vendido. No suma lo mismo que el período, y lo dice.
+  - **El panel compara contra los mismos días del mes anterior**, no contra el mes entero.
+  - **El aviso de módulos apagados se puede cerrar** y queda guardado en el navegador
+    (`localStorage`): es una comodidad de cada persona, no un dato.
+  - **Un servicio creado hoy aparece en reportes de meses anteriores** (con *"Sin
+    movimientos"*): `productos` no guarda la fecha de alta. Ya está anotado; no lo reportes.
 
 Si encontrás una forma NUEVA de explotar alguna de estas, eso sí reportalo.
 
@@ -533,6 +549,27 @@ LO QUE CAMBIÓ EL 15/11/2026 (correcciones de la entrega) — es lo que menos oj
   dentro de cada bloque**, no sólo el scroll de la página (es lo que se escapó en la
   revisión del 14/11).
 
+LO QUE CAMBIÓ EN LA SEGUNDA VUELTA (15/11/2026, `57627ad`) — lo que menos ojos tuvo
+- **El candado del producto devuelve la fila trabada** (`decidir(existencia, conexion,
+  fila)`) y la edición del producto, cuando cambia la unidad, cuenta y escribe adentro.
+  Atacalo con TODAS las combinaciones al mismo tiempo: cambiar la unidad contra una compra,
+  una venta, una entrada, la anulación de la única entrada, y una corrección.
+- **Corregir cualquier entrada o salida** (`reemplaza` en `POST
+  /productos/stock/movimientos`): la vieja se anula y la nueva entra en el mismo paso.
+  Probá: corregir algo de otra empresa, de otro producto, ya anulado, una venta o una compra
+  por este camino, corregir una entrada a menos cuando ya se vendió parte, dos correcciones
+  de la misma a la vez, y corregir mientras otro la anula.
+- **La contraseña actual**: con la inicial, sin la actual, con la actual mal, con una que no
+  es texto, y que la sesión de otro usuario no pueda cambiar la de nadie.
+- **Por producto**: compará cada fila (lo vendido y lo comprado) contra un `SELECT`, en los
+  tres atajos, y que el CSV y el PDF digan lo mismo que la pantalla.
+- **Completar la plata** ahora calcula cantidad × precio en la pantalla y manda el total:
+  probá por API que el servidor siga validando el monto como antes (no confía en la cuenta).
+- **El panel contra los mismos días**: el 31 contra un mes de 30, el 29 de marzo contra
+  febrero, el día 1, y una empresa sin nada el mes anterior.
+- **`movimientos.html?periodo=`**: con un período inventado, con `nuevo=` combinado, y con
+  un rol que no ve Movimientos.
+
 FLUJOS COMPLETOS
 - Registro de empresa → aprobación → alta de usuarios → carga de movimientos.
 - Rechazo de una empresa: ¿se puede revertir? ¿qué pasa con sus usuarios?
@@ -679,5 +716,6 @@ CLAUDE.md), que es lo que menos ojos tuvo encima.
 | 14/11/2026 | **Auditoría final, sistema completo** (HU-67), con foco en lo que nunca pasó por QA: Articulación, el superadmin rehecho, lo que se sacó, HU-87 y HU-88 | 6 (1 crítico, 1 alto, 1 medio, 3 bajos), todos confirmados ejecutándolos. Informe en `informes-QA/informe-QA-final.md` | **14/11: los 6 corregidos**, ninguno al backlog (ver el final del informe). Después vino una revisión grande en cuatro tandas (bitácora de CLAUDE.md, 14/11 (13) a (15)) que todavía no pasó por QA. Lo que encontró el informe: **C1**: *Anular y corregir* (HU-87) vuelve a cargar la plata de una venta sin atarla, la venta queda *"Sin registrar el cobro"* y se puede cobrar dos veces. **A1**: el registro da *"Error del servidor"* con el CUIT escrito con guiones. **M1**: el DNI con puntos se guarda con puntos (saltea el duplicado y la contraseña temporal queda con puntos). **Lo nuevo de Articulación y del superadmin aguantó entero**: nada privado sale hacia otra empresa, cada condición de "quién aparece" esconde, y 0 inyecciones de XSS en las pantallas nuevas. La regresión de los cuatro informes anteriores dio bien |
 | 14/11/2026 | **Auditoría de la entrega, sistema completo**, sobre `453f870` (las cuatro tandas de la revisión del 14/11, que nunca habían pasado por QA) | 9 (0 críticos, 1 alto, 2 medios, 6 bajos), todos confirmados ejecutándolos. Informe en `informes-QA/informe-QA-entrega.md` | **15/11: los 9 corregidos**, ninguno al backlog, más las observaciones (descarga con formato inventado, mínimo entero). Ver el final del informe. Lo que encontró: **A1**: cambiar el rol de alguien no toca su sesión abierta (un tesorero pasado a operador sigue cargando y anulando plata; es el pariente que quedó de la sesión viva del Sprint 06). **M1**: con la contraseña temporal, 12 de 16 pantallas mandan al login en vez de a cambiarla. **M2**: cambiar la unidad de un producto usado reinterpreta el historial y puede dejar un resto que no se puede sacar. **Lo que aguantó**: cero XSS en 25 vistas, nueve carreras sobre plata y stock sin filas desparejas, los reportes cierran contra `SELECT` en las cinco vistas, la misma lista de 25 valores raros se comporta igual en los diez campos numéricos, y 71 recorridos por ancho (1280, 800, 375) sin errores de consola ni scroll horizontal. La regresión de los ocho informes anteriores dio bien |
 | 15/11/2026 | **Segunda auditoría de la entrega**, sobre `56e4bc6` (las correcciones de QA y UX de la entrega), con foco en la regresión y en *"LO QUE CAMBIÓ EL 15/11/2026"* | 4 (0 críticos, 0 altos, 1 medio, 3 bajos), todos confirmados ejecutándolos. Informe en `informes-QA/informe-QA-entrega-2.md` | **15/11: los 4 corregidos** (ver el final del informe). Lo que encontró: **M1**: la unidad fija (M2 de la entrega) se saltea con dos pedidos a la vez. Si la primera compra entra mientras se cambia la unidad, pasan las dos (15 de 15 vueltas) y queda "2,5 cajas" trabado para siempre. Otra vez consultar-decidir-escribir. **B1**: en 375 px el texto de los botones de Stock se sale del botón. **B2**: cambiar la contraseña no pide la actual con cualquier sesión. **B3**: un mensaje al operador todavía nombra Movimientos (sólo armando el pedido). **Lo que aguantó**: los 9 hallazgos de la entrega siguen corregidos (el rol vale desde el pedido siguiente en las 15 rutas de finanzas), los archivos nuevos no rompen las columnas y cierran contra `SELECT`, cero XSS en 24 vistas más las piezas nuevas, las carreras sobre plata y stock sin filas desparejas, y 97 recorridos por ancho (1280, 800, 375) midiendo también lo que se sale de cada bloque |
+| 15/11/2026 | **Tercera auditoría de la entrega**, sobre `57627ad` (las correcciones de la segunda vuelta), con foco en la regresión y en *"LO QUE CAMBIÓ EN LA SEGUNDA VUELTA"* | 6 (0 críticos, 0 altos, 2 medios, 4 bajos), todos confirmados ejecutándolos. Informe en `informes-QA/informe-QA-entrega-3.md` | **15/11: los 6 corregidos** (ver el final del informe). Lo que encontró: **M1**: una pestaña de Productos abierta pisa el costo que dejó una compra con la casilla, y la fecha del costo queda como nueva (el formulario manda todos los campos leídos al abrir la pantalla; *"editar desde dos pestañas"* nunca se había cubierto). **M2**: el resumen nuevo del historial de un producto dice *"En total: entraron 0 kg"* con un motivo elegido (suma sólo el filtro). **B1**: `movimientos.html?periodo="]` deja la pantalla en *"Cargando..."* (selector sin escapar). **B2**: corregir una entrada como salida dice *"hay -8 kg"*. **B3**: la venta o compra que entra mientras cambia la unidad describe la plata con la unidad vieja (*"Compra: 3 cajas"* y el stock en kg). **B4**: `cambiar-password.html` con una contraseña propia pide la actual y no tiene dónde escribirla. **Lo que aguantó**: los 4 de la segunda vuelta siguen cerrados (el candado de la unidad, en 54 vueltas de carreras, nunca deja el producto roto), `reemplaza` rebota en todos los cruces y en sus cuatro carreras, *Por producto* cierra contra `SELECT` en pantalla, CSV y PDF, el panel contra los mismos días da lo que da la base, cero XSS en 29 vistas, y 339 recorridos de pantallas en tres anchos |
 
 *(Completar después de cada corrida.)*

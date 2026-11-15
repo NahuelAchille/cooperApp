@@ -10,7 +10,8 @@
 //   2. a la caja de filtros, la clase "filtros-plegables"
 //   3. <script src="/components/filtros-plegables.js"></script> al final
 //
-// En 768 px o más no cambia nada: los filtros siguen a la vista.
+// En 1024 px o más no cambia nada: los filtros siguen a la vista (en la tablet
+// también se pliegan, como el resto del celular).
 //
 // El botón dice cuántos filtros hay puestos. Sin eso, con los filtros
 // plegados, una lista corta se lee como "hay pocos" cuando en realidad es

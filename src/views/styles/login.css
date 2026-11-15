@@ -178,3 +178,5 @@ main {
 #boton-login, #boton-login button { width: 100%; max-width: none; }
 #formulario-login { margin: 0.5rem 0 1rem !important; }
 #formulario-login input { margin-bottom: 0.75rem; }
+
+.olvido-login { color: rgba(255, 255, 255, 0.85); font-size: 0.875rem; margin: 10px 0 0; text-align: center; }

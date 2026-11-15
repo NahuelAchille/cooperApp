@@ -473,3 +473,10 @@
 }
 /* El panel de comparación: el mes anterior a los mismos días, y el entero más chico (G-07) */
 .dashboard-kpi h5 small { display: block; font-weight: 400; opacity: 0.85; }
+
+/* H3-15: a 375 los botones de la franja, de la misma altura */
+@media (max-width: 767px) { #secondary-nav ul li a { height: 100%; display: flex !important; align-items: center; justify-content: center; } }
+.dashboard-kpi .comparacion { font-weight: 400; }
+
+/* Sin el hueco blanco abajo de Primeros pasos (UX entrega 3, H3-20) */
+#primeros-pasos .pasos-lista { margin-bottom: 0; }

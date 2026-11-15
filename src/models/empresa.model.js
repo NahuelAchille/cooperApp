@@ -66,7 +66,7 @@ const findAll = async () => {
     SELECT e.id_empresa, e.nombre, e.email, e.cuit, e.federacion, e.domicilio, e.telefono, e.estado,
            l.nombre AS localidad, p.nombre AS provincia,
            (SELECT COUNT(*) FROM usuarios u WHERE u.id_empresa = e.id_empresa) AS cantidad_usuarios,
-           adm.id AS admin_id, adm.nombre AS admin_nombre, adm.apellido AS admin_apellido, adm.email AS admin_email
+           adm.id AS admin_id, adm.nombre AS admin_nombre, adm.apellido AS admin_apellido, adm.email AS admin_email, adm.dni AS admin_dni
     FROM empresas e
     LEFT JOIN localidades l ON l.id_localidad = e.id_localidad
     LEFT JOIN provincias  p ON p.id_provincia = l.id_provincia

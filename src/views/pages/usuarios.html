@@ -81,6 +81,8 @@
               <div class="col-md-6">
                 <label class="form-label">Email</label>
                 <input type="email" class="form-control" name="email" placeholder="juan@tuempresa.com.ar" autocomplete="new-password" required>
+                <!-- Es el dato que la persona quizás no tiene a mano (UX entrega 3, H3-06). -->
+                <div class="form-text">Es con lo que va a entrar al sistema. Puede ser cualquiera que la persona recuerde: no le llegan correos.</div>
               </div>
               <div class="col-md-6">
                 <label class="form-label">DNI</label>
@@ -254,11 +256,11 @@
         : `<button class="btn-accion" data-accion="alta" ${datos} title="Reactivar">
              <i class="fa-solid fa-circle-plus me-1"></i>Reactivar</button>`
 
-      return `<div class="d-flex flex-wrap gap-1 justify-content-end">
+      return `<div class="d-flex flex-wrap flex-xl-nowrap gap-1 justify-content-end">
                 <button class="btn-accion" data-accion="editar" ${datos} title="Editar">
                   <i class="fa-solid fa-pen me-1"></i>Editar</button>
-                <button class="btn-reset" ${datos} data-dni="${esc(u.dni)}" title="Volver a la contraseña inicial (su DNI)">
-                  <i class="fa-solid fa-key me-1"></i>Se olvidó la contraseña</button>
+                ${u.activo && !u.debe_cambiar_password ? `<button class="btn-reset" ${datos} data-dni="${esc(u.dni)}" title="Volver a la contraseña inicial (su DNI)">
+                  <i class="fa-solid fa-key me-1"></i>Se olvidó la contraseña</button>` : ''}
                 ${baja}
               </div>`
     }

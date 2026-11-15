@@ -185,6 +185,10 @@
 
         // --- KPI ---
         document.getElementById('kpi-faltantes').textContent = faltantes.length
+        // El casillero y el bloque decían lo mismo dos veces (UX entrega 3,
+        // H3-15): queda el bloque, con el número en el título.
+        document.getElementById('dashboard-kpis-5').classList.add('d-none')
+        document.getElementById('titulo-alertas').textContent = faltantes.length ? `Para reponer (${faltantes.length})` : 'Para reponer'
         const sinStock = faltantes.filter(p => p.sinStock).length
         const detalleFaltantes = document.getElementById('kpi-faltantes-detalle')
         detalleFaltantes.textContent = faltantes.length === 0
@@ -263,7 +267,10 @@
         const comparar = (id, campo) => {
             const el = document.getElementById(id)
             if (!huboAntes || !anteriorMismosDias) { el.textContent = ''; return }
-            el.innerHTML = `${tramo}: ${formatMoneda(anteriorMismosDias[campo])}` +
+            // Y dice si es más o menos (UX entrega 3, H3-19).
+            const ahora = Math.round(Number(actual[campo]) * 100), antes = Math.round(Number(anteriorMismosDias[campo]) * 100)
+            const cuanto = ahora > antes ? 'más que' : ahora < antes ? 'menos que' : 'lo mismo que'
+            el.innerHTML = `${tramo}: ${formatMoneda(anteriorMismosDias[campo])} <span class="comparacion">(ahora, ${cuanto} esos días)</span>` +
                 (enteroDistinto ? `<small>${conMayuscula(mesAntes)} entero: ${formatMoneda(anterior[campo])}</small>` : '')
         }
         comparar('kpi-ingresos-var', 'total_ingresos')
@@ -276,7 +283,8 @@
         const detalle = document.getElementById('kpi-balance-detalle')
         detalle.innerHTML = `Quedó ${comoQuedo(actual.balance)}` +
             (huboAntes && anteriorMismosDias
-                ? `<small>${tramo}: ${formatMoneda(anteriorMismosDias.balance)} (${comoQuedo(anteriorMismosDias.balance)})</small>`
+                ? `<small>${tramo}: ${formatMoneda(anteriorMismosDias.balance)} (${comoQuedo(anteriorMismosDias.balance)})</small>` +
+                  (enteroDistinto ? `<small>${conMayuscula(mesAntes)} entero: ${formatMoneda(anterior.balance)} (${comoQuedo(anterior.balance)})</small>` : '')
                 : '')
     }
 
@@ -445,7 +453,7 @@
             </section>
             <section class="dashboard-block" id="dashboard-stock">
                 <div class="dashboard-block-header">
-                    <h3>Alertas de stock</h3>
+                    <h3 id="titulo-alertas">Para reponer</h3>
                     <a href="/pages/stock.html?ver=faltantes" id="link-ver-stock" class="d-none">Ver lo que falta →</a>
                 </div>
                 <div class="table-responsive">
@@ -465,7 +473,7 @@
                 </div>
                 <form id="buscador-dashboard" action="/pages/articulacion.html" method="get" style="padding:12px 4px;margin:0;">
                     <div class="input-group">
-                        <input type="search" class="form-control" name="q" maxlength="100" placeholder="¿Qué necesitás? Ej: papel, fletes, telas">
+                        <input type="search" class="form-control" name="q" maxlength="100" placeholder="¿Qué necesitás? Ej: papel, fletes">
                         <button class="btn btn-success" type="submit"><i class="fa-solid fa-magnifying-glass"></i></button>
                     </div>
                 </form>

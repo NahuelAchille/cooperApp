@@ -200,6 +200,16 @@ const armarFilas = async (criterio, id_empresa, periodo) => {
           : `${sinValorizar} movimientos sin la plata registrada`)
       }
 
+      // "Te dejó (aprox.)": lo cobrado menos lo que costó lo vendido, con el
+      // costo de referencia (UX entrega 3, H3-02). Contesta "¿qué me
+      // conviene?" sin restar las compras, que pueden seguir en el depósito.
+      // Sin costo cargado es "no se sabe", nunca un número inventado.
+      const vendidasCobradas = Number(p.vendidas_cobradas)
+      const costo = p.costo_referencia === null ? null : Number(p.costo_referencia)
+      const dejo = vendidasCobradas === 0 ? null
+        : costo === null ? undefined
+        : (Math.round(cobrado * 100) - Math.round(vendidasCobradas * costo * 100)) / 100
+
       return {
         id: p.id_producto,
         nombre: p.nombre,
@@ -207,6 +217,7 @@ const armarFilas = async (criterio, id_empresa, periodo) => {
         ingresos: cobrado,
         egresos: pagado,
         resultado: cobrado - pagado,
+        dejo,
         detalle: partes.join(' · '),
         movio: Number(p.entradas) > 0 || Number(p.salidas) > 0,
         sin_valorizar: sinValorizar
@@ -253,9 +264,10 @@ const armarFilas = async (criterio, id_empresa, periodo) => {
 // Va igual en la pantalla, en el CSV y en el PDF.
 const NOTA_DE_VISTA = {
   categoria: 'Son la misma plata del período, ordenada por categoría: suma lo mismo que los totales del período.',
-  producto: 'Lo que vendiste y lo que compraste de cada producto, por separado. Es sólo la plata de la mercadería: sueldos, luz y lo demás no aparecen acá. ' +
-            'No se restan a propósito: lo comprado que todavía está en el depósito no es plata perdida. Lo que se perdió de verdad está en «Lo que se perdió».',
-  servicio: 'Acá sólo está la plata que se cargó diciendo de qué servicio salió. Lo demás no aparece, por eso no suma lo mismo que los totales del período.'
+  producto: 'Lo que vendiste y lo que compraste de cada producto, por separado: es sólo la plata de la mercadería. ' +
+            '«Te dejó» es lo cobrado menos lo que te costó lo que vendiste, con el costo cargado en cada producto: es aproximado. ' +
+            'Lo comprado no se resta, porque puede seguir en el depósito.',
+  servicio: 'Acá sólo está la plata que se cargó diciendo de qué servicio salió. La luz, los sueldos y lo demás no aparecen.'
 }
 
 // Devuelve el aviso, o null si no hace falta.
@@ -371,7 +383,7 @@ const FORMATOS = ['csv', 'pdf']
 const TITULO_DE = {
   movimientos: 'Movimientos del período',
   categoria:   'Totales por categoría',
-  producto:    'Totales por producto',
+  producto:    'Lo que vendiste y compraste de cada producto',
   servicio:    'Totales por servicio',
   perdidas:    'Lo que se perdió en el período'
 }
@@ -484,11 +496,13 @@ const armarDescargaDeMovimientos = async (id_empresa, periodo) => {
   return {
     avisos: avisosDelPeriodo(datos.totales),
     ...totalesDelPeriodo(datos.totales),
-    encabezadoCSV: ['Fecha', 'Descripción', 'Categoría', 'Tipo', 'Entró / Salió', 'Monto', 'Servicio'],
+    // La descripción va al final: Excel deja ver entero un texto largo si la
+    // celda de al lado está vacía, y en el medio se cortaba (UX entrega 3,
+    // H3-16). Sin descripción, el tipo, como en la pantalla (H3-11).
+    encabezadoCSV: ['Fecha', 'Entró / Salió', 'Monto', 'Categoría', 'Tipo', 'Servicio', 'Descripción'],
     filasCSV: datos.movimientos.map(m => [
-      fecha(m.fecha), m.descripcion, m.categoria_nombre, m.tipo_nombre,
-      m.naturaleza === 'ingreso' ? 'Entró' : 'Salió',
-      numero(m.monto), m.servicio_nombre
+      fecha(m.fecha), m.naturaleza === 'ingreso' ? 'Entró' : 'Salió', numero(m.monto),
+      m.categoria_nombre, m.tipo_nombre, m.servicio_nombre, m.descripcion || m.tipo_nombre
     ]),
     bloques: [{
       columnas: [
@@ -500,7 +514,7 @@ const armarDescargaDeMovimientos = async (id_empresa, periodo) => {
       ],
       filas: datos.movimientos.map(m => [
         fechaCorta(m.fecha),
-        m.servicio_nombre ? `${m.descripcion || '—'}\n(${m.servicio_nombre})` : (m.descripcion || '—'),
+        m.servicio_nombre ? `${m.descripcion || m.tipo_nombre}\n(${m.servicio_nombre})` : (m.descripcion || m.tipo_nombre),
         m.categoria_nombre,
         m.tipo_nombre,
         { texto: (m.naturaleza === 'ingreso' ? '+' : '-') + plata(m.monto),
@@ -523,7 +537,9 @@ const armarDescargaAgrupada = async (vista, id_empresa, periodo) => {
   const agrupador = { categoria: 'Categoría', producto: 'Producto', servicio: 'Servicio' }[vista]
 
   const esProducto = vista === 'producto'
-  const avisos = [NOTA_DE_VISTA[vista], ...(esProducto ? [] : avisosDelPeriodo(periodoCompleto.totales))]
+  const esServicio = vista === 'servicio'
+  // Producto y servicio no llevan los totales del período: la tabla no los suma.
+  const avisos = [NOTA_DE_VISTA[vista], ...(esProducto || esServicio ? [] : avisosDelPeriodo(periodoCompleto.totales))]
   const sinPlata = esProducto ? avisoDeProductosSinPlata(filas) : null
   if (sinPlata) avisos.push(sinPlata)
 
@@ -538,18 +554,23 @@ const armarDescargaAgrupada = async (vista, id_empresa, periodo) => {
         { etiqueta: 'Comprado', valor: plata(comprado), color: '#1a2e23' }
       ],
       totalesCSV: [['Vendido en el período', numero(vendido)], ['Comprado en el período', numero(comprado)]],
-      encabezadoCSV: ['Producto', 'Detalle', 'Vendido', 'Comprado'],
-      filasCSV: filas.map(f => [f.nombre + (f.activo ? '' : ' (de baja)'), f.detalle, numero(f.ingresos), numero(f.egresos)]),
+      // El detalle va al final: Excel deja ver entero un texto largo si la
+      // celda de al lado está vacía (UX entrega 3, H3-16).
+      encabezadoCSV: ['Producto', 'Vendido', 'Comprado', 'Te dejó (aprox.)', 'Detalle'],
+      filasCSV: filas.map(f => [f.nombre + (f.activo ? '' : ' (de baja)'), numero(f.ingresos), numero(f.egresos),
+        f.dejo === null ? '' : f.dejo === undefined ? 'No se sabe' : numero(f.dejo), f.detalle]),
       bloques: [{
         columnas: [
-          { titulo: 'Producto', ancho: 0.6 },
-          { titulo: 'Vendido', ancho: 0.2, align: 'right' },
-          { titulo: 'Comprado', ancho: 0.2, align: 'right' }
+          { titulo: 'Producto', ancho: 0.46 },
+          { titulo: 'Vendido', ancho: 0.18, align: 'right' },
+          { titulo: 'Comprado', ancho: 0.18, align: 'right' },
+          { titulo: 'Te dejó (aprox.)', ancho: 0.18, align: 'right' }
         ],
         filas: filas.map(f => [
           f.nombre + (f.activo ? '' : ' (de baja)') + (f.detalle ? `\n${f.detalle}` : ''),
           f.ingresos ? plata(f.ingresos) : '—',
-          f.egresos ? plata(f.egresos) : '—'
+          f.egresos ? plata(f.egresos) : '—',
+          f.dejo === null ? '—' : f.dejo === undefined ? 'No se sabe' : plata(f.dejo)
         ]),
         vacio: 'No hay nada para agrupar en este período.'
       }]
@@ -561,13 +582,27 @@ const armarDescargaAgrupada = async (vista, id_empresa, periodo) => {
   // seleccionarla en Excel, que es lo que paso con las perdidas (H-02).
   const detalle = (f) => vista === 'servicio' && f.categoria ? `${f.categoria} · ${f.detalle}` : f.detalle
 
+  // Por servicio, arriba van los bloques (lo que dejaron los que se ofrecen,
+  // lo que se llevaron los que se contratan), no el período (UX entrega 3, H3-01).
+  const bloquesServicio = esServicio
+    ? [...new Map(filas.filter(f => f.categoria).map(f => [f.categoria, Number(f.deja_categoria) || 0])).entries()]
+    : []
+  const totales = esServicio
+    ? {
+        casilleros: bloquesServicio.map(([cat, deja]) => ({
+          etiqueta: `${cat} ${deja < 0 ? 'se llevaron' : 'dejaron'}`, valor: plata(Math.abs(deja)), color: deja < 0 ? ROJO : VERDE
+        })),
+        totalesCSV: bloquesServicio.map(([cat, deja]) => [`${cat} ${deja < 0 ? 'se llevaron' : 'dejaron'}`, numero(Math.abs(deja))])
+      }
+    : totalesDelPeriodo(periodoCompleto.totales)
+
   return {
     avisos,
-    ...totalesDelPeriodo(periodoCompleto.totales),
-    encabezadoCSV: [agrupador, 'Detalle', 'Entró', 'Salió', 'Resultado'],
+    ...totales,
+    encabezadoCSV: [agrupador, 'Entró', 'Salió', 'Resultado', 'Detalle'],
     filasCSV: filas.map(f => [
       f.nombre + (f.activo ? '' : ' (de baja)'),
-      detalle(f), numero(f.ingresos), numero(f.egresos), numero(f.resultado)
+      numero(f.ingresos), numero(f.egresos), numero(f.resultado), detalle(f)
     ]),
     bloques: [{
       columnas: [
@@ -600,10 +635,15 @@ const armarDescargaDePerdidas = async (id_empresa, periodo) => {
   // MAS importa: sin el, alguien que recibe el PDF suelto puede restar este
   // numero del balance y contar dos veces la misma mercaderia.
   const avisos = [
+    // Qué entra acá (UX entrega 3, H3-05): el consumo propio no se "pierde",
+    // pero sale sin venderse, y sin decirlo el número parecía más grande.
+    'Roturas, robos, vencimientos, consumo propio y ajustes: todo lo que salió sin venderse.',
     'Esta plata NO está en lo que salió del balance. Lo que salió es plata que se fue de la caja; esto es mercadería que se fue sin venderse, valuada a lo que te costó. Sumarlas sería contar dos veces lo mismo, porque esa mercadería ya se pagó cuando se compró.'
   ]
   if (t.sin_costo > 0) {
-    avisos.push(`${t.sin_costo} ${t.sin_costo === 1 ? 'salida no se pudo valorizar' : 'salidas no se pudieron valorizar'} porque esos productos no tienen cargado cuánto cuestan. NO están en el total: lo perdido es ese número y algo más.`)
+    // Sin "valorizar" y con los nombres (UX entrega 3, vocabulario).
+    const sinCosto = datos.productos.filter(p => p.costo_referencia === null).map(p => p.nombre)
+    avisos.push(`A ${t.sin_costo === 1 ? '1 salida' : t.sin_costo + ' salidas'} (${sinCosto.join(', ')}) no le pudimos poner precio: ${sinCosto.length === 1 ? 'el producto no tiene' : 'los productos no tienen'} cargado cuánto cuesta. NO está en el total: lo perdido es ese número y algo más.`)
   }
 
   return {
@@ -624,21 +664,21 @@ const armarDescargaDePerdidas = async (id_empresa, periodo) => {
     encabezadoCSV: null,
     filasCSV: [
       ['¿Por qué se fue?'],
-      ['Motivo', 'Detalle', 'Cuánto costó'],
+      ['Motivo', 'Cuánto costó', 'Detalle'],
       ...datos.motivos.map(m => [m.nombre + (m.activo ? '' : ' (de baja)'),
+        numero(m.valorizado),
         `${m.movimientos} ${m.movimientos === 1 ? 'salida' : 'salidas'}` +
-        (m.sin_costo > 0 ? ` · ${m.sin_costo} sin poder valorizar` : ''),
-        numero(m.valorizado)]),
-      ['Total', '', numero(t.valorizado)],
+        (m.sin_costo > 0 ? ` · ${m.sin_costo} sin precio (el producto no tiene costo cargado)` : '')]),
+      ['Total', numero(t.valorizado)],
       [],
       [],
       ['¿Qué se fue?'],
-      ['Producto', 'Detalle', 'Cuánto costó'],
+      ['Producto', 'Cuánto costó', 'Detalle'],
       ...datos.productos.map(p => [p.nombre,
+        p.costo_referencia === null ? 'No se sabe' : numero(p.valorizado),
         conUnidad(p.cantidad, p.unidad_medida) +
-        (p.costo_referencia === null ? ' · sin costo cargado' : ` · a ${plata(p.costo_referencia)} por ${p.unidad_medida || 'unidad'}`),
-        p.costo_referencia === null ? 'No se sabe' : numero(p.valorizado)]),
-      ['Total', '', numero(t.valorizado)]
+        (p.costo_referencia === null ? ' · sin costo cargado' : ` · a ${plata(p.costo_referencia)} por ${p.unidad_medida || 'unidad'}`)]),
+      ['Total', numero(t.valorizado)]
     ],
     bloques: [
       {
@@ -650,7 +690,7 @@ const armarDescargaDePerdidas = async (id_empresa, periodo) => {
         ],
         filas: datos.motivos.map(m => [
           m.nombre + (m.activo ? '' : ' (de baja)'),
-          String(m.movimientos) + (m.sin_costo > 0 ? ` (${m.sin_costo} sin valorizar)` : ''),
+          String(m.movimientos) + (m.sin_costo > 0 ? ` (${m.sin_costo} sin precio)` : ''),
           { texto: plata(m.valorizado), color: '#1a2e23' }
         ]),
         vacio: 'No se perdió nada en este período.'

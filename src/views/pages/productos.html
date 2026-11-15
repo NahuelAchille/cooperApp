@@ -156,7 +156,7 @@
                 <div class="form-text" id="ayuda-unidad">En qué se mide: por unidad, por kilo, por litro...</div>
               </div>
               <div class="col-12 col-sm-5">
-                <label class="form-label">Stock mínimo</label>
+                <label class="form-label">Stock mínimo <span id="minimo-unidad"></span></label>
                 <input type="number" class="form-control" name="stock_minimo" min="0" step="0.01" placeholder="0">
                 <div class="form-text" id="ayuda-stock">Cuando llegue a este número (o menos), el sistema avisa que hay que reponer. En 0 no avisa.</div>
               </div>
@@ -513,12 +513,29 @@
 
     // Al cambiar la unidad, la pregunta del costo cambia con ella.
     document.getElementById('select-unidad').addEventListener('change', () => mostrarAntiguedadDelCosto(productoDelCosto))
+    // El mínimo dice en qué se mide (UX entrega 3, H3-20).
+    const mostrarUnidadDelMinimo = () => {
+      const clave = document.getElementById('select-unidad').value
+      document.getElementById('minimo-unidad').textContent = clave ? `(en ${nombreUnidad(2, clave)})` : ''
+    }
+    document.getElementById('select-unidad').addEventListener('change', mostrarUnidadDelMinimo)
 
     // ================= FORMULARIO =================
 
     // Pide el árbol una sola vez y guarda las dos listas que hacen falta.
     // El formulario de alta ofrece sólo las activas a propósito: no se puede
     // clasificar algo nuevo en una categoría que la empresa dejó de usar.
+    // "Actualizá la lista": vuelve a traer las categorías sin cerrar el
+    // formulario ni perder lo escrito (UX entrega 3, H3-08).
+    document.getElementById('ayuda-categoria').addEventListener('click', async (evento) => {
+      if (!evento.target.closest('[data-actualizar-categorias]')) return
+      evento.preventDefault()
+      const select = document.getElementById('form-producto').id_categoria_producto
+      const elegida = select.value
+      await cargarCategorias()
+      if ([...select.options].some(o => o.value === elegida)) select.value = elegida
+    })
+
     async function cargarCategorias() {
       todasLasCategorias = await fetch(`${CATALOGO.api}/categorias`).then(r => r.ok ? r.json() : [])
       categorias = todasLasCategorias.filter(c => c.activo)
@@ -541,8 +558,9 @@
 
       if (esAdmin) {
         ayuda.innerHTML = categorias.length === 0
-          ? `<strong>Todavía no cargaste ninguna categoría.</strong> <a href="${CATALOGO.categorias}">Armá las categorías de tus ${CATALOGO.cosas}</a> antes de dar de alta el primero.`
-          : `¿Falta la categoría que necesitás? <a href="${CATALOGO.categorias}">Agregala acá</a>.`
+          ? `<strong>Todavía no cargaste ninguna categoría.</strong> <a href="${CATALOGO.categorias}" target="_blank" rel="noopener">Armá las categorías de tus ${CATALOGO.cosas}</a> (se abre aparte) y después <a href="#" data-actualizar-categorias>actualizá la lista</a>.`
+          : `¿Falta la categoría que necesitás? <a href="${CATALOGO.categorias}" target="_blank" rel="noopener">Agregala acá</a> ` +
+            `(se abre aparte, para no perder lo que escribiste) y después <a href="#" data-actualizar-categorias>actualizá la lista</a>.`
       } else {
         ayuda.innerHTML = categorias.length === 0
           ? `<strong>Todavía no hay categorías cargadas.</strong> Pedile al administrador de tu empresa que las cree para poder dar de alta ${CATALOGO.cosas}.`
@@ -629,19 +647,27 @@
 
     document.getElementById('btn-nuevo').addEventListener('click', () => abrirModalProducto(null))
 
-    document.getElementById('tabla-productos').addEventListener('click', (evento) => {
+    document.getElementById('tabla-productos').addEventListener('click', async (evento) => {
       const boton = evento.target.closest('button')
       if (!boton) return
 
       if (boton.dataset.accion === 'editar') {
-        const producto = window.productosCargados.find(p => String(p.id_producto) === boton.dataset.id)
+        // Los datos se piden de nuevo al abrir, no se toman de la lista que
+        // quedó cargada: mientras la pantalla estaba abierta, una compra pudo
+        // actualizar el costo (QA entrega 3, M1).
+        const frescos = await fetch(CATALOGO.api).then(r => r.ok ? r.json() : []).catch(() => [])
+        const producto = frescos.find(p => String(p.id_producto) === boton.dataset.id) ||
+                         window.productosCargados.find(p => String(p.id_producto) === boton.dataset.id)
         abrirModalProducto(producto)
       } else if (boton.dataset.accion === 'toggle') {
         abrirModalEstado(boton.dataset.id, boton.dataset.nombre, boton.dataset.activo === '1')
       }
     })
 
+    let productoEditado = null   // lo que tenía el producto al abrir el formulario (QA entrega 3, M1)
+
     async function abrirModalProducto(producto) {
+      productoEditado = producto || null
       const form = document.getElementById('form-producto')
       form.reset()
       form.unidad_medida.disabled = false
@@ -658,6 +684,7 @@
 
       form.id.value = esEdicion ? producto.id_producto : ''
 
+      setTimeout(() => mostrarUnidadDelMinimo?.(), 0)
       if (esEdicion) {
         form.nombre.value = producto.nombre
         form.descripcion.value = producto.descripcion || ''
@@ -735,26 +762,43 @@
       const esEdicion = !!datos.id
       const url = esEdicion ? `${CATALOGO.api}/${datos.id}` : CATALOGO.api
 
+      const cuerpo = {
+        nombre: datos.nombre,
+        descripcion: datos.descripcion,
+        // Un servicio no los manda: el servidor los fuerza en NULL y en 0.
+        ...(ES_SERVICIO ? {} : {
+          unidad_medida: datos.unidad_medida,
+          stock_minimo: datos.stock_minimo,
+          // Vacío viaja como null, no como 0: son cosas distintas.
+          costo_referencia: datos.costo_referencia || null,
+          precio_venta: datos.precio_venta || null
+        }),
+        id_categoria_producto: datos.id_categoria_producto,
+        id_subcategoria_producto: datos.id_subcategoria_producto || null,
+        // Si Articulación está apagado no viaja nada, y el servidor deja
+        // lo que había: apagar el módulo no borra lo elegido.
+        ...BloqueArticulacion.datos()
+      }
+
+      // Al editar viaja sólo lo que la persona cambió (más el nombre): el
+      // servidor deja como está lo que no viene. Así guardar una descripción
+      // no le pisa a una compra el costo que acaba de actualizar, ni la fecha
+      // del costo (QA entrega 3, M1).
+      if (esEdicion && productoEditado) {
+        const igual = (a, b) => (a === null || a === undefined || a === '' ? '' : String(Number(a) || a)) ===
+                                (b === null || b === undefined || b === '' ? '' : String(Number(b) || b))
+        for (const campo of ['descripcion', 'unidad_medida', 'stock_minimo', 'costo_referencia', 'precio_venta',
+                             'id_categoria_producto', 'id_subcategoria_producto']) {
+          if (campo in cuerpo && igual(cuerpo[campo], productoEditado[campo])) delete cuerpo[campo]
+        }
+        // Sin la categoría, la subcategoría no se puede validar sola.
+        if ('id_subcategoria_producto' in cuerpo) cuerpo.id_categoria_producto = datos.id_categoria_producto
+      }
+
       const res = await fetch(url, {
         method: esEdicion ? 'PUT' : 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          nombre: datos.nombre,
-          descripcion: datos.descripcion,
-          // Un servicio no los manda: el servidor los fuerza en NULL y en 0.
-          ...(ES_SERVICIO ? {} : {
-            unidad_medida: datos.unidad_medida,
-            stock_minimo: datos.stock_minimo,
-            // Vacío viaja como null, no como 0: son cosas distintas.
-            costo_referencia: datos.costo_referencia || null,
-            precio_venta: datos.precio_venta || null
-          }),
-          id_categoria_producto: datos.id_categoria_producto,
-          id_subcategoria_producto: datos.id_subcategoria_producto || null,
-          // Si Articulación está apagado no viaja nada, y el servidor deja
-          // lo que había: apagar el módulo no borra lo elegido.
-          ...BloqueArticulacion.datos()
-        })
+        body: JSON.stringify(cuerpo)
       })
       const resultado = await res.json()
       boton.disabled = false

@@ -59,7 +59,10 @@ const findByEmpresa = async (id_empresa, filtros = {}) => {
            -- Si esta plata es la de una venta o una compra de Stock. Esa no se
            -- corrige desde Movimientos: la copia quedaria suelta de la venta y
            -- el cobro se terminaba cargando dos veces (QA final, C1).
-           EXISTS (SELECT 1 FROM movimientos_stock ms WHERE ms.id_movimiento = m.id_movimiento) AS de_stock
+           EXISTS (SELECT 1 FROM movimientos_stock ms WHERE ms.id_movimiento = m.id_movimiento) AS de_stock,
+           -- De qué venta o compra es, para ir a corregirla desde Stock (UX entrega 3, H3-04).
+           (SELECT ms.id_movimiento_stock FROM movimientos_stock ms WHERE ms.id_movimiento = m.id_movimiento AND ms.anulado = 0 LIMIT 1) AS id_stock,
+           (SELECT ms.id_producto FROM movimientos_stock ms WHERE ms.id_movimiento = m.id_movimiento LIMIT 1) AS id_producto_stock
     FROM movimientos m
     JOIN tipos_movimiento t      ON t.id_tipo = m.id_tipo
     JOIN categorias_movimiento c ON c.id_categoria = t.id_categoria

@@ -250,7 +250,7 @@
                 <select class="form-select" name="id_servicio" id="mov-servicio">
                   <option value="">No, ninguno</option>
                 </select>
-                <div class="form-text">Sirve para saber después cuánto te deja cada servicio. La categoría y el tipo van igual.</div>
+                <div class="form-text">Sirve para saber después cuánto te deja cada servicio. Igual tenés que decir arriba de qué fue la plata.</div>
               </div>
             </div>
             <div id="mov-error" class="text-danger small mt-2 d-none"></div>
@@ -271,7 +271,7 @@
     <div class="modal-dialog modal-dialog-centered">
       <div class="modal-content">
         <div class="modal-header">
-          <h5 class="modal-title fw-bold"><i class="fa-solid fa-pen me-2"></i>Anular o corregir</h5>
+          <h5 class="modal-title fw-bold"><i class="fa-solid fa-pen me-2"></i><span id="anular-titulo">Anular o corregir</span></h5>
           <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
         </div>
         <div class="modal-body">
@@ -300,6 +300,11 @@
           <button type="button" id="btn-confirmar-anular" class="btn fw-bold btn-outline-danger">
             <i class="fa-solid fa-ban me-2"></i><span id="anular-texto-boton">Anular</span>
           </button>
+          <!-- La admin, en la plata de una venta: va directo al cartel de esa
+               venta en Stock (UX entrega 3, H3-04). -->
+          <a id="btn-corregir-stock" class="btn fw-bold px-4 d-none" style="background-color:#2d7a4f;color:white;">
+            <i class="fa-solid fa-pen me-2"></i>Corregir en Stock
+          </a>
           <button type="button" id="btn-entendido" class="btn fw-bold px-4 d-none" style="background-color:#2d7a4f;color:white;" data-bs-dismiss="modal">
             Entendido, se lo pido
           </button>
@@ -388,7 +393,9 @@
       // Desde el panel se llega con ?periodo=mes-actual: el mismo período que
       // los casilleros de donde se vino (UX entrega 2, G-11).
       const periodoPedido = new URLSearchParams(location.search).get('periodo')
-      const atajoPedido = periodoPedido && document.querySelector(`.btn-atajo[data-periodo="${periodoPedido}"]`)
+      // Se compara el texto, no se arma un selector: una comilla en la
+      // dirección lo rompía y la pantalla quedaba en "Cargando..." (QA entrega 3, B1).
+      const atajoPedido = periodoPedido && [...document.querySelectorAll('.btn-atajo')].find(b => b.dataset.periodo === periodoPedido)
       if (atajoPedido) atajoPedido.click()
       else await cargarMovimientos()
 
@@ -579,7 +586,7 @@
                 // entra a Stock, el botón no le promete corregir (UX E-01).
                 : (m.de_stock && !puedeIrAStock())
                   ? `<button class="btn-accion" data-id="${m.id_movimiento}" data-detalle="${signo}${formatMoneda(m.monto)} · ${esc(m.tipo_nombre)}" title="Anular"><i class="fa-solid fa-ban me-1"></i>Anular</button>`
-                  : `<button class="btn-accion" data-id="${m.id_movimiento}" data-detalle="${signo}${formatMoneda(m.monto)} · ${esc(m.tipo_nombre)}" title="Anular o corregir"><i class="fa-solid fa-ban me-1"></i>Anular o corregir</button>`
+                  : `<button class="btn-accion btn-corregir" data-id="${m.id_movimiento}" data-detalle="${signo}${formatMoneda(m.monto)} · ${esc(m.tipo_nombre)}" title="Anular o corregir"><i class="fa-solid fa-pen me-1"></i>Anular o corregir</button>`
             }</td>
           </tr>`
       }).join('')
@@ -870,8 +877,13 @@
       // El tesorero no puede corregirla: su botón principal cierra, y anular
       // queda como "Anular igual" (UX entrega 2, G-08).
       const sinSalida = deStock && !puedeIrAStock()
+      const irAStock = document.getElementById('btn-corregir-stock')
+      const conSalida = deStock && puedeIrAStock() && m.id_stock
+      irAStock.classList.toggle('d-none', !conSalida)
+      if (conSalida) irAStock.href = `/pages/stock.html?ver=historial&producto=${m.id_producto_stock}&corregir=${m.id_stock}`
       document.getElementById('btn-entendido').classList.toggle('d-none', !sinSalida)
       document.getElementById('anular-texto-boton').textContent = sinSalida ? 'Anular igual' : 'Anular'
+      document.getElementById('anular-titulo').textContent = sinSalida ? `Anular la plata de ${queEs}` : 'Anular o corregir'
 
       new bootstrap.Modal(document.getElementById('modalAnular')).show()
     })

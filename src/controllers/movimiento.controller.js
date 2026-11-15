@@ -190,11 +190,11 @@ exports.crearMovimiento = async (req, res) => {
 
     const id_movimiento = await movimientoModel.create({ ...datos, id_empresa, id_usuario })
 
-    res.status(201).json({ id_movimiento, message: 'Movimiento registrado correctamente' })
+    res.status(201).json({ id_movimiento, message: 'Listo: quedó anotado.' })
 
   } catch (error) {
     console.error(error)
-    res.status(500).json({ error: 'Error al registrar el movimiento' })
+    res.status(500).json({ error: 'No se pudo guardar. Probá de nuevo en un rato.' })
   }
 }
 

@@ -206,10 +206,14 @@ exports.registrarMovimiento = async (req, res) => {
           if (anulado.error) return { error: 'Lo que querés corregir ya estaba anulado' }
           const cantidadVieja = Number(original.cantidad)
           disponible = original.efecto_stock === 'salida' ? disponible + cantidadVieja : disponible - cantidadVieja
-          if (motivo.efecto_stock === 'entrada' && disponible + cantidad.valor < 0) {
+          // Una entrada de la que ya salió parte: sin ella lo que hay da
+          // negativo. Pase lo que pase con la corrección, se dice eso y no
+          // "hay -8 kg" (QA entrega 3, B2).
+          const queda = motivo.efecto_stock === 'entrada' ? disponible + cantidad.valor : disponible - cantidad.valor
+          if (disponible < 0 && queda < 0) {
             return {
               error: `No se puede corregir así: de esa entrada ya salieron ${conUnidad(-disponible, producto.unidad_medida)}, ` +
-                     `y con ${conUnidad(cantidad.valor, producto.unidad_medida)} el stock quedaría en negativo.`
+                     'y lo que hay quedaría por debajo de cero.'
             }
           }
         }
@@ -255,7 +259,7 @@ exports.registrarMovimiento = async (req, res) => {
 
   } catch (error) {
     console.error(error)
-    res.status(500).json({ error: 'Error al registrar el movimiento de stock' })
+    res.status(500).json({ error: 'No se pudo guardar. Probá de nuevo en un rato.' })
   }
 }
 
@@ -506,9 +510,13 @@ const registrarOperacion = async (clase, req, res) => {
     // Si con el nombre del producto y el detalle se pasa de los 255 de la
     // columna, se corta con "…" para que se note (el detalle completo queda
     // en el movimiento de stock).
-    const descripcionCompleta = `${motivo.nombre}: ${conUnidad(cantidad.valor, producto.unidad_medida)} de ${producto.nombre}` +
-                                (detalle ? ` · ${detalle}` : '')
-    const descripcionDinero = descripcionCompleta.length > 255 ? descripcionCompleta.slice(0, 254) + '…' : descripcionCompleta
+    // Se arma con la unidad que vale ADENTRO del candado: si alguien la cambió
+    // mientras tanto, la plata contaba "3 cajas" y el stock "3 kg" (QA entrega 3, B3).
+    const describirDinero = (unidad) => {
+      const completa = `${motivo.nombre}: ${conUnidad(cantidad.valor, unidad)} de ${producto.nombre}` +
+                       (detalle ? ` · ${detalle}` : '')
+      return completa.length > 255 ? completa.slice(0, 254) + '…' : completa
+    }
 
     // Todo adentro del candado del producto: el control del stock, el dinero
     // y la mercaderia. O entran los dos movimientos o no entra ninguno: nunca
@@ -571,7 +579,7 @@ const registrarOperacion = async (clase, req, res) => {
         const id_movimiento = await movimientoModel.create({
           id_tipo: tipo.id_tipo,
           monto: total,
-          descripcion: descripcionDinero,
+          descripcion: describirDinero(fila.unidad_medida),
           fecha: revision.fecha,
           id_empresa,
           id_usuario
@@ -588,7 +596,7 @@ const registrarOperacion = async (clase, req, res) => {
           id_movimiento
         }, conexion)
 
-        return { id_movimiento_stock, id_movimiento, actualizarCosto, dineroAnulado }
+        return { id_movimiento_stock, id_movimiento, actualizarCosto, dineroAnulado, unidad: fila.unidad_medida }
       }
     )
 
@@ -596,11 +604,11 @@ const registrarOperacion = async (clase, req, res) => {
       return res.status(400).json({ error: resultado.error })
     }
 
-    const { id_movimiento_stock, id_movimiento, existencia, actualizarCosto, dineroAnulado } = resultado
+    const { id_movimiento_stock, id_movimiento, existencia, actualizarCosto, dineroAnulado, unidad } = resultado
 
     const comoQueda = op.efecto_stock === 'salida'
-      ? `${Number(existencia) === 1 ? 'Queda' : 'Quedan'} ${conUnidad(existencia, producto.unidad_medida)}.`
-      : `Ahora hay ${conUnidad(existencia, producto.unidad_medida)}.`
+      ? `${Number(existencia) === 1 ? 'Queda' : 'Quedan'} ${conUnidad(existencia, unidad)}.`
+      : `Ahora hay ${conUnidad(existencia, unidad)}.`
     const avisoCosto = actualizarCosto
       ? ` El costo del producto pasó a ${formatearPlata(precio.valor)}.`
       : ''
@@ -611,7 +619,7 @@ const registrarOperacion = async (clase, req, res) => {
       existencia,
       total,
       costoActualizado: actualizarCosto,
-      message: `${op.Laoperacion} ${original ? 'corregida' : 'registrada'}: ${conUnidad(cantidad.valor, producto.unidad_medida)} de ${producto.nombre} por ${formatearPlata(total)}. ` +
+      message: `${op.Laoperacion} ${original ? 'corregida' : 'registrada'}: ${conUnidad(cantidad.valor, unidad)} de ${producto.nombre} por ${formatearPlata(total)}. ` +
                // Que la plata ya está anotada (UX E-05): quien venía de cargar
                // todo dos veces iba a Movimientos a cargarla de nuevo. Al
                // operador, sin nombrar una pantalla que no tiene.
@@ -670,7 +678,9 @@ exports.registrarMovimientoDinero = async (req, res) => {
     }
     if (tipo.naturaleza !== movimiento.efecto_dinero) {
       return res.status(400).json({
-        error: `El motivo "${movimiento.motivo_nombre}" genera un ${movimiento.efecto_dinero}, así que hay que elegir una categoría de ${movimiento.efecto_dinero}s`
+        error: movimiento.efecto_dinero === 'ingreso'
+          ? 'Con este motivo entra plata: elegí de qué fue la plata que entró.'
+          : 'Con este motivo sale plata: elegí en qué se fue la plata.'
       })
     }
 
@@ -714,7 +724,7 @@ exports.registrarMovimientoDinero = async (req, res) => {
 
   } catch (error) {
     console.error(error)
-    res.status(500).json({ error: 'Error al registrar el movimiento de dinero' })
+    res.status(500).json({ error: 'No se pudo guardar. Probá de nuevo en un rato.' })
   }
 }
 

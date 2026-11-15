@@ -3,7 +3,8 @@
 
 .btn-filtros { display: none; }
 
-@media (max-width: 767px) {
+/* Hasta 1023: en la tablet la caja abierta empujaba el primer dato al píxel 603 (UX entrega 3, H3-17). */
+@media (max-width: 1023px) {
   .btn-filtros {
     display: flex;
     justify-content: space-between;

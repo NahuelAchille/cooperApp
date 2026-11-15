@@ -112,6 +112,8 @@
           <div>
             <h5 class="mb-1" id="hoja-titulo">Movimientos del período</h5>
             <p class="mb-0" id="hoja-periodo"></p>
+            <!-- En el celular las descargas quedan abajo: un atajo (UX entrega 3, H3-09). -->
+            <a href="#zona-descargas" class="link-descargar">Descargar ↓</a>
           </div>
           <div class="hoja-empresa" id="hoja-empresa"></div>
         </div>
@@ -121,7 +123,7 @@
              de una tabla larga habría que buscarlas.
              El archivo se arma en el servidor con los mismos datos que se ven
              acá, así que no puede decir otra cosa. -->
-        <div class="descargas">
+        <div class="descargas" id="zona-descargas">
           <a class="btn-descargar" id="btn-csv" download>
             <i class="fa-solid fa-file-csv me-1"></i>Descargar para Excel
           </a>
@@ -211,6 +213,7 @@
              porque NO es plata del balance, y mezclarlas sería contar dos
              veces lo mismo. -->
         <div class="d-none" id="caja-perdidas">
+          <p class="que-es-perdido">Roturas, robos, vencimientos, consumo propio y ajustes: todo lo que salió sin venderse.</p>
 
           <div class="aviso-perdidas">
             <i class="fa-solid fa-circle-info me-1"></i>
@@ -462,12 +465,12 @@
       // sin costo cargado no vale cero, no se sabe cuánto vale.
       const avisoSinCosto = document.getElementById('perdidas-sin-costo')
       if (t.sin_costo > 0) {
+        // Sin "valorizar", y diciendo cuál (UX entrega 3, vocabulario).
+        const sinCosto = (datos.productos || []).filter(p => p.costo_referencia === null).map(p => esc(p.nombre))
         avisoSinCosto.innerHTML = `<i class="fa-solid fa-triangle-exclamation me-1"></i>` +
-          `${t.sin_costo === 1
-            ? 'Hay 1 salida que no se pudo valorizar'
-            : `Hay ${t.sin_costo} salidas que no se pudieron valorizar`}` +
-          `, porque esos productos no tienen cargado cuánto cuestan. <strong>No están en el total</strong>: ` +
-          `lo perdido es ese número <em>y algo más</em>. Cargales el costo desde Productos.`
+          `A ${t.sin_costo === 1 ? '1 salida' : t.sin_costo + ' salidas'}${sinCosto.length ? ` (${sinCosto.join(', ')})` : ''} no le pudimos poner precio: ` +
+          `${sinCosto.length === 1 ? 'el producto no tiene' : 'los productos no tienen'} cargado cuánto cuesta. <strong>No está en el total</strong>: ` +
+          `lo perdido es ese número <em>y algo más</em>. Cargale el costo desde Productos.`
         avisoSinCosto.classList.remove('d-none')
       } else {
         avisoSinCosto.classList.add('d-none')
@@ -486,7 +489,7 @@
           <td>
             <div class="agr-nombre">${esc(m.nombre)}${m.activo ? '' : ' <span class="chico-gris">(de baja)</span>'}</div>
             <div class="chico-gris">${m.movimientos} ${m.movimientos === 1 ? 'salida' : 'salidas'}${
-              m.sin_costo > 0 ? ` · ${m.sin_costo} sin poder valorizar` : ''}</div>
+              m.sin_costo > 0 ? ` · ${m.sin_costo} sin precio` : ''}</div>
           </td>
           <td class="text-end fw-bold texto-perdido">${formatMoneda(m.valorizado)}</td>
         </tr>`).join('')
@@ -520,15 +523,27 @@
 
       document.getElementById('th-agrupador').textContent = AGRUPADOR[vistaElegida]
       const esProducto = vistaElegida === 'producto'
+      const esServicio = vistaElegida === 'servicio'
       // Por producto: Vendido y Comprado, sin restar (UX entrega 2, G-02).
       document.getElementById('th-entro').textContent = esProducto ? 'Vendido' : 'Entró'
       document.getElementById('th-salio').textContent = esProducto ? 'Comprado' : 'Salió'
-      document.getElementById('th-resultado').classList.toggle('d-none', esProducto)
+      // Por producto, la última columna es "Te dejó": lo cobrado menos lo que
+      // costó lo vendido (UX entrega 3, H3-02).
+      document.getElementById('th-resultado').textContent = esProducto ? 'Te dejó (aprox.)' : 'Resultado'
       const notaVista = document.getElementById('nota-vista')
-      notaVista.textContent = esProducto ? '' : (datos.nota || '')
-      notaVista.classList.toggle('d-none', esProducto)
+      const conRecuadro = esProducto || esServicio
+      notaVista.textContent = conRecuadro ? '' : (datos.nota || '')
+      notaVista.classList.toggle('d-none', conRecuadro)
       const notaProducto = document.getElementById('nota-producto')
-      notaProducto.classList.toggle('d-none', !esProducto)
+      notaProducto.classList.toggle('d-none', !conRecuadro)
+      // Por servicio, lo mismo que por producto: arriba lo que suma la tabla
+      // (cada bloque) y la nota, no los casilleros del período (UX entrega 3, H3-01).
+      if (esServicio) {
+        const bloques = [...new Map(datos.filas.filter(f => f.categoria).map(f => [f.categoria, Number(f.deja_categoria) || 0])).entries()]
+        notaProducto.innerHTML = `<div class="nota-producto-totales">` +
+          bloques.map(([cat, deja]) => `<span>${esc(cat)} ${deja < 0 ? 'se llevaron' : 'dejaron'} <strong>${formatMoneda(Math.abs(deja))}</strong></span>`).join('') +
+          `</div><p class="mb-0"><i class="fa-solid fa-circle-info me-1"></i>${esc(datos.nota || '')}</p>`
+      }
       if (esProducto) {
         const vendido = datos.filas.reduce((s, f) => s + Math.round(f.ingresos * 100), 0) / 100
         const comprado = datos.filas.reduce((s, f) => s + Math.round(f.egresos * 100), 0) / 100
@@ -579,7 +594,9 @@
           </td>
           <td class="text-end col-detalle">${f.ingresos ? formatMoneda(f.ingresos) : '<span class="chico-gris">—</span>'}</td>
           <td class="text-end col-detalle">${f.egresos ? formatMoneda(f.egresos) : '<span class="chico-gris">—</span>'}</td>
-          ${esProducto ? '' : `<td class="text-end fw-bold ${f.resultado > 0 ? 'positivo' : f.resultado < 0 ? 'negativo' : 'text-muted'}">${formatMoneda(f.resultado)}</td>`}
+          ${esProducto
+            ? `<td class="text-end fw-bold ${f.dejo > 0 ? 'positivo' : 'text-muted'}">${f.dejo === null ? '—' : f.dejo === undefined ? '<span class="chico-gris">No se sabe</span>' : formatMoneda(f.dejo)}</td>`
+            : `<td class="text-end fw-bold ${f.resultado > 0 ? 'positivo' : f.resultado < 0 ? 'negativo' : 'text-muted'}">${formatMoneda(f.resultado)}</td>`}
         </tr>`).join('')
 
       // Las categorías y los servicios aparecen aunque estén en cero, a
@@ -608,7 +625,7 @@
       // Los anulados. En la vista de pérdidas no se muestran: hablan de los
       // movimientos de dinero y ahí no viene al caso.
       const avisoAnulados = document.getElementById('aviso-anulados')
-      if (t.anulados_fuera > 0 && !['perdidas', 'producto'].includes(vistaElegida)) {
+      if (t.anulados_fuera > 0 && !['perdidas', 'producto', 'servicio'].includes(vistaElegida)) {
         avisoAnulados.innerHTML = `<i class="fa-solid fa-circle-info me-1"></i>` +
           `${t.anulados_fuera === 1
             ? 'Hay 1 movimiento anulado en este período y no entra en el reporte'
@@ -702,14 +719,14 @@
         const notaVista = document.getElementById('nota-vista')
         notaVista.textContent = esListado ? 'Son la misma plata del período, ordenada de distinta manera.' : ''
         notaVista.classList.toggle('d-none', !esListado && !esAgrupado)
-        if (vistaElegida !== 'producto') document.getElementById('nota-producto').classList.add('d-none')
+        if (!['producto', 'servicio'].includes(vistaElegida)) document.getElementById('nota-producto').classList.add('d-none')
         document.getElementById('caja-perdidas').classList.toggle('d-none', !esPerdidas)
 
         // Los tres casilleros del período no aplican a las pérdidas: esa plata
         // no está ahí adentro, y dejarlos arriba invitaría a restarlos. Por lo
         // mismo se esconden el aviso de anulados y el pie, que hablan de los
         // movimientos de dinero y acá no vienen al caso.
-        document.getElementById('bloque-totales').classList.toggle('d-none', esPerdidas || vistaElegida === 'producto')
+        document.getElementById('bloque-totales').classList.toggle('d-none', esPerdidas || ['producto', 'servicio'].includes(vistaElegida))
         document.getElementById('pie-reporte').classList.toggle('d-none', esPerdidas)
         if (esPerdidas) document.getElementById('aviso-anulados').classList.add('d-none')
 
@@ -718,6 +735,7 @@
         document.getElementById('hoja-titulo').textContent =
             esListado  ? 'Movimientos del período'
           : esPerdidas ? 'Lo que se perdió en el período'
+          : vistaElegida === 'producto' ? 'Lo que vendiste y compraste de cada producto'
           : `Totales por ${AGRUPADOR[vistaElegida].toLowerCase()}`
 
         cargarReporte()
